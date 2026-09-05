@@ -378,7 +378,7 @@ static int tr_##name(lua_State *L) { \
     return 1; \
 }
 
-DEF_TYPEREAD(Char, signed char, lua_pushinteger)
+DEF_TYPEREAD(Char, unsigned char, lua_pushinteger)
 DEF_TYPEREAD(UnsignedChar, unsigned char, lua_pushinteger)
 DEF_TYPEREAD(Short, short, lua_pushinteger)
 DEF_TYPEREAD(UnsignedShort, unsigned short, lua_pushinteger)
@@ -406,7 +406,7 @@ static int tw_##name(lua_State *L) { \
     return 0; \
 }
 
-DEF_TYPEWRITE(Char, signed char, luaL_checkinteger)
+DEF_TYPEWRITE(Char, unsigned char, luaL_checkinteger)
 DEF_TYPEWRITE(UnsignedChar, unsigned char, luaL_checkinteger)
 DEF_TYPEWRITE(Short, short, luaL_checkinteger)
 DEF_TYPEWRITE(UnsignedShort, unsigned short, luaL_checkinteger)
@@ -625,7 +625,7 @@ static int lasm_kindex(lua_State *L) {
     }
     if (idx >= sizek) return 0;
     if (f->k == NULL) return 0;
-    setobj2s(L, L->top, &f->k[idx]);
+    memcpy(L->top, &f->k[idx], sizeof(TValue));
     L->top++;
     return 1;
 }
