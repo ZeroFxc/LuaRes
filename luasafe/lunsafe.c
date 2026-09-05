@@ -474,7 +474,7 @@ static void push_proto_info(lua_State *L, Proto *f, int detailed) {
                 case LUA_TSHRSTR:
                 case LUA_TLNGSTR: {
                     TString *ts = gco2ts(o->value_.gc);
-                    lua_pushlstring(L, getstr(ts), ts->shrlen);
+                    lua_pushlstring(L, getstr(ts), (ts->tt == LUA_TSHRSTR) ? ts->shrlen : ts->u.lnglen);
                     break;
                 }
                 default: lua_pushnil(L); break;
@@ -600,7 +600,7 @@ static int lasm_ProtoInfo(lua_State *L) {
 }
 
 static int lasm_pindex(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     int idx = (int)luaL_checkinteger(L, 2);
     int sizecode = f->sizecode;
@@ -615,7 +615,7 @@ static int lasm_pindex(lua_State *L) {
 }
 
 static int lasm_kindex(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     int idx = (int)luaL_checkinteger(L, 2);
     int sizek = f->sizek;
@@ -631,7 +631,7 @@ static int lasm_kindex(lua_State *L) {
 }
 
 static int lasm_handleInst(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
     if (f->sizecode >= 1) {
@@ -654,7 +654,7 @@ static int lasm_handleInst(lua_State *L) {
 }
 
 static int lasm_replaceInst(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     luaL_checktype(L, 2, LUA_TUSERDATA);
     Instruction *newcode = (Instruction *)lua_touserdata(L, 2);
@@ -668,7 +668,7 @@ static int lasm_replaceInst(lua_State *L) {
 }
 
 static int lasm_replaceK(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     int idx = (int)luaL_checkinteger(L, 2);
     if (lua_gettop(L) == 2)
