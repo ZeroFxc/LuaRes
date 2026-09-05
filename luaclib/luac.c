@@ -656,6 +656,16 @@ static void sync_k_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
                 const char *s = lua_tostring(L, -1);
                 f->k_tag[i] = (strlen(s) <= 40) ? LUA_TSHRSTR : LUA_TLNGSTR;
                 f->k_str[i] = luac_strdup(s);
+            } else if (t == LUA_TTABLE) {
+                /* poison constant: {__poison = tag} writes raw tag byte only,
+                   matching andlua VM behavior (unknown tags read no data) */
+                lua_getfield(L, -1, "__poison");
+                if (lua_isnumber(L, -1)) {
+                    f->k_tag[i] = (int)lua_tointeger(L, -1);
+                } else {
+                    f->k_tag[i] = LUA_TNIL;
+                }
+                lua_pop(L, 1);
             } else {
                 f->k_tag[i] = LUA_TNIL;
             }
