@@ -277,7 +277,6 @@ static int l_writemem(lua_State *L) {
     size_t len = (size_t)luaL_checkinteger(L, 2);
     size_t slen;
     const char *data = luaL_checklstring(L, 3, &slen);
-    if (len > slen) len = slen;
     memcpy(ptr, data, len);
     return 0;
 }
@@ -320,7 +319,7 @@ static int l_luatype2memptr(lua_State *L) {
         case LUA_TLNGSTR: {
             TString *ts = gco2ts(o->value_.gc);
             ptr = getstr(ts);
-            size = ts->shrlen;
+            size = (ts->tt == LUA_TSHRSTR) ? ts->shrlen : ts->u.lnglen;
             break;
         }
         case LUA_TTABLE: {
@@ -379,14 +378,14 @@ static int tr_##name(lua_State *L) { \
     return 1; \
 }
 
-DEF_TYPEREAD(Char, signed char, lua_pushinteger)
+DEF_TYPEREAD(Char, unsigned char, lua_pushinteger)
 DEF_TYPEREAD(UnsignedChar, unsigned char, lua_pushinteger)
 DEF_TYPEREAD(Short, short, lua_pushinteger)
 DEF_TYPEREAD(UnsignedShort, unsigned short, lua_pushinteger)
 DEF_TYPEREAD(Int, int, lua_pushinteger)
 DEF_TYPEREAD(UnsignedInt, unsigned int, lua_pushinteger)
-DEF_TYPEREAD(Long, long, lua_pushinteger)
-DEF_TYPEREAD(UnsignedLong, unsigned long, lua_pushinteger)
+DEF_TYPEREAD(Long, long long, lua_pushinteger)
+DEF_TYPEREAD(UnsignedLong, unsigned long long, lua_pushinteger)
 DEF_TYPEREAD(SizeT, size_t, lua_pushinteger)
 DEF_TYPEREAD(Float, float, lua_pushnumber)
 DEF_TYPEREAD(Double, double, lua_pushnumber)
@@ -407,14 +406,14 @@ static int tw_##name(lua_State *L) { \
     return 0; \
 }
 
-DEF_TYPEWRITE(Char, signed char, luaL_checkinteger)
+DEF_TYPEWRITE(Char, unsigned char, luaL_checkinteger)
 DEF_TYPEWRITE(UnsignedChar, unsigned char, luaL_checkinteger)
 DEF_TYPEWRITE(Short, short, luaL_checkinteger)
 DEF_TYPEWRITE(UnsignedShort, unsigned short, luaL_checkinteger)
 DEF_TYPEWRITE(Int, int, luaL_checkinteger)
 DEF_TYPEWRITE(UnsignedInt, unsigned int, luaL_checkinteger)
-DEF_TYPEWRITE(Long, long, luaL_checkinteger)
-DEF_TYPEWRITE(UnsignedLong, unsigned long, luaL_checkinteger)
+DEF_TYPEWRITE(Long, long long, luaL_checkinteger)
+DEF_TYPEWRITE(UnsignedLong, unsigned long long, luaL_checkinteger)
 DEF_TYPEWRITE(SizeT, size_t, luaL_checkinteger)
 DEF_TYPEWRITE(Float, float, luaL_checknumber)
 DEF_TYPEWRITE(Double, double, luaL_checknumber)
@@ -475,7 +474,7 @@ static void push_proto_info(lua_State *L, Proto *f, int detailed) {
                 case LUA_TSHRSTR:
                 case LUA_TLNGSTR: {
                     TString *ts = gco2ts(o->value_.gc);
-                    lua_pushlstring(L, getstr(ts), ts->shrlen);
+                    lua_pushlstring(L, getstr(ts), (ts->tt == LUA_TSHRSTR) ? ts->shrlen : ts->u.lnglen);
                     break;
                 }
                 default: lua_pushnil(L); break;
@@ -601,7 +600,7 @@ static int lasm_ProtoInfo(lua_State *L) {
 }
 
 static int lasm_pindex(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     int idx = (int)luaL_checkinteger(L, 2);
     int sizecode = f->sizecode;
@@ -616,7 +615,7 @@ static int lasm_pindex(lua_State *L) {
 }
 
 static int lasm_kindex(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     int idx = (int)luaL_checkinteger(L, 2);
     int sizek = f->sizek;
@@ -626,13 +625,13 @@ static int lasm_kindex(lua_State *L) {
     }
     if (idx >= sizek) return 0;
     if (f->k == NULL) return 0;
-    setobj2s(L, L->top, &f->k[idx]);
+    memcpy(L->top, &f->k[idx], sizeof(TValue));
     L->top++;
     return 1;
 }
 
 static int lasm_handleInst(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     luaL_checktype(L, 2, LUA_TFUNCTION);
     if (f->sizecode >= 1) {
@@ -655,13 +654,13 @@ static int lasm_handleInst(lua_State *L) {
 }
 
 static int lasm_replaceInst(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     luaL_checktype(L, 2, LUA_TUSERDATA);
     Instruction *newcode = (Instruction *)lua_touserdata(L, 2);
     int count = (int)luaL_checkinteger(L, 3);
-    if (f->code != NULL) luaM_freearray(L, f->code, f->sizecode);
-    Instruction *code = luaM_newvector(L, count, Instruction);
+    if (f->code != NULL) free(f->code);
+    Instruction *code = (Instruction *)malloc(count * sizeof(Instruction));
     f->code = code;
     memcpy(code, newcode, count * sizeof(Instruction));
     f->sizecode = count;
@@ -669,7 +668,7 @@ static int lasm_replaceInst(lua_State *L) {
 }
 
 static int lasm_replaceK(lua_State *L) {
-    luaL_checktype(L, 1, LUA_TUSERDATA);
+    luaL_checktype(L, 1, LUA_TLIGHTUSERDATA);
     Proto *f = (Proto *)lua_touserdata(L, 1);
     int idx = (int)luaL_checkinteger(L, 2);
     if (lua_gettop(L) == 2)
@@ -679,7 +678,9 @@ static int lasm_replaceK(lua_State *L) {
     int sizek = f->sizek;
     if ((idx & 0x80000000) == 0 || (idx += sizek, idx >= 0)) {
         if (idx < sizek) {
-            setobj2s(L, &f->k[idx], L->top - 1);
+            TValue *src = L->top - 1;
+            TValue *dst = &f->k[idx];
+            memcpy(dst, src, sizeof(TValue));
         }
     }
     return 0;
