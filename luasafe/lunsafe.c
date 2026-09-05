@@ -320,7 +320,7 @@ static int l_luatype2memptr(lua_State *L) {
         case LUA_TLNGSTR: {
             TString *ts = gco2ts(o->value_.gc);
             ptr = getstr(ts);
-            size = ts->shrlen;
+            size = (ts->tt == LUA_TSHRSTR) ? ts->shrlen : ts->u.lnglen;
             break;
         }
         case LUA_TTABLE: {
