@@ -510,8 +510,8 @@ static void push_constant(lua_State *L, luac_Proto *f, int idx) {
     switch (f->k_tag[idx]) {
         case LUA_TNIL: lua_pushnil(L); break;
         case LUA_TBOOLEAN: lua_pushboolean(L, f->k_bool[idx]); break;
-        case LUA_TNUMFLT:
-        case LUA_TNUMINT: lua_pushnumber(L, f->k_num[idx]); break;
+        case LUA_TNUMFLT: lua_pushnumber(L, f->k_num[idx]); break;
+        case LUA_TNUMINT: lua_pushinteger(L, (long long)f->k_num[idx]); break;
         case LUA_TSHRSTR:
         case LUA_TLNGSTR: lua_pushstring(L, f->k_str[idx] ? f->k_str[idx] : ""); break;
         default: lua_pushnil(L); break;

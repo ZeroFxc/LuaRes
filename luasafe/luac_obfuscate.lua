@@ -17,6 +17,7 @@ local ASBX_OPS = {
     [luac.OP_JMP] = true,
     [luac.OP_FORLOOP] = true,
     [luac.OP_FORPREP] = true,
+    [luac.OP_TFORLOOP] = true,
 }
 
 local function make_jmp(sbx)
@@ -30,7 +31,7 @@ end
 -- Obfuscate one function's code
 local function handle_code(proto)
     local code = proto.code
-    local n = proto.sizecode
+    local n = #code  -- use table length, not proto.sizecode (may be stale after other passes)
     local groups = {}  -- each original instruction -> group of instructions
 
     for i = 1, n do
@@ -104,7 +105,7 @@ end
 -- Recursively obfuscate all functions
 local function obfuscate_proto(proto)
     handle_code(proto)
-    for i = 1, proto.sizep do
+    for i = 1, #proto.p do
         obfuscate_proto(proto.p[i])
     end
 end
@@ -150,8 +151,12 @@ local function obfuscate(input_path, output_path)
 end
 
 -- CLI
-if arg[1] and arg[2] then
+if arg and arg[1] and arg[2] and arg[0] and arg[0]:match("luac_obfuscate") then
     obfuscate(arg[1], arg[2])
-else
-    print("Usage: lua luac_obfuscate.lua <input.luac> <output.luac>")
 end
+
+return {
+    obfuscate_proto = obfuscate_proto,
+    handle_code = handle_code,
+    obfuscate = obfuscate,
+}

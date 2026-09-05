@@ -111,7 +111,7 @@ end
 
 local function flatten_function(proto)
     local code = proto.code
-    local n = proto.sizecode
+    local n = #code  -- use table length, not proto.sizecode (may be stale)
     if n <= 3 then return end  -- too small to flatten
 
     local blocks = identify_blocks(code, n)
@@ -275,7 +275,7 @@ end
 -- Recursively flatten all functions
 local function flatten_proto(proto)
     flatten_function(proto)
-    for i = 1, proto.sizep do
+    for i = 1, #proto.p do
         flatten_proto(proto.p[i])
     end
 end
@@ -317,8 +317,12 @@ local function flatten(input_path, output_path)
     end
 end
 
-if arg[1] and arg[2] then
+if arg and arg[1] and arg[2] and arg[0] and arg[0]:match("luac_flatten") then
     flatten(arg[1], arg[2])
-else
-    print("Usage: lua luac_flatten.lua <input.luac> <output.luac>")
 end
+
+return {
+    flatten_proto = flatten_proto,
+    flatten_function = flatten_function,
+    flatten = flatten,
+}
