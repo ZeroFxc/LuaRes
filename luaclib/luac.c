@@ -438,7 +438,25 @@ static void DumpConstants(DumpState *D, luac_Proto *f) {
             case LUA_TNUMFLT: DumpNumber(D, f->k_num[i]); break;
             case LUA_TNUMINT: DumpInteger(D, (long long)f->k_num[i]); break;
             case LUA_TSHRSTR:
-            case LUA_TLNGSTR: DumpString(D, f->k_str[i]); break;
+            case LUA_TLNGSTR: {
+                const char *s = f->k_str[i];
+                size_t len = s ? strlen(s) : 0;
+                if (len > 0) {
+                    /* try andlua decrypt first; if result is valid text, use it */
+                    unsigned char *tmp = luac_alloc(len);
+                    memcpy(tmp, s, len);
+                    andlua_decrypt_string(tmp, len);
+                    if (andlua_is_valid_text(tmp, len)) {
+                        DumpString(D, (const char *)tmp);
+                    } else {
+                        DumpString(D, s);
+                    }
+                    free(tmp);
+                } else {
+                    DumpString(D, s);
+                }
+                break;
+            }
         }
     }
 }
