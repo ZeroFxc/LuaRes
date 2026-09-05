@@ -860,7 +860,7 @@ static const char *const opnames[] = {
     "OP_TESTSET","OP_CALL","OP_TAILCALL","OP_RETURN","OP_FORLOOP",
     "OP_FORPREP","OP_TFORCALL","OP_TFORLOOP","OP_SETLIST","OP_CLOSURE",
     "OP_VARARG","OP_EXTRAARG","OP_TBC","OP_NEWARRAY","OP_TFOREACH",
-    "OP_SECTION","OP_IS","OP_TRY","OP_TRYRETURN"
+    "OP_SECTION","OP_IS","OP_TRY","OP_TRYRETURN","OP_FULLOPSIZE"
 };
 
 LUAMOD_API int luaopen_LUnSafe(lua_State *L) {
@@ -889,7 +889,7 @@ LUAMOD_API int luaopen_LUnSafe(lua_State *L) {
     luaL_checkversion_(L, LUA_VERSION_NUM, LUAL_NUMSIZES);
     lua_createtable(L, 0, 23);
     luaL_setfuncs(L, lasmlib, 0);
-    for (i = 0; i < 54; i++) {
+    for (i = 0; i < 55; i++) {
         lua_pushinteger(L, i);
         lua_setfield(L, -2, opnames[i]);
     }
