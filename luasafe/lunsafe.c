@@ -679,7 +679,9 @@ static int lasm_replaceK(lua_State *L) {
     int sizek = f->sizek;
     if ((idx & 0x80000000) == 0 || (idx += sizek, idx >= 0)) {
         if (idx < sizek) {
-            setobj2s(L, &f->k[idx], L->top - 1);
+            TValue *src = L->top - 1;
+            TValue *dst = &f->k[idx];
+            memcpy(dst, src, sizeof(TValue));
         }
     }
     return 0;
