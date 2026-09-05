@@ -35,6 +35,7 @@ local proto_passes = {
     {'bool_obfuscate', 'bool_obfuscate', 'obfuscate'},
     {'num_obfuscate', 'num_obfuscate', 'obfuscate'},
     {'str_encrypt', 'str_encrypt', 'encrypt', {key=0x55}},
+    {'str_split', 'str_split', 'obfuscate'},
     {'const_poison', 'const_poison', 'poison'},
     {'opaque_junk', 'opaque_junk', 'inject'},
     {'junk_jmp', 'junk_jmp', 'inject'},
@@ -105,7 +106,7 @@ print()
 print('=== 第一阶段：基础混淆（proto接口）===')
 run_proto_pass('bool_obfuscate', 'bool_obfuscate', 'obfuscate')
 run_proto_pass('num_obfuscate', 'num_obfuscate', 'obfuscate')
-run_proto_pass('str_encrypt', 'str_encrypt', 'encrypt', {key=0x55})
+run_proto_pass('str_split', 'str_split', 'obfuscate')
 
 print()
 print('=== 第二阶段：常量与指令（文件接口）===')
