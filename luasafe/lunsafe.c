@@ -277,7 +277,6 @@ static int l_writemem(lua_State *L) {
     size_t len = (size_t)luaL_checkinteger(L, 2);
     size_t slen;
     const char *data = luaL_checklstring(L, 3, &slen);
-    if (len > slen) len = slen;
     memcpy(ptr, data, len);
     return 0;
 }
