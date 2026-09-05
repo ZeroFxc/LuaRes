@@ -1138,7 +1138,7 @@ LUALIB_API unsigned char *luaL_andlua_dec (const char *buff, size_t size,
     *outlen = 0;
     return NULL;
   }
-  inflated[0] = 0x1B;  /* standard Lua bytecode marker; LoadString always decrypts strings */
+  inflated[0] = 0x1A;  /* andlua encrypted marker; undump2 decrypts strings */
   *outlen = ilen;
   return inflated;
 }
