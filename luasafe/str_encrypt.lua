@@ -16,6 +16,43 @@ local function xor_crypt(s, key)
     return table.concat(bytes)
 end
 
+-- andlua 内置字符串解密（和 lundump.c 的 decrypt_string 一致）
+local function andlua_decrypt_string(s)
+    local len = #s
+    if len == 0 then return s end
+    local bytes = {string.byte(s, 1, len)}
+    local first = bytes[1] ~ (len % 255)
+    bytes[1] = first
+    local step = first + len
+    local length = len
+    for i = 2, len do
+        length = length + step
+        bytes[i] = bytes[i] ~ (length % 255)
+    end
+    return string.char(table.unpack(bytes))
+end
+
+-- 检查是否是有效文本（简单版：没有 0 字节，主要是可打印 ASCII）
+local function is_valid_text(s)
+    for i = 1, #s do
+        local b = string.byte(s, i)
+        if b == 0 then return false end
+        if b < 0x20 and b ~= 0x09 and b ~= 0x0A and b ~= 0x0D then return false end
+        if b == 0x7F then return false end
+    end
+    return true
+end
+
+-- 确保字符串是明文：如果是 andlua 加密的，先解密
+local function ensure_plaintext(s)
+    if #s == 0 then return s end
+    local decrypted = andlua_decrypt_string(s)
+    if is_valid_text(decrypted) then
+        return decrypted
+    end
+    return s  -- 已经是明文
+end
+
 -- 递归收集所有 proto（避免处理时添加新函数导致无限递归）
 local function collect_protos(proto, list)
     list = list or {}
@@ -90,7 +127,14 @@ local function make_decrypt_proto(key)
     local proto = luac.undump(bc, false)
     -- main 返回一个闭包，子函数就是解密函数
     if proto.p and #proto.p >= 1 then
-        return proto.p[1]
+        local dec = proto.p[1]
+        -- 修正 upvalue：从父函数的 upvalue 列表获取第 0 个（_ENV）
+        -- 原来是 instack=1（从父栈获取），改为 instack=0（从父 upvalue 获取）
+        if dec.upvalues and #dec.upvalues > 0 then
+            dec.upvalues[1].instack = 0
+            dec.upvalues[1].idx = 0
+        end
+        return dec
     end
     return nil
 end
@@ -102,6 +146,11 @@ function str_encrypt.encrypt_function(proto, options)
 
     local loadks, string_indices = find_string_loadks(proto)
     if #string_indices == 0 then return 0 end
+
+    -- 先确保所有字符串是明文（解密 andlua 内置加密）
+    for _, idx in ipairs(string_indices) do
+        proto.k[idx + 1] = ensure_plaintext(proto.k[idx + 1])
+    end
 
     -- 加密所有字符串常量
     for _, idx in ipairs(string_indices) do
