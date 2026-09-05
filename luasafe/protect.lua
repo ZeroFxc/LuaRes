@@ -129,7 +129,18 @@ local function protect(bytecode, options)
         end
     end
 
-    -- 11. OP_48 junk instructions (andlua VM ignores invalid opcode 48)
+    -- 11. Opaque predicate junk branches (dead code with TEST+JMP guards)
+    if not options.no_opaque_junk then
+        local m = load_mod("opaque_junk")
+        if m and m.inject then
+            m.inject(proto, {
+                count = options.opaque_junk_count or 15,
+            })
+            table.insert(stats.passes, "opaque_junk")
+        end
+    end
+
+    -- 12. OP_48 junk instructions (andlua VM ignores invalid opcode 48)
     --    Must run last, injects at end of code / after last RETURN
     if not options.no_op48 then
         local m = load_mod("op48_junk")
@@ -170,6 +181,8 @@ if arg and arg[0] and arg[0]:match("protect") and arg[1] and arg[2] then
         elseif arg[i]:match("^--junk%-loadk%-count=") then options.junk_loadk_count = tonumber(arg[i]:match("=(%d+)"))
         elseif arg[i] == "--no-junk-move" then options.no_junk_move = true
         elseif arg[i]:match("^--junk%-move%-count=") then options.junk_move_count = tonumber(arg[i]:match("=(%d+)"))
+        elseif arg[i] == "--no-opaque-junk" then options.no_opaque_junk = true
+        elseif arg[i]:match("^--opaque%-junk%-count=") then options.opaque_junk_count = tonumber(arg[i]:match("=(%d+)"))
         end
     end
 
