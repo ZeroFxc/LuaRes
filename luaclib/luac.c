@@ -656,11 +656,10 @@ static void sync_k_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
 static void sync_p_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
     lua_pushvalue(L, tbl_idx);
     int n = (int)lua_rawlen(L, -1);
-    /* free old */
-    if (f->p) {
-        for (int i = 0; i < f->sizep; i++) luac_free_proto(f->p[i]);
-        free(f->p);
-    }
+    /* Save old pointers to check for duplicates (do NOT free them;
+       they are owned by Lua userdata objects still referenced in the table) */
+    luac_Proto **old_p = f->p;
+    int old_sizep = f->sizep;
     f->sizep = n;
     f->p = NULL;
     if (n > 0) {
@@ -671,6 +670,17 @@ static void sync_p_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
             f->p[i] = sub;
             lua_pop(L, 1);
         }
+    }
+    /* Only free old protos that are not referenced in the new p array */
+    if (old_p) {
+        for (int i = 0; i < old_sizep; i++) {
+            int still_referenced = 0;
+            for (int j = 0; j < n; j++) {
+                if (f->p[j] == old_p[i]) { still_referenced = 1; break; }
+            }
+            if (!still_referenced) luac_free_proto(old_p[i]);
+        }
+        free(old_p);
     }
     lua_pop(L, 1);
 }
@@ -975,11 +985,15 @@ static void push_proto(lua_State *L, luac_Proto *f) {
     p->lineinfo_tbl = LUA_NOREF;
     p->locvars_tbl = LUA_NOREF;
     p->upvalues_tbl = LUA_NOREF;
-    /* The original f's arrays are now owned by p.
-       Set f's pointers to NULL so the caller doesn't double-free.
-       But caller (LoadFunction) allocated f and we copy it.
-       Actually we should NOT free f after push_proto - the userdata
-       owns the data. Caller should not free f. */
+    /* The original f's arrays are now owned by p (the userdata).
+       Set f's pointers to NULL so caller doesn't double-free. */
+    f->code = NULL;
+    f->k_tag = NULL; f->k_str = NULL; f->k_num = NULL; f->k_bool = NULL;
+    f->p = NULL;
+    f->lineinfo = NULL;
+    f->locvar_name = NULL; f->locvar_startpc = NULL; f->locvar_endpc = NULL;
+    f->upval_name = NULL; f->upval_instack = NULL; f->upval_idx = NULL;
+    f->source = NULL;
     luaL_getmetatable(L, "luac.Proto");
     lua_setmetatable(L, -2);
 }
