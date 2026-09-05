@@ -1,0 +1,1440 @@
+﻿.\lua_luac_dbg.exe : [VM 0] pc=0 GETUPVAL A=0 B=0 C=0 ra=num:0
+所在位置 行:1 字符: 23
++ ... es\luasafe; .\lua_luac_dbg.exe test_str_split_dbg.lua 2>dbg_log.txt;  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([VM 0] pc=0 GET...=0 C=0 ra=num:0:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[VM 1] pc=1 GETTABLE A=1 B=0 ra=str:'STR_SPLIT OK'
+[VM 2] pc=2 LOADK A=2 B=0 C=1 ra=type:5
+[VM 3] pc=3 CALL A=1 B=2 C=2 ra=func
+[VM 4] pc=4 LOADK A=2 B=0 C=2 ra=str:'luac'
+[VM 5] pc=5 GETTABLE A=3 B=0 ra=type:5
+[VM 6] pc=6 MOVE A=4 B=2 C=0 ra=type:5
+[VM 7] pc=7 CALL A=3 B=2 C=2 ra=func
+[VM 8] pc=8 GETTABLE A=4 B=0 ra=str:'local a = "hello world"; print(a)'
+[VM 9] pc=9 GETTABLE A=4 B=4 ra=type:5
+[VM 10] pc=10 GETTABLE A=5 B=0 ra=func
+[VM 11] pc=11 GETTABLE A=5 B=5 ra=type:5
+[VM 12] pc=12 MOVE A=6 B=3 C=0 ra=type:5
+[VM 13] pc=13 CALL A=5 B=2 C=0 ra=func
+[DumpString] len=33 plain=6c6f63 enc0=4d
+[DumpString] len=11 plain=68656c enc0=63
+[DumpString] len=5 plain=707269 enc0=75
+[DumpString] len=4 plain=5f454e enc0=5b
+[DumpString] len=1 plain=616161 enc0=60
+[DumpString] len=4 plain=5f454e enc0=5b
+[VM 14] pc=14 CALL A=4 B=0 C=2 ra=func
+[VM 15] pc=15 GETTABLE A=5 B=1 ra=str:'=IAPYthkQWr2DFAH7uAABwAAA5BA10aAGv/rgsb0ueS0D0cOR464vciie7pl4D7CWkJ1DAhYSB2VYmrf
+R9B0pdfKVDAgFunDzkrOnDIOILDwISDg6IoAoLmK9mSIO0HUb4QqOULtUcSsk5JdoOTcuNib+cwxN/bOSB4jEB3vj+vbPMPJ5K5OLioikNCUlAImvL7X'
+[VM 16] pc=16 MOVE A=6 B=4 C=0 ra=str:'LuaS'
+[VM 17] pc=17 LOADBOOL A=7 B=0 C=0 ra=str:'=IAPYthkQWr2DFAH7uAABwAAA5BA10aAGv/rgsb0ueS0D0cOR464vciie7pl4D7CWkJ1DAhYSB2V
+YmrfR9B0pdfKVDAgFunDzkrOnDIOILDwISDg6IoAoLmK9mSIO0HUb4QqOULtUcSsk5JdoOTcuNib+cwxN/bOSB4jEB3vj+vbPMPJ5K5OLioikNCUlAImvL7
+X'
+[VM 18] pc=18 CALL A=5 B=3 C=2 ra=func
+[luac LoadString] enc=1 len=33 raw=4dc15f dec=6c6f63 valid=1
+[luac LoadString] enc=1 len=11 raw=631b9d dec=68656c valid=1
+[luac LoadString] enc=1 len=5 raw=750886 dec=707269 valid=1
+[luac LoadString] enc=1 len=4 raw=5b2284 dec=5f454e valid=1
+[luac LoadString] enc=1 len=1 raw=606060 dec=616161 valid=1
+[luac LoadString] enc=1 len=4 raw=5b2284 dec=5f454e valid=1
+[VM 19] pc=19 GETTABLE A=6 B=0 ra=str:'LuaS'
+[VM 20] pc=20 LOADK A=7 B=0 C=8 ra=bool:0
+[VM 21] pc=21 CALL A=6 B=2 C=2 ra=func
+[VM 22] pc=0 GETUPVAL A=0 B=0 C=0 ra=str:'str_split'
+[VM 23] pc=1 GETTABLE A=1 B=0 ra=str:'E:\LuaRes\luasafe\str_split.lua'
+[VM 24] pc=2 LOADK A=2 B=0 C=1 ra=str:'str_split'
+[VM 25] pc=3 CALL A=1 B=2 C=2 ra=func
+[VM 26] pc=4 NEWTABLE A=2 B=0 C=0 ra=str:'luac'
+[VM 27] pc=5 CLOSURE A=3 B=0 C=0 ra=type:5
+[VM 28] pc=6 CLOSURE A=4 B=0 C=1 ra=type:5
+[VM 29] pc=7 CLOSURE A=5 B=0 C=2 ra=str:'E:\LuaRes\luasafe\str_split.lua'
+[VM 30] pc=8 CLOSURE A=6 B=0 C=3 ra=type:5
+[VM 31] pc=9 CLOSURE A=7 B=0 C=4 ra=str:'str_split'
+[VM 32] pc=10 CLOSURE A=8 B=0 C=5 ra=nil
+[VM 33] pc=11 SETTABLE A=2 C=8 ra=type:5
+[VM 34] pc=12 CLOSURE A=8 B=0 C=6 ra=func
+[VM 35] pc=13 SETTABLE A=2 C=8 ra=type:5
+[VM 36] pc=14 RETURN A=2 B=2 C=0 ra=type:5
+[VM 37] pc=22 GETTABLE A=6 B=6 ra=type:5
+[VM 38] pc=23 MOVE A=7 B=5 C=0 ra=str:'str_split'
+[VM 39] pc=24 CALL A=6 B=2 C=1 ra=func
+[VM 40] pc=0 GETUPVAL A=2 B=0 C=0 ra=type:5
+[VM 41] pc=1 TEST A=1 B=0 C=1 ra=nil
+[VM 42] pc=3 NEWTABLE A=3 B=0 C=0 ra=type:5
+[VM 43] pc=4 MOVE A=1 B=3 C=0 ra=nil
+[VM 44] pc=5 LOADK A=3 B=0 C=0 ra=type:5
+[VM 45] pc=6 GETTABUP A=4 B=1 ra=str:'str_split'
+[VM 46] pc=7 MOVE A=5 B=0 C=0 ra=type:5
+[VM 47] pc=8 MOVE A=6 B=1 C=0 ra=type:5
+[VM 48] pc=9 CALL A=4 B=3 C=2 ra=func
+[VM 49] pc=0 GETUPVAL A=2 B=0 C=0 ra=func
+[VM 50] pc=1 TEST A=1 B=0 C=1 ra=type:5
+[VM 51] pc=5 GETTABLE A=3 B=1 ra=func
+[VM 52] pc=6 TEST A=3 B=0 C=1 ra=nil
+[VM 53] pc=8 LOADK A=3 B=0 C=1 ra=nil
+[VM 54] pc=9 GETUPVAL A=4 B=1 C=0 ra=func
+[VM 55] pc=10 MOVE A=5 B=0 C=0 ra=func
+[VM 56] pc=11 CALL A=4 B=2 C=3 ra=func
+[VM 57] pc=0 GETUPVAL A=1 B=0 C=0 ra=func
+[VM 58] pc=1 NEWTABLE A=2 B=0 C=0 ra=func
+[VM 59] pc=2 NEWTABLE A=3 B=0 C=0 ra=nil
+[VM 60] pc=3 LOADK A=4 B=0 C=0 ra=nil
+[VM 61] pc=4 GETTABLE A=5 B=0 ra=nil
+[VM 62] pc=5 LEN A=5 B=5 C=0 ra=type:5
+[VM 63] pc=6 LOADK A=6 B=0 C=0 ra=nil
+[VM 64] pc=7 FORPREP A=4 C=156 ra=num:1
+[VM 65] pc=165 FORLOOP A=4 ra=num:0
+[VM 66] pc=8 GETTABLE A=8 B=0 ra=nil
+[VM 67] pc=9 GETTABLE A=8 B=8 C=7 ra=type:5
+[VM 68] pc=10 GETTABUP A=9 B=1 ra=nil
+[VM 69] pc=11 MOVE A=10 B=8 C=0 ra=nil
+[VM 70] pc=12 CALL A=9 B=2 C=2 ra=func
+[VM 71] pc=13 GETTABUP A=10 B=1 ra=num:5
+[VM 72] pc=14 EQ A=0 B=9 C=10 ra=type:7
+[VM 73] pc=36 GETTABUP A=10 B=1 ra=num:1
+[VM 74] pc=37 EQ A=0 B=9 C=10 ra=type:7
+[VM 75] pc=62 GETTABUP A=10 B=1 ra=num:6
+[VM 76] pc=63 EQ A=0 B=9 C=10 ra=type:7
+[VM 77] pc=88 GETTABUP A=10 B=1 ra=num:7
+[VM 78] pc=89 EQ A=0 B=9 C=10 ra=type:7
+[VM 79] pc=114 GETTABUP A=10 B=1 ra=num:8
+[VM 80] pc=115 EQ A=0 B=9 C=10 ra=type:7
+[VM 81] pc=140 GETTABUP A=10 B=1 ra=num:10
+[VM 82] pc=141 EQ A=0 B=9 C=10 ra=type:7
+[VM 83] pc=165 FORLOOP A=4 ra=num:1
+[VM 84] pc=8 GETTABLE A=8 B=0 ra=num:5
+[VM 85] pc=9 GETTABLE A=8 B=8 C=7 ra=type:5
+[VM 86] pc=10 GETTABUP A=9 B=1 ra=num:5
+[VM 87] pc=11 MOVE A=10 B=8 C=0 ra=num:12
+[VM 88] pc=12 CALL A=9 B=2 C=2 ra=func
+[VM 89] pc=13 GETTABUP A=10 B=1 ra=num:65
+[VM 90] pc=14 EQ A=0 B=9 C=10 ra=type:7
+[VM 91] pc=16 GETTABUP A=10 B=1 ra=num:1
+[VM 92] pc=17 MOVE A=11 B=8 C=0 ra=num:1
+[VM 93] pc=18 CALL A=10 B=2 C=2 ra=func
+[VM 94] pc=19 GETTABLE A=11 B=1 ra=num:65
+[VM 95] pc=20 GETTABLE A=12 B=0 ra=num:0
+[VM 96] pc=21 ADD A=13 B=10 ra=nil
+[VM 97] pc=22 GETTABLE A=12 B=12 C=13 ra=type:5
+[VM 98] pc=23 CALL A=11 B=2 C=2 ra=func
+[VM 99] pc=24 EQ A=0 B=11 ra=type:7
+[VM 100] pc=26 LEN A=11 B=2 C=0 ra=str:'string'
+[VM 101] pc=27 ADD A=11 B=11 ra=num:0
+[VM 102] pc=28 NEWTABLE A=12 B=0 C=4 ra=str:'hello world'
+[VM 103] pc=29 SETTABLE A=12 C=7 ra=type:5
+[VM 104] pc=30 SETTABLE A=12 C=9 ra=type:5
+[VM 105] pc=31 SETTABLE A=12 ra=type:5
+[VM 106] pc=32 SETTABLE A=12 C=10 ra=type:5
+[VM 107] pc=33 SETTABLE A=2 B=11 C=12 ra=type:5
+[VM 108] pc=34 SETTABLE A=3 B=10 ra=type:5
+[VM 109] pc=35 JMP A=0 C=128 ra=type:7
+[VM 110] pc=165 FORLOOP A=4 ra=num:2
+[VM 111] pc=8 GETTABLE A=8 B=0 ra=num:65
+[VM 112] pc=9 GETTABLE A=8 B=8 C=7 ra=type:5
+[VM 113] pc=10 GETTABUP A=9 B=1 ra=num:1
+[VM 114] pc=11 MOVE A=10 B=8 C=0 ra=num:0
+[VM 115] pc=12 CALL A=9 B=2 C=2 ra=func
+[VM 116] pc=13 GETTABUP A=10 B=1 ra=num:4.21082e+06
+[VM 117] pc=14 EQ A=0 B=9 C=10 ra=type:7
+[VM 118] pc=36 GETTABUP A=10 B=1 ra=num:1
+[VM 119] pc=37 EQ A=0 B=9 C=10 ra=type:7
+[VM 120] pc=62 GETTABUP A=10 B=1 ra=num:6
+[VM 121] pc=63 EQ A=0 B=9 C=10 ra=type:7
+[VM 122] pc=65 GETTABUP A=10 B=1 ra=num:7
+[VM 123] pc=66 MOVE A=11 B=8 C=0 ra=num:7
+[VM 124] pc=67 CALL A=10 B=2 C=2 ra=func
+[VM 125] pc=68 LE A=0 C=10 ra=type:7
+[VM 126] pc=70 SUB A=11 B=10 ra=num:4.21082e+06
+[VM 127] pc=71 GETTABLE A=12 B=1 ra=num:257
+[VM 128] pc=72 GETTABLE A=13 B=0 ra=str:'string'
+[VM 129] pc=73 ADD A=14 B=11 ra=nil
+[VM 130] pc=74 GETTABLE A=13 B=13 C=14 ra=type:5
+[VM 131] pc=75 CALL A=12 B=2 C=2 ra=func
+[VM 132] pc=76 EQ A=0 B=12 ra=type:7
+[VM 133] pc=78 LEN A=12 B=2 C=0 ra=str:'string'
+[VM 134] pc=79 ADD A=12 B=12 ra=num:1
+[VM 135] pc=80 NEWTABLE A=13 B=0 C=4 ra=str:'print'
+[VM 136] pc=81 SETTABLE A=13 C=7 ra=type:5
+[VM 137] pc=82 SETTABLE A=13 C=9 ra=type:5
+[VM 138] pc=83 SETTABLE A=13 ra=type:5
+[VM 139] pc=84 SETTABLE A=13 C=11 ra=type:5
+[VM 140] pc=85 SETTABLE A=2 B=12 C=13 ra=type:5
+[VM 141] pc=86 SETTABLE A=3 B=11 ra=type:5
+[VM 142] pc=87 JMP A=0 C=76 ra=type:7
+[VM 143] pc=165 FORLOOP A=4 ra=num:3
+[VM 144] pc=8 GETTABLE A=8 B=0 ra=num:4.21082e+06
+[VM 145] pc=9 GETTABLE A=8 B=8 C=7 ra=type:5
+[VM 146] pc=10 GETTABUP A=9 B=1 ra=num:7
+[VM 147] pc=11 MOVE A=10 B=8 C=0 ra=num:257
+[VM 148] pc=12 CALL A=9 B=2 C=2 ra=func
+[VM 149] pc=13 GETTABUP A=10 B=1 ra=num:8.3888e+06
+[VM 150] pc=14 EQ A=0 B=9 C=10 ra=type:7
+[VM 151] pc=36 GETTABUP A=10 B=1 ra=num:1
+[VM 152] pc=37 EQ A=0 B=9 C=10 ra=type:7
+[VM 153] pc=62 GETTABUP A=10 B=1 ra=num:6
+[VM 154] pc=63 EQ A=0 B=9 C=10 ra=type:7
+[VM 155] pc=88 GETTABUP A=10 B=1 ra=num:7
+[VM 156] pc=89 EQ A=0 B=9 C=10 ra=type:7
+[VM 157] pc=114 GETTABUP A=10 B=1 ra=num:8
+[VM 158] pc=115 EQ A=0 B=9 C=10 ra=type:7
+[VM 159] pc=140 GETTABUP A=10 B=1 ra=num:10
+[VM 160] pc=141 EQ A=0 B=9 C=10 ra=type:7
+[VM 161] pc=165 FORLOOP A=4 ra=num:4
+[VM 162] pc=8 GETTABLE A=8 B=0 ra=num:8.3888e+06
+[VM 163] pc=9 GETTABLE A=8 B=8 C=7 ra=type:5
+[VM 164] pc=10 GETTABUP A=9 B=1 ra=num:0
+[VM 165] pc=11 MOVE A=10 B=8 C=0 ra=num:12
+[VM 166] pc=12 CALL A=9 B=2 C=2 ra=func
+[VM 167] pc=13 GETTABUP A=10 B=1 ra=num:1.67938e+07
+[VM 168] pc=14 EQ A=0 B=9 C=10 ra=type:7
+[VM 169] pc=36 GETTABUP A=10 B=1 ra=num:1
+[VM 170] pc=37 EQ A=0 B=9 C=10 ra=type:7
+[VM 171] pc=62 GETTABUP A=10 B=1 ra=num:6
+[VM 172] pc=63 EQ A=0 B=9 C=10 ra=type:7
+[VM 173] pc=88 GETTABUP A=10 B=1 ra=num:7
+[VM 174] pc=89 EQ A=0 B=9 C=10 ra=type:7
+[VM 175] pc=114 GETTABUP A=10 B=1 ra=num:8
+[VM 176] pc=115 EQ A=0 B=9 C=10 ra=type:7
+[VM 177] pc=140 GETTABUP A=10 B=1 ra=num:10
+[VM 178] pc=141 EQ A=0 B=9 C=10 ra=type:7
+[VM 179] pc=165 FORLOOP A=4 ra=num:5
+[VM 180] pc=8 GETTABLE A=8 B=0 ra=num:1.67938e+07
+[VM 181] pc=9 GETTABLE A=8 B=8 C=7 ra=type:5
+[VM 182] pc=10 GETTABUP A=9 B=1 ra=num:36
+[VM 183] pc=11 MOVE A=10 B=8 C=0 ra=num:12
+[VM 184] pc=12 CALL A=9 B=2 C=2 ra=func
+[VM 185] pc=13 GETTABUP A=10 B=1 ra=num:8.38865e+06
+[VM 186] pc=14 EQ A=0 B=9 C=10 ra=type:7
+[VM 187] pc=36 GETTABUP A=10 B=1 ra=num:1
+[VM 188] pc=37 EQ A=0 B=9 C=10 ra=type:7
+[VM 189] pc=62 GETTABUP A=10 B=1 ra=num:6
+[VM 190] pc=63 EQ A=0 B=9 C=10 ra=type:7
+[VM 191] pc=88 GETTABUP A=10 B=1 ra=num:7
+[VM 192] pc=89 EQ A=0 B=9 C=10 ra=type:7
+[VM 193] pc=114 GETTABUP A=10 B=1 ra=num:8
+[VM 194] pc=115 EQ A=0 B=9 C=10 ra=type:7
+[VM 195] pc=140 GETTABUP A=10 B=1 ra=num:10
+[VM 196] pc=141 EQ A=0 B=9 C=10 ra=type:7
+[VM 197] pc=165 FORLOOP A=4 ra=num:6
+[VM 198] pc=166 MOVE A=4 B=2 C=0 ra=num:6
+[VM 199] pc=167 MOVE A=5 B=3 C=0 ra=num:6
+[VM 200] pc=168 RETURN A=4 B=3 C=0 ra=type:5
+[VM 201] pc=12 LEN A=6 B=4 C=0 ra=type:5
+[VM 202] pc=13 EQ A=0 B=6 ra=type:7
+[VM 203] pc=17 NEWTABLE A=6 B=0 C=0 ra=num:2
+[VM 204] pc=18 GETTABLE A=7 B=2 ra=type:5
+[VM 205] pc=19 MOVE A=8 B=5 C=0 ra=type:5
+[VM 206] pc=20 CALL A=7 B=2 C=4 ra=func
+[VM 207] pc=21 JMP A=0 C=52 ra=type:7
+[VM 208] pc=75 TFORCALL A=7 B=0 C=1 ra=func
+[VM 209] pc=22 GETTABLE A=11 B=0 ra=type:5
+[VM 210] pc=23 ADD A=12 B=10 ra=num:1
+[VM 211] pc=24 GETTABLE A=11 B=11 C=12 ra=type:5
+[VM 212] pc=25 LEN A=12 B=11 C=0 ra=num:2
+[VM 213] pc=26 LE A=0 B=3 C=12 ra=type:7
+[VM 214] pc=28 GETUPVAL A=12 B=2 C=0 ra=num:5
+[VM 215] pc=29 LEN A=13 B=11 C=0 ra=bool:1
+[VM 216] pc=30 CALL A=12 B=2 C=2 ra=func
+[VM 217] pc=0 GETUPVAL A=1 B=0 C=0 ra=num:38
+[VM 218] pc=1 LE A=0 B=0 ra=num:5
+[VM 219] pc=5 LE A=0 B=0 ra=num:5
+[VM 220] pc=7 LOADK A=2 B=0 C=2 ra=num:12
+[VM 221] pc=8 RETURN A=2 B=2 C=0 ra=num:3
+[VM 222] pc=31 GETUPVAL A=13 B=3 C=0 ra=num:5
+[VM 223] pc=32 MOVE A=14 B=11 C=0 ra=type:5
+[VM 224] pc=33 MOVE A=15 B=12 C=0 ra=num:3
+[VM 225] pc=34 CALL A=13 B=3 C=2 ra=func
+[VM 226] pc=0 GETUPVAL A=2 B=0 C=0 ra=num:38
+[VM 227] pc=1 NEWTABLE A=3 B=0 C=0 ra=num:2
+[VM 228] pc=2 LEN A=4 B=0 C=0 ra=type:5
+[VM 229] pc=3 LT A=0 B=4 C=1 ra=str:'print'
+[VM 230] pc=14 GETTABLE A=5 B=2 ra=str:'string'
+[VM 231] pc=15 GETTABLE A=5 B=5 ra=type:5
+[VM 232] pc=16 DIV A=6 B=4 C=1 ra=type:5
+[VM 233] pc=17 CALL A=5 B=2 C=2 ra=func
+[VM 234] pc=18 LOADK A=6 B=0 C=4 ra=num:1.66667
+[VM 235] pc=19 LOADK A=7 B=0 C=4 ra=num:1
+[VM 236] pc=20 MOVE A=8 B=1 C=0 ra=str:'code'
+[VM 237] pc=21 LOADK A=9 B=0 C=4 ra=type:5
+[VM 238] pc=22 FORPREP A=7 C=16 ra=num:1
+[VM 239] pc=40 FORLOOP A=7 ra=num:0
+[VM 240] pc=23 MOVE A=11 B=5 C=0 ra=nil
+[VM 241] pc=24 EQ A=0 B=10 C=1 ra=str:'print'
+[VM 242] pc=28 LT A=0 B=11 ra=str:'print'
+[VM 243] pc=31 SELF A=12 B=0 ra=nil
+[VM 244] pc=32 MOVE A=14 B=6 C=0 ra=nil
+[VM 245] pc=33 ADD A=15 B=6 C=11 ra=nil
+[VM 246] pc=34 SUB A=15 B=15 ra=num:2
+[VM 247] pc=35 CALL A=12 B=4 C=2 ra=func
+[VM 248] pc=36 SETTABLE A=3 B=10 C=12 ra=type:5
+[VM 249] pc=37 ADD A=6 B=6 C=11 ra=num:1
+[VM 250] pc=38 LT A=1 B=4 C=6 ra=num:3
+[VM 251] pc=40 FORLOOP A=7 ra=num:1
+[VM 252] pc=23 MOVE A=11 B=5 C=0 ra=num:1
+[VM 253] pc=24 EQ A=0 B=10 C=1 ra=str:'print'
+[VM 254] pc=28 LT A=0 B=11 ra=str:'print'
+[VM 255] pc=31 SELF A=12 B=0 ra=str:'p'
+[VM 256] pc=32 MOVE A=14 B=6 C=0 ra=num:1
+[VM 257] pc=33 ADD A=15 B=6 C=11 ra=num:1
+[VM 258] pc=34 SUB A=15 B=15 ra=num:3
+[VM 259] pc=35 CALL A=12 B=4 C=2 ra=func
+[VM 260] pc=36 SETTABLE A=3 B=10 C=12 ra=type:5
+[VM 261] pc=37 ADD A=6 B=6 C=11 ra=num:2
+[VM 262] pc=38 LT A=1 B=4 C=6 ra=num:3
+[VM 263] pc=40 FORLOOP A=7 ra=num:2
+[VM 264] pc=23 MOVE A=11 B=5 C=0 ra=num:1
+[VM 265] pc=24 EQ A=0 B=10 C=1 ra=str:'print'
+[VM 266] pc=26 SUB A=12 B=4 C=6 ra=str:'r'
+[VM 267] pc=27 ADD A=11 B=12 ra=num:1
+[VM 268] pc=28 LT A=0 B=11 ra=str:'print'
+[VM 269] pc=31 SELF A=12 B=0 ra=num:2
+[VM 270] pc=32 MOVE A=14 B=6 C=0 ra=num:2
+[VM 271] pc=33 ADD A=15 B=6 C=11 ra=num:2
+[VM 272] pc=34 SUB A=15 B=15 ra=num:6
+[VM 273] pc=35 CALL A=12 B=4 C=2 ra=func
+[VM 274] pc=36 SETTABLE A=3 B=10 C=12 ra=type:5
+[VM 275] pc=37 ADD A=6 B=6 C=11 ra=num:3
+[VM 276] pc=38 LT A=1 B=4 C=6 ra=num:3
+[VM 277] pc=41 LEN A=7 B=3 C=0 ra=num:3
+[VM 278] pc=42 LT A=0 B=7 C=1 ra=str:'print'
+[VM 279] pc=48 RETURN A=3 B=2 C=0 ra=type:5
+[VM 280] pc=35 GETUPVAL A=14 B=4 C=0 ra=str:'print'
+[VM 281] pc=36 MOVE A=15 B=12 C=0 ra=num:3
+[VM 282] pc=37 CALL A=14 B=2 C=2 ra=func
+[VM 283] pc=0 GETUPVAL A=1 B=0 C=0 ra=type:5
+[VM 284] pc=1 NEWTABLE A=2 B=0 C=0 ra=type:5
+[VM 285] pc=2 LOADK A=3 B=0 C=0 ra=num:5
+[VM 286] pc=3 MOVE A=4 B=0 C=0 ra=num:1
+[VM 287] pc=4 LOADK A=5 B=0 C=0 ra=num:6
+[VM 288] pc=5 FORPREP A=3 C=0 ra=num:1
+[VM 289] pc=7 FORLOOP A=3 ra=num:0
+[VM 290] pc=6 SETTABLE A=2 B=6 C=6 ra=type:5
+[VM 291] pc=7 FORLOOP A=3 ra=num:1
+[VM 292] pc=6 SETTABLE A=2 B=6 C=6 ra=type:5
+[VM 293] pc=7 FORLOOP A=3 ra=num:2
+[VM 294] pc=6 SETTABLE A=2 B=6 C=6 ra=type:5
+[VM 295] pc=7 FORLOOP A=3 ra=num:3
+[VM 296] pc=8 MOVE A=3 B=0 C=0 ra=num:3
+[VM 297] pc=9 LOADK A=4 B=0 C=1 ra=num:3
+[VM 298] pc=10 LOADK A=5 B=0 C=2 ra=num:1
+[VM 299] pc=11 FORPREP A=3 C=8 ra=num:3
+[VM 300] pc=21 FORLOOP A=3 ra=num:4
+[VM 301] pc=12 GETTABLE A=7 B=1 ra=num:3
+[VM 302] pc=13 GETTABLE A=7 B=7 ra=type:5
+[VM 303] pc=14 LOADK A=8 B=0 C=0 ra=num:1
+[VM 304] pc=15 MOVE A=9 B=6 C=0 ra=num:3
+[VM 305] pc=16 CALL A=7 B=3 C=2 ra=func
+[VM 306] pc=17 GETTABLE A=8 B=2 C=7 ra=num:1
+[VM 307] pc=18 GETTABLE A=9 B=2 C=6 ra=num:3
+[VM 308] pc=19 SETTABLE A=2 B=7 C=9 ra=type:5
+[VM 309] pc=20 SETTABLE A=2 B=6 C=8 ra=type:5
+[VM 310] pc=21 FORLOOP A=3 ra=num:3
+[VM 311] pc=12 GETTABLE A=7 B=1 ra=num:1
+[VM 312] pc=13 GETTABLE A=7 B=7 ra=type:5
+[VM 313] pc=14 LOADK A=8 B=0 C=0 ra=num:1
+[VM 314] pc=15 MOVE A=9 B=6 C=0 ra=num:3
+[VM 315] pc=16 CALL A=7 B=3 C=2 ra=func
+[VM 316] pc=17 GETTABLE A=8 B=2 C=7 ra=num:1
+[VM 317] pc=18 GETTABLE A=9 B=2 C=6 ra=num:2
+[VM 318] pc=19 SETTABLE A=2 B=7 C=9 ra=type:5
+[VM 319] pc=20 SETTABLE A=2 B=6 C=8 ra=type:5
+[VM 320] pc=21 FORLOOP A=3 ra=num:2
+[VM 321] pc=22 RETURN A=2 B=2 C=0 ra=type:5
+[VM 322] pc=38 NEWTABLE A=15 B=0 C=0 ra=num:3
+[VM 323] pc=39 NEWTABLE A=16 B=0 C=0 ra=type:5
+[VM 324] pc=40 LOADK A=17 B=0 C=5 ra=type:5
+[VM 325] pc=41 MOVE A=18 B=12 C=0 ra=num:2
+[VM 326] pc=42 LOADK A=19 B=0 C=5 ra=num:2
+[VM 327] pc=43 FORPREP A=17 C=2 ra=num:1
+[VM 328] pc=47 FORLOOP A=17 ra=num:0
+[VM 329] pc=44 GETTABLE A=21 B=14 C=20 ra=num:2
+[VM 330] pc=45 GETTABLE A=22 B=13 C=20 ra=num:2
+[VM 331] pc=46 SETTABLE A=16 B=21 C=22 ra=type:5
+[VM 332] pc=47 FORLOOP A=17 ra=num:1
+[VM 333] pc=44 GETTABLE A=21 B=14 C=20 ra=num:3
+[VM 334] pc=45 GETTABLE A=22 B=13 C=20 ra=str:'p'
+[VM 335] pc=46 SETTABLE A=16 B=21 C=22 ra=type:5
+[VM 336] pc=47 FORLOOP A=17 ra=num:2
+[VM 337] pc=44 GETTABLE A=21 B=14 C=20 ra=num:2
+[VM 338] pc=45 GETTABLE A=22 B=13 C=20 ra=str:'r'
+[VM 339] pc=46 SETTABLE A=16 B=21 C=22 ra=type:5
+[VM 340] pc=47 FORLOOP A=17 ra=num:3
+[VM 341] pc=48 LOADK A=17 B=0 C=5 ra=num:3
+[VM 342] pc=49 MOVE A=18 B=12 C=0 ra=num:3
+[VM 343] pc=50 LOADK A=19 B=0 C=5 ra=num:1
+[VM 344] pc=51 FORPREP A=17 C=5 ra=num:1
+[VM 345] pc=58 FORLOOP A=17 ra=num:0
+[VM 346] pc=52 GETTABLE A=21 B=0 ra=num:1
+[VM 347] pc=53 GETTABLE A=22 B=0 ra=str:'int'
+[VM 348] pc=54 LEN A=22 B=22 C=0 ra=type:5
+[VM 349] pc=55 ADD A=22 B=22 ra=num:2
+[VM 350] pc=56 GETTABLE A=23 B=16 C=20 ra=num:2
+[VM 351] pc=57 SETTABLE A=21 B=22 C=23 ra=type:5
+[VM 352] pc=58 FORLOOP A=17 ra=num:1
+[VM 353] pc=52 GETTABLE A=21 B=0 ra=type:5
+[VM 354] pc=53 GETTABLE A=22 B=0 ra=num:3
+[VM 355] pc=54 LEN A=22 B=22 C=0 ra=type:5
+[VM 356] pc=55 ADD A=22 B=22 ra=num:3
+[VM 357] pc=56 GETTABLE A=23 B=16 C=20 ra=str:'int'
+[VM 358] pc=57 SETTABLE A=21 B=22 C=23 ra=type:5
+[VM 359] pc=58 FORLOOP A=17 ra=num:2
+[VM 360] pc=52 GETTABLE A=21 B=0 ra=type:5
+[VM 361] pc=53 GETTABLE A=22 B=0 ra=num:4
+[VM 362] pc=54 LEN A=22 B=22 C=0 ra=type:5
+[VM 363] pc=55 ADD A=22 B=22 ra=num:4
+[VM 364] pc=56 GETTABLE A=23 B=16 C=20 ra=str:'r'
+[VM 365] pc=57 SETTABLE A=21 B=22 C=23 ra=type:5
+[VM 366] pc=58 FORLOOP A=17 ra=num:3
+[VM 367] pc=59 GETTABLE A=17 B=0 ra=num:3
+[VM 368] pc=60 LEN A=17 B=17 C=0 ra=type:5
+[VM 369] pc=61 SUB A=17 B=17 C=12 ra=num:5
+[VM 370] pc=62 LOADK A=18 B=0 C=5 ra=num:3
+[VM 371] pc=63 MOVE A=19 B=12 C=0 ra=num:1
+[VM 372] pc=64 LOADK A=20 B=0 C=5 ra=num:3
+[VM 373] pc=65 FORPREP A=18 C=3 ra=num:1
+[VM 374] pc=70 FORLOOP A=18 ra=num:0
+[VM 375] pc=66 GETTABLE A=22 B=14 C=21 ra=num:5
+[VM 376] pc=67 ADD A=22 B=17 C=22 ra=num:3
+[VM 377] pc=68 SUB A=22 B=22 ra=num:5
+[VM 378] pc=69 SETTABLE A=15 B=21 C=22 ra=type:5
+[VM 379] pc=70 FORLOOP A=18 ra=num:1
+[VM 380] pc=66 GETTABLE A=22 B=14 C=21 ra=num:4
+[VM 381] pc=67 ADD A=22 B=17 C=22 ra=num:2
+[VM 382] pc=68 SUB A=22 B=22 ra=num:4
+[VM 383] pc=69 SETTABLE A=15 B=21 C=22 ra=type:5
+[VM 384] pc=70 FORLOOP A=18 ra=num:2
+[VM 385] pc=66 GETTABLE A=22 B=14 C=21 ra=num:3
+[VM 386] pc=67 ADD A=22 B=17 C=22 ra=num:1
+[VM 387] pc=68 SUB A=22 B=22 ra=num:3
+[VM 388] pc=69 SETTABLE A=15 B=21 C=22 ra=type:5
+[VM 389] pc=70 FORLOOP A=18 ra=num:3
+[VM 390] pc=71 NEWTABLE A=18 B=0 C=2 ra=num:3
+[VM 391] pc=72 SETTABLE A=18 C=15 ra=type:5
+[VM 392] pc=73 SETTABLE A=18 C=12 ra=type:5
+[VM 393] pc=74 SETTABLE A=6 B=10 C=18 ra=type:5
+[VM 394] pc=75 TFORCALL A=7 B=0 C=1 ra=func
+[VM 395] pc=22 GETTABLE A=11 B=0 ra=type:5
+[VM 396] pc=23 ADD A=12 B=10 ra=num:0
+[VM 397] pc=24 GETTABLE A=11 B=11 C=12 ra=type:5
+[VM 398] pc=25 LEN A=12 B=11 C=0 ra=num:1
+[VM 399] pc=26 LE A=0 B=3 C=12 ra=type:7
+[VM 400] pc=28 GETUPVAL A=12 B=2 C=0 ra=num:11
+[VM 401] pc=29 LEN A=13 B=11 C=0 ra=bool:1
+[VM 402] pc=30 CALL A=12 B=2 C=2 ra=func
+[VM 403] pc=0 GETUPVAL A=1 B=0 C=0 ra=type:5
+[VM 404] pc=1 LE A=0 B=0 ra=num:11
+[VM 405] pc=5 LE A=0 B=0 ra=num:11
+[VM 406] pc=9 LOADK A=2 B=0 C=3 ra=type:5
+[VM 407] pc=10 RETURN A=2 B=2 C=0 ra=num:4
+[VM 408] pc=31 GETUPVAL A=13 B=3 C=0 ra=num:11
+[VM 409] pc=32 MOVE A=14 B=11 C=0 ra=type:5
+[VM 410] pc=33 MOVE A=15 B=12 C=0 ra=num:4
+[VM 411] pc=34 CALL A=13 B=3 C=2 ra=func
+[VM 412] pc=0 GETUPVAL A=2 B=0 C=0 ra=type:5
+[VM 413] pc=1 NEWTABLE A=3 B=0 C=0 ra=num:2
+[VM 414] pc=2 LEN A=4 B=0 C=0 ra=type:5
+[VM 415] pc=3 LT A=0 B=4 C=1 ra=str:'hello world'
+[VM 416] pc=14 GETTABLE A=5 B=2 ra=num:3
+[VM 417] pc=15 GETTABLE A=5 B=5 ra=type:5
+[VM 418] pc=16 DIV A=6 B=4 C=1 ra=num:1
+[VM 419] pc=17 CALL A=5 B=2 C=2 ra=func
+[VM 420] pc=18 LOADK A=6 B=0 C=4 ra=num:2.75
+[VM 421] pc=19 LOADK A=7 B=0 C=4 ra=num:2
+[VM 422] pc=20 MOVE A=8 B=1 C=0 ra=num:2
+[VM 423] pc=21 LOADK A=9 B=0 C=4 ra=str:'p'
+[VM 424] pc=22 FORPREP A=7 C=16 ra=num:1
+[VM 425] pc=40 FORLOOP A=7 ra=num:0
+[VM 426] pc=23 MOVE A=11 B=5 C=0 ra=num:2
+[VM 427] pc=24 EQ A=0 B=10 C=1 ra=str:'hello world'
+[VM 428] pc=28 LT A=0 B=11 ra=str:'hello world'
+[VM 429] pc=31 SELF A=12 B=0 ra=str:'int'
+[VM 430] pc=32 MOVE A=14 B=6 C=0 ra=num:3
+[VM 431] pc=33 ADD A=15 B=6 C=11 ra=num:5
+[VM 432] pc=34 SUB A=15 B=15 ra=num:3
+[VM 433] pc=35 CALL A=12 B=4 C=2 ra=func
+[VM 434] pc=36 SETTABLE A=3 B=10 C=12 ra=type:5
+[VM 435] pc=37 ADD A=6 B=6 C=11 ra=num:1
+[VM 436] pc=38 LT A=1 B=4 C=6 ra=num:4
+[VM 437] pc=40 FORLOOP A=7 ra=num:1
+[VM 438] pc=23 MOVE A=11 B=5 C=0 ra=num:2
+[VM 439] pc=24 EQ A=0 B=10 C=1 ra=str:'hello world'
+[VM 440] pc=28 LT A=0 B=11 ra=str:'hello world'
+[VM 441] pc=31 SELF A=12 B=0 ra=str:'he'
+[VM 442] pc=32 MOVE A=14 B=6 C=0 ra=num:1
+[VM 443] pc=33 ADD A=15 B=6 C=11 ra=num:2
+[VM 444] pc=34 SUB A=15 B=15 ra=num:5
+[VM 445] pc=35 CALL A=12 B=4 C=2 ra=func
+[VM 446] pc=36 SETTABLE A=3 B=10 C=12 ra=type:5
+[VM 447] pc=37 ADD A=6 B=6 C=11 ra=num:3
+[VM 448] pc=38 LT A=1 B=4 C=6 ra=num:4
+[VM 449] pc=40 FORLOOP A=7 ra=num:2
+[VM 450] pc=23 MOVE A=11 B=5 C=0 ra=num:2
+[VM 451] pc=24 EQ A=0 B=10 C=1 ra=str:'hello world'
+[VM 452] pc=28 LT A=0 B=11 ra=str:'hello world'
+[VM 453] pc=31 SELF A=12 B=0 ra=str:'ll'
+[VM 454] pc=32 MOVE A=14 B=6 C=0 ra=num:3
+[VM 455] pc=33 ADD A=15 B=6 C=11 ra=num:4
+[VM 456] pc=34 SUB A=15 B=15 ra=num:7
+[VM 457] pc=35 CALL A=12 B=4 C=2 ra=func
+[VM 458] pc=36 SETTABLE A=3 B=10 C=12 ra=type:5
+[VM 459] pc=37 ADD A=6 B=6 C=11 ra=num:5
+[VM 460] pc=38 LT A=1 B=4 C=6 ra=num:4
+[VM 461] pc=40 FORLOOP A=7 ra=num:3
+[VM 462] pc=23 MOVE A=11 B=5 C=0 ra=num:2
+[VM 463] pc=24 EQ A=0 B=10 C=1 ra=str:'hello world'
+[VM 464] pc=26 SUB A=12 B=4 C=6 ra=str:'o '
+[VM 465] pc=27 ADD A=11 B=12 ra=num:2
+[VM 466] pc=28 LT A=0 B=11 ra=str:'hello world'
+[VM 467] pc=31 SELF A=12 B=0 ra=num:4
+[VM 468] pc=32 MOVE A=14 B=6 C=0 ra=num:5
+[VM 469] pc=33 ADD A=15 B=6 C=11 ra=num:6
+[VM 470] pc=34 SUB A=15 B=15 ra=num:12
+[VM 471] pc=35 CALL A=12 B=4 C=2 ra=func
+[VM 472] pc=36 SETTABLE A=3 B=10 C=12 ra=type:5
+[VM 473] pc=37 ADD A=6 B=6 C=11 ra=num:7
+[VM 474] pc=38 LT A=1 B=4 C=6 ra=num:4
+[VM 475] pc=41 LEN A=7 B=3 C=0 ra=num:4
+[VM 476] pc=42 LT A=0 B=7 C=1 ra=str:'hello world'
+[VM 477] pc=48 RETURN A=3 B=2 C=0 ra=type:5
+[VM 478] pc=35 GETUPVAL A=14 B=4 C=0 ra=str:'hello world'
+[VM 479] pc=36 MOVE A=15 B=12 C=0 ra=num:4
+[VM 480] pc=37 CALL A=14 B=2 C=2 ra=func
+[VM 481] pc=0 GETUPVAL A=1 B=0 C=0 ra=type:5
+[VM 482] pc=1 NEWTABLE A=2 B=0 C=0 ra=type:5
+[VM 483] pc=2 LOADK A=3 B=0 C=0 ra=num:11
+[VM 484] pc=3 MOVE A=4 B=0 C=0 ra=num:2
+[VM 485] pc=4 LOADK A=5 B=0 C=0 ra=num:12
+[VM 486] pc=5 FORPREP A=3 C=0 ra=num:1
+[VM 487] pc=7 FORLOOP A=3 ra=num:0
+[VM 488] pc=6 SETTABLE A=2 B=6 C=6 ra=type:5
+[VM 489] pc=7 FORLOOP A=3 ra=num:1
+[VM 490] pc=6 SETTABLE A=2 B=6 C=6 ra=type:5
+[VM 491] pc=7 FORLOOP A=3 ra=num:2
+[VM 492] pc=6 SETTABLE A=2 B=6 C=6 ra=type:5
+[VM 493] pc=7 FORLOOP A=3 ra=num:3
+[VM 494] pc=6 SETTABLE A=2 B=6 C=6 ra=type:5
+[VM 495] pc=7 FORLOOP A=3 ra=num:4
+[VM 496] pc=8 MOVE A=3 B=0 C=0 ra=num:4
+[VM 497] pc=9 LOADK A=4 B=0 C=1 ra=num:4
+[VM 498] pc=10 LOADK A=5 B=0 C=2 ra=num:1
+[VM 499] pc=11 FORPREP A=3 C=8 ra=num:4
+[VM 500] pc=21 FORLOOP A=3 ra=num:5
+[VM 501] pc=12 GETTABLE A=7 B=1 ra=num:4
+[VM 502] pc=13 GETTABLE A=7 B=7 ra=type:5
+[VM 503] pc=14 LOADK A=8 B=0 C=0 ra=num:1
+[VM 504] pc=15 MOVE A=9 B=6 C=0 ra=num:4
+[VM 505] pc=16 CALL A=7 B=3 C=2 ra=func
+[VM 506] pc=17 GETTABLE A=8 B=2 C=7 ra=num:1
+[VM 507] pc=18 GETTABLE A=9 B=2 C=6 ra=num:4
+[VM 508] pc=19 SETTABLE A=2 B=7 C=9 ra=type:5
+[VM 509] pc=20 SETTABLE A=2 B=6 C=8 ra=type:5
+[VM 510] pc=21 FORLOOP A=3 ra=num:4
+[VM 511] pc=12 GETTABLE A=7 B=1 ra=num:2
+[VM 512] pc=13 GETTABLE A=7 B=7 ra=type:5
+[VM 513] pc=14 LOADK A=8 B=0 C=0 ra=num:2
+[VM 514] pc=15 MOVE A=9 B=6 C=0 ra=num:4
+[VM 515] pc=16 CALL A=7 B=3 C=2 ra=func
+[VM 516] pc=17 GETTABLE A=8 B=2 C=7 ra=num:1
+[VM 517] pc=18 GETTABLE A=9 B=2 C=6 ra=num:3
+[VM 518] pc=19 SETTABLE A=2 B=7 C=9 ra=type:5
+[VM 519] pc=20 SETTABLE A=2 B=6 C=8 ra=type:5
+[VM 520] pc=21 FORLOOP A=3 ra=num:3
+[VM 521] pc=12 GETTABLE A=7 B=1 ra=num:2
+[VM 522] pc=13 GETTABLE A=7 B=7 ra=type:5
+[VM 523] pc=14 LOADK A=8 B=0 C=0 ra=num:4
+[VM 524] pc=15 MOVE A=9 B=6 C=0 ra=num:3
+[VM 525] pc=16 CALL A=7 B=3 C=2 ra=func
+[VM 526] pc=17 GETTABLE A=8 B=2 C=7 ra=num:1
+[VM 527] pc=18 GETTABLE A=9 B=2 C=6 ra=num:2
+[VM 528] pc=19 SETTABLE A=2 B=7 C=9 ra=type:5
+[VM 529] pc=20 SETTABLE A=2 B=6 C=8 ra=type:5
+[VM 530] pc=21 FORLOOP A=3 ra=num:2
+[VM 531] pc=22 RETURN A=2 B=2 C=0 ra=type:5
+[VM 532] pc=38 NEWTABLE A=15 B=0 C=0 ra=num:4
+[VM 533] pc=39 NEWTABLE A=16 B=0 C=0 ra=type:5
+[VM 534] pc=40 LOADK A=17 B=0 C=5 ra=type:5
+[VM 535] pc=41 MOVE A=18 B=12 C=0 ra=num:2
+[VM 536] pc=42 LOADK A=19 B=0 C=5 ra=num:2
+[VM 537] pc=43 FORPREP A=17 C=2 ra=num:1
+[VM 538] pc=47 FORLOOP A=17 ra=num:0
+[VM 539] pc=44 GETTABLE A=21 B=14 C=20 ra=num:2
+[VM 540] pc=45 GETTABLE A=22 B=13 C=20 ra=num:2
+[VM 541] pc=46 SETTABLE A=16 B=21 C=22 ra=type:5
+[VM 542] pc=47 FORLOOP A=17 ra=num:1
+[VM 543] pc=44 GETTABLE A=21 B=14 C=20 ra=num:1
+[VM 544] pc=45 GETTABLE A=22 B=13 C=20 ra=str:'he'
+[VM 545] pc=46 SETTABLE A=16 B=21 C=22 ra=type:5
+[VM 546] pc=47 FORLOOP A=17 ra=num:2
+[VM 547] pc=44 GETTABLE A=21 B=14 C=20 ra=num:3
+[VM 548] pc=45 GETTABLE A=22 B=13 C=20 ra=str:'ll'
+[VM 549] pc=46 SETTABLE A=16 B=21 C=22 ra=type:5
+[VM 550] pc=47 FORLOOP A=17 ra=num:3
+[VM 551] pc=44 GETTABLE A=21 B=14 C=20 ra=num:4
+[VM 552] pc=45 GETTABLE A=22 B=13 C=20 ra=str:'o '
+[VM 553] pc=46 SETTABLE A=16 B=21 C=22 ra=type:5
+[VM 554] pc=47 FORLOOP A=17 ra=num:4
+[VM 555] pc=48 LOADK A=17 B=0 C=5 ra=num:4
+[VM 556] pc=49 MOVE A=18 B=12 C=0 ra=num:4
+[VM 557] pc=50 LOADK A=19 B=0 C=5 ra=num:1
+[VM 558] pc=51 FORPREP A=17 C=5 ra=num:1
+[VM 559] pc=58 FORLOOP A=17 ra=num:0
+[VM 560] pc=52 GETTABLE A=21 B=0 ra=num:2
+[VM 561] pc=53 GETTABLE A=22 B=0 ra=str:'world'
+[VM 562] pc=54 LEN A=22 B=22 C=0 ra=type:5
+[VM 563] pc=55 ADD A=22 B=22 ra=num:5
+[VM 564] pc=56 GETTABLE A=23 B=16 C=20 ra=num:3
+[VM 565] pc=57 SETTABLE A=21 B=22 C=23 ra=type:5
+[VM 566] pc=58 FORLOOP A=17 ra=num:1
+[VM 567] pc=52 GETTABLE A=21 B=0 ra=type:5
+[VM 568] pc=53 GETTABLE A=22 B=0 ra=num:6
+[VM 569] pc=54 LEN A=22 B=22 C=0 ra=type:5
+[VM 570] pc=55 ADD A=22 B=22 ra=num:6
+[VM 571] pc=56 GETTABLE A=23 B=16 C=20 ra=str:'he'
+[VM 572] pc=57 SETTABLE A=21 B=22 C=23 ra=type:5
+[VM 573] pc=58 FORLOOP A=17 ra=num:2
+[VM 574] pc=52 GETTABLE A=21 B=0 ra=type:5
+[VM 575] pc=53 GETTABLE A=22 B=0 ra=num:7
+[VM 576] pc=54 LEN A=22 B=22 C=0 ra=type:5
+[VM 577] pc=55 ADD A=22 B=22 ra=num:7
+[VM 578] pc=56 GETTABLE A=23 B=16 C=20 ra=str:'world'
+[VM 579] pc=57 SETTABLE A=21 B=22 C=23 ra=type:5
+[VM 580] pc=58 FORLOOP A=17 ra=num:3
+[VM 581] pc=52 GETTABLE A=21 B=0 ra=type:5
+[VM 582] pc=53 GETTABLE A=22 B=0 ra=num:8
+[VM 583] pc=54 LEN A=22 B=22 C=0 ra=type:5
+[VM 584] pc=55 ADD A=22 B=22 ra=num:8
+[VM 585] pc=56 GETTABLE A=23 B=16 C=20 ra=str:'ll'
+[VM 586] pc=57 SETTABLE A=21 B=22 C=23 ra=type:5
+[VM 587] pc=58 FORLOOP A=17 ra=num:4
+[VM 588] pc=59 GETTABLE A=17 B=0 ra=num:4
+[VM 589] pc=60 LEN A=17 B=17 C=0 ra=type:5
+[VM 590] pc=61 SUB A=17 B=17 C=12 ra=num:9
+[VM 591] pc=62 LOADK A=18 B=0 C=5 ra=num:4
+[VM 592] pc=63 MOVE A=19 B=12 C=0 ra=num:1
+[VM 593] pc=64 LOADK A=20 B=0 C=5 ra=num:4
+[VM 594] pc=65 FORPREP A=18 C=3 ra=num:1
+[VM 595] pc=70 FORLOOP A=18 ra=num:0
+[VM 596] pc=66 GETTABLE A=22 B=14 C=21 ra=num:9
+[VM 597] pc=67 ADD A=22 B=17 C=22 ra=num:1
+[VM 598] pc=68 SUB A=22 B=22 ra=num:6
+[VM 599] pc=69 SETTABLE A=15 B=21 C=22 ra=type:5
+[VM 600] pc=70 FORLOOP A=18 ra=num:1
+[VM 601] pc=66 GETTABLE A=22 B=14 C=21 ra=num:5
+[VM 602] pc=67 ADD A=22 B=17 C=22 ra=num:3
+[VM 603] pc=68 SUB A=22 B=22 ra=num:8
+[VM 604] pc=69 SETTABLE A=15 B=21 C=22 ra=type:5
+[VM 605] pc=70 FORLOOP A=18 ra=num:2
+[VM 606] pc=66 GETTABLE A=22 B=14 C=21 ra=num:7
+[VM 607] pc=67 ADD A=22 B=17 C=22 ra=num:4
+[VM 608] pc=68 SUB A=22 B=22 ra=num:9
+[VM 609] pc=69 SETTABLE A=15 B=21 C=22 ra=type:5
+[VM 610] pc=70 FORLOOP A=18 ra=num:3
+[VM 611] pc=66 GETTABLE A=22 B=14 C=21 ra=num:8
+[VM 612] pc=67 ADD A=22 B=17 C=22 ra=num:2
+[VM 613] pc=68 SUB A=22 B=22 ra=num:7
+[VM 614] pc=69 SETTABLE A=15 B=21 C=22 ra=type:5
+[VM 615] pc=70 FORLOOP A=18 ra=num:4
+[VM 616] pc=71 NEWTABLE A=18 B=0 C=2 ra=num:4
+[VM 617] pc=72 SETTABLE A=18 C=15 ra=type:5
+[VM 618] pc=73 SETTABLE A=18 C=12 ra=type:5
+[VM 619] pc=74 SETTABLE A=6 B=10 C=18 ra=type:5
+[VM 620] pc=75 TFORCALL A=7 B=0 C=1 ra=func
+[VM 621] pc=77 GETTABLE A=7 B=2 ra=func
+[VM 622] pc=78 MOVE A=8 B=6 C=0 ra=type:5
+[VM 623] pc=79 CALL A=7 B=2 C=2 ra=func
+[VM 624] pc=80 TEST A=7 B=0 C=1 ra=num:1
+[VM 625] pc=84 GETTABLE A=7 B=2 ra=num:1
+[VM 626] pc=85 MOVE A=8 B=6 C=0 ra=type:5
+[VM 627] pc=86 CALL A=7 B=2 C=4 ra=func
+[VM 628] pc=87 JMP A=0 C=25 ra=type:7
+[VM 629] pc=114 TFORCALL A=7 B=0 C=1 ra=func
+[VM 630] pc=88 GETTABLE A=11 B=0 ra=type:5
+[VM 631] pc=89 ADD A=12 B=10 ra=num:1
+[VM 632] pc=90 GETTABLE A=11 B=11 C=12 ra=type:5
+[VM 633] pc=91 LEN A=12 B=11 C=0 ra=num:2
+[VM 634] pc=92 NEWTABLE A=13 B=0 C=0 ra=type:5
+[VM 635] pc=93 LOADK A=14 B=0 C=5 ra=type:5
+[VM 636] pc=94 MOVE A=15 B=12 C=0 ra=type:5
+[VM 637] pc=95 LOADK A=16 B=0 C=5 ra=type:5
+[VM 638] pc=96 FORPREP A=14 C=8 ra=num:1
+[VM 639] pc=106 FORLOOP A=14 ra=num:0
+[VM 640] pc=97 GETTABLE A=18 B=2 ra=type:5
+[VM 641] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 642] pc=99 GETTABLE A=19 B=2 ra=num:4
+[VM 643] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 644] pc=101 LOADK A=20 B=0 C=13 ra=num:1
+[VM 645] pc=102 LOADK A=21 B=0 C=14 ra=num:4
+[VM 646] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 647] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 648] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 649] pc=106 FORLOOP A=14 ra=num:1
+[VM 650] pc=97 GETTABLE A=18 B=2 ra=str:'B'
+[VM 651] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 652] pc=99 GETTABLE A=19 B=2 ra=num:66
+[VM 653] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 654] pc=101 LOADK A=20 B=0 C=13 ra=str:'B'
+[VM 655] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 656] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 657] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 658] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 659] pc=106 FORLOOP A=14 ra=num:2
+[VM 660] pc=97 GETTABLE A=18 B=2 ra=str:'r'
+[VM 661] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 662] pc=99 GETTABLE A=19 B=2 ra=num:114
+[VM 663] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 664] pc=101 LOADK A=20 B=0 C=13 ra=str:'r'
+[VM 665] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 666] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 667] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 668] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 669] pc=106 FORLOOP A=14 ra=num:3
+[VM 670] pc=97 GETTABLE A=18 B=2 ra=str:'V'
+[VM 671] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 672] pc=99 GETTABLE A=19 B=2 ra=num:86
+[VM 673] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 674] pc=101 LOADK A=20 B=0 C=13 ra=str:'V'
+[VM 675] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 676] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 677] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 678] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 679] pc=106 FORLOOP A=14 ra=num:4
+[VM 680] pc=97 GETTABLE A=18 B=2 ra=str:']'
+[VM 681] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 682] pc=99 GETTABLE A=19 B=2 ra=num:93
+[VM 683] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 684] pc=101 LOADK A=20 B=0 C=13 ra=str:']'
+[VM 685] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 686] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 687] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 688] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 689] pc=106 FORLOOP A=14 ra=num:5
+[VM 690] pc=107 GETTABLE A=14 B=0 ra=num:5
+[VM 691] pc=108 ADD A=15 B=10 ra=num:5
+[VM 692] pc=109 GETTABLE A=16 B=2 ra=num:1
+[VM 693] pc=110 GETTABLE A=16 B=16 ra=type:5
+[VM 694] pc=111 MOVE A=17 B=13 C=0 ra=num:5
+[VM 695] pc=112 CALL A=16 B=2 C=2 ra=func
+[VM 696] pc=113 SETTABLE A=14 B=15 C=16 ra=type:5
+[VM 697] pc=114 TFORCALL A=7 B=0 C=1 ra=func
+[VM 698] pc=88 GETTABLE A=11 B=0 ra=type:5
+[VM 699] pc=89 ADD A=12 B=10 ra=num:0
+[VM 700] pc=90 GETTABLE A=11 B=11 C=12 ra=type:5
+[VM 701] pc=91 LEN A=12 B=11 C=0 ra=num:1
+[VM 702] pc=92 NEWTABLE A=13 B=0 C=0 ra=type:5
+[VM 703] pc=93 LOADK A=14 B=0 C=5 ra=type:5
+[VM 704] pc=94 MOVE A=15 B=12 C=0 ra=num:2
+[VM 705] pc=95 LOADK A=16 B=0 C=5 ra=str:'BrV]2'
+[VM 706] pc=96 FORPREP A=14 C=8 ra=num:1
+[VM 707] pc=106 FORLOOP A=14 ra=num:0
+[VM 708] pc=97 GETTABLE A=18 B=2 ra=str:'BrV]2'
+[VM 709] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 710] pc=99 GETTABLE A=19 B=2 ra=num:50
+[VM 711] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 712] pc=101 LOADK A=20 B=0 C=13 ra=str:'2'
+[VM 713] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 714] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 715] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 716] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 717] pc=106 FORLOOP A=14 ra=num:1
+[VM 718] pc=97 GETTABLE A=18 B=2 ra=str:'a'
+[VM 719] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 720] pc=99 GETTABLE A=19 B=2 ra=num:97
+[VM 721] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 722] pc=101 LOADK A=20 B=0 C=13 ra=str:'a'
+[VM 723] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 724] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 725] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 726] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 727] pc=106 FORLOOP A=14 ra=num:2
+[VM 728] pc=97 GETTABLE A=18 B=2 ra=str:'4'
+[VM 729] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 730] pc=99 GETTABLE A=19 B=2 ra=num:52
+[VM 731] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 732] pc=101 LOADK A=20 B=0 C=13 ra=str:'4'
+[VM 733] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 734] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 735] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 736] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 737] pc=106 FORLOOP A=14 ra=num:3
+[VM 738] pc=97 GETTABLE A=18 B=2 ra=str:'F'
+[VM 739] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 740] pc=99 GETTABLE A=19 B=2 ra=num:70
+[VM 741] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 742] pc=101 LOADK A=20 B=0 C=13 ra=str:'F'
+[VM 743] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 744] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 745] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 746] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 747] pc=106 FORLOOP A=14 ra=num:4
+[VM 748] pc=97 GETTABLE A=18 B=2 ra=str:'G'
+[VM 749] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 750] pc=99 GETTABLE A=19 B=2 ra=num:71
+[VM 751] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 752] pc=101 LOADK A=20 B=0 C=13 ra=str:'G'
+[VM 753] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 754] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 755] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 756] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 757] pc=106 FORLOOP A=14 ra=num:5
+[VM 758] pc=97 GETTABLE A=18 B=2 ra=str:'!'
+[VM 759] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 760] pc=99 GETTABLE A=19 B=2 ra=num:33
+[VM 761] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 762] pc=101 LOADK A=20 B=0 C=13 ra=str:'!'
+[VM 763] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 764] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 765] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 766] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 767] pc=106 FORLOOP A=14 ra=num:6
+[VM 768] pc=97 GETTABLE A=18 B=2 ra=str:'F'
+[VM 769] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 770] pc=99 GETTABLE A=19 B=2 ra=num:70
+[VM 771] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 772] pc=101 LOADK A=20 B=0 C=13 ra=str:'F'
+[VM 773] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 774] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 775] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 776] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 777] pc=106 FORLOOP A=14 ra=num:7
+[VM 778] pc=97 GETTABLE A=18 B=2 ra=str:'s'
+[VM 779] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 780] pc=99 GETTABLE A=19 B=2 ra=num:115
+[VM 781] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 782] pc=101 LOADK A=20 B=0 C=13 ra=str:'s'
+[VM 783] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 784] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 785] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 786] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 787] pc=106 FORLOOP A=14 ra=num:8
+[VM 788] pc=97 GETTABLE A=18 B=2 ra=str:'E'
+[VM 789] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 790] pc=99 GETTABLE A=19 B=2 ra=num:69
+[VM 791] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 792] pc=101 LOADK A=20 B=0 C=13 ra=str:'E'
+[VM 793] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 794] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 795] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 796] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 797] pc=106 FORLOOP A=14 ra=num:9
+[VM 798] pc=97 GETTABLE A=18 B=2 ra=str:'M'
+[VM 799] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 800] pc=99 GETTABLE A=19 B=2 ra=num:77
+[VM 801] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 802] pc=101 LOADK A=20 B=0 C=13 ra=str:'M'
+[VM 803] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 804] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 805] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 806] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 807] pc=106 FORLOOP A=14 ra=num:10
+[VM 808] pc=97 GETTABLE A=18 B=2 ra=str:'9'
+[VM 809] pc=98 GETTABLE A=18 B=18 ra=type:5
+[VM 810] pc=99 GETTABLE A=19 B=2 ra=num:57
+[VM 811] pc=100 GETTABLE A=19 B=19 ra=type:5
+[VM 812] pc=101 LOADK A=20 B=0 C=13 ra=str:'9'
+[VM 813] pc=102 LOADK A=21 B=0 C=14 ra=num:126
+[VM 814] pc=103 CALL A=19 B=3 C=0 ra=func
+[VM 815] pc=104 CALL A=18 B=0 C=2 ra=func
+[VM 816] pc=105 SETTABLE A=13 B=17 C=18 ra=type:5
+[VM 817] pc=106 FORLOOP A=14 ra=num:11
+[VM 818] pc=107 GETTABLE A=14 B=0 ra=num:11
+[VM 819] pc=108 ADD A=15 B=10 ra=num:11
+[VM 820] pc=109 GETTABLE A=16 B=2 ra=num:1
+[VM 821] pc=110 GETTABLE A=16 B=16 ra=type:5
+[VM 822] pc=111 MOVE A=17 B=13 C=0 ra=num:11
+[VM 823] pc=112 CALL A=16 B=2 C=2 ra=func
+[VM 824] pc=113 SETTABLE A=14 B=15 C=16 ra=type:5
+[VM 825] pc=114 TFORCALL A=7 B=0 C=1 ra=func
+[VM 826] pc=116 GETUPVAL A=7 B=5 C=0 ra=func
+[VM 827] pc=117 MOVE A=8 B=0 C=0 ra=type:5
+[VM 828] pc=118 CALL A=7 B=2 C=2 ra=func
+[VM 829] pc=0 GETUPVAL A=1 B=0 C=0 ra=num:0
+[VM 830] pc=1 GETTABLE A=2 B=0 ra=nil
+[VM 831] pc=2 SUB A=2 B=2 ra=num:4
+[VM 832] pc=3 LOADK A=3 B=0 C=1 ra=type:5
+[VM 833] pc=4 GETTABLE A=4 B=0 ra=nil
+[VM 834] pc=5 LEN A=4 B=4 C=0 ra=type:5
+[VM 835] pc=6 LOADK A=5 B=0 C=1 ra=type:5
+[VM 836] pc=7 FORPREP A=3 C=28 ra=num:1
+[VM 837] pc=37 FORLOOP A=3 ra=num:0
+[VM 838] pc=8 GETTABLE A=7 B=0 ra=num:1
+[VM 839] pc=9 GETTABLE A=7 B=7 C=6 ra=type:5
+[VM 840] pc=10 GETTABUP A=8 B=1 ra=str:'a4FG!FsEM9A'
+[VM 841] pc=11 MOVE A=9 B=7 C=0 ra=type:5
+[VM 842] pc=12 CALL A=8 B=2 C=2 ra=func
+[VM 843] pc=13 GETTABUP A=9 B=1 ra=num:5
+[VM 844] pc=14 MOVE A=10 B=7 C=0 ra=num:5
+[VM 845] pc=15 CALL A=9 B=2 C=2 ra=func
+[VM 846] pc=16 LT A=0 B=2 C=9 ra=type:7
+[VM 847] pc=19 LE A=0 B=8 ra=type:7
+[VM 848] pc=21 GETTABUP A=10 B=1 ra=num:5
+[VM 849] pc=22 MOVE A=11 B=7 C=0 ra=num:0
+[VM 850] pc=23 CALL A=10 B=2 C=2 ra=func
+[VM 851] pc=24 GETTABUP A=11 B=1 ra=num:5
+[VM 852] pc=25 MOVE A=12 B=7 C=0 ra=num:0
+[VM 853] pc=26 CALL A=11 B=2 C=2 ra=func
+[VM 854] pc=27 LT A=0 B=10 ra=type:7
+[VM 855] pc=29 LT A=0 B=2 C=10 ra=type:7
+[VM 856] pc=32 LT A=0 B=11 ra=type:7
+[VM 857] pc=34 LT A=0 B=2 C=11 ra=type:7
+[VM 858] pc=37 FORLOOP A=3 ra=num:1
+[VM 859] pc=8 GETTABLE A=7 B=0 ra=num:5
+[VM 860] pc=9 GETTABLE A=7 B=7 C=6 ra=type:5
+[VM 861] pc=10 GETTABUP A=8 B=1 ra=num:5
+[VM 862] pc=11 MOVE A=9 B=7 C=0 ra=num:0
+[VM 863] pc=12 CALL A=8 B=2 C=2 ra=func
+[VM 864] pc=13 GETTABUP A=9 B=1 ra=num:65
+[VM 865] pc=14 MOVE A=10 B=7 C=0 ra=num:1
+[VM 866] pc=15 CALL A=9 B=2 C=2 ra=func
+[VM 867] pc=16 LT A=0 B=2 C=9 ra=type:7
+[VM 868] pc=19 LE A=0 B=8 ra=type:7
+[VM 869] pc=21 GETTABUP A=10 B=1 ra=num:65
+[VM 870] pc=22 MOVE A=11 B=7 C=0 ra=num:1
+[VM 871] pc=23 CALL A=10 B=2 C=2 ra=func
+[VM 872] pc=24 GETTABUP A=11 B=1 ra=num:65
+[VM 873] pc=25 MOVE A=12 B=7 C=0 ra=num:0
+[VM 874] pc=26 CALL A=11 B=2 C=2 ra=func
+[VM 875] pc=27 LT A=0 B=10 ra=type:7
+[VM 876] pc=29 LT A=0 B=2 C=10 ra=type:7
+[VM 877] pc=32 LT A=0 B=11 ra=type:7
+[VM 878] pc=34 LT A=0 B=2 C=11 ra=type:7
+[VM 879] pc=37 FORLOOP A=3 ra=num:2
+[VM 880] pc=8 GETTABLE A=7 B=0 ra=num:65
+[VM 881] pc=9 GETTABLE A=7 B=7 C=6 ra=type:5
+[VM 882] pc=10 GETTABUP A=8 B=1 ra=num:1
+[VM 883] pc=11 MOVE A=9 B=7 C=0 ra=num:1
+[VM 884] pc=12 CALL A=8 B=2 C=2 ra=func
+[VM 885] pc=13 GETTABUP A=9 B=1 ra=num:4.21082e+06
+[VM 886] pc=14 MOVE A=10 B=7 C=0 ra=num:7
+[VM 887] pc=15 CALL A=9 B=2 C=2 ra=func
+[VM 888] pc=16 LT A=0 B=2 C=9 ra=type:7
+[VM 889] pc=19 LE A=0 B=8 ra=type:7
+[VM 890] pc=21 GETTABUP A=10 B=1 ra=num:4.21082e+06
+[VM 891] pc=22 MOVE A=11 B=7 C=0 ra=num:2
+[VM 892] pc=23 CALL A=10 B=2 C=2 ra=func
+[VM 893] pc=24 GETTABUP A=11 B=1 ra=num:4.21082e+06
+[VM 894] pc=25 MOVE A=12 B=7 C=0 ra=num:0
+[VM 895] pc=26 CALL A=11 B=2 C=2 ra=func
+[VM 896] pc=27 LT A=0 B=10 ra=type:7
+[VM 897] pc=29 LT A=0 B=2 C=10 ra=type:7
+[VM 898] pc=32 LT A=0 B=11 ra=type:7
+[VM 899] pc=37 FORLOOP A=3 ra=num:3
+[VM 900] pc=8 GETTABLE A=7 B=0 ra=num:4.21082e+06
+[VM 901] pc=9 GETTABLE A=7 B=7 C=6 ra=type:5
+[VM 902] pc=10 GETTABUP A=8 B=1 ra=num:7
+[VM 903] pc=11 MOVE A=9 B=7 C=0 ra=num:2
+[VM 904] pc=12 CALL A=8 B=2 C=2 ra=func
+[VM 905] pc=13 GETTABUP A=9 B=1 ra=num:8.3888e+06
+[VM 906] pc=14 MOVE A=10 B=7 C=0 ra=num:0
+[VM 907] pc=15 CALL A=9 B=2 C=2 ra=func
+[VM 908] pc=16 LT A=0 B=2 C=9 ra=type:7
+[VM 909] pc=19 LE A=0 B=8 ra=type:7
+[VM 910] pc=21 GETTABUP A=10 B=1 ra=num:8.3888e+06
+[VM 911] pc=22 MOVE A=11 B=7 C=0 ra=num:3
+[VM 912] pc=23 CALL A=10 B=2 C=2 ra=func
+[VM 913] pc=24 GETTABUP A=11 B=1 ra=num:8.3888e+06
+[VM 914] pc=25 MOVE A=12 B=7 C=0 ra=num:1
+[VM 915] pc=26 CALL A=11 B=2 C=2 ra=func
+[VM 916] pc=27 LT A=0 B=10 ra=type:7
+[VM 917] pc=29 LT A=0 B=2 C=10 ra=type:7
+[VM 918] pc=32 LT A=0 B=11 ra=type:7
+[VM 919] pc=34 LT A=0 B=2 C=11 ra=type:7
+[VM 920] pc=37 FORLOOP A=3 ra=num:4
+[VM 921] pc=8 GETTABLE A=7 B=0 ra=num:8.3888e+06
+[VM 922] pc=9 GETTABLE A=7 B=7 C=6 ra=type:5
+[VM 923] pc=10 GETTABUP A=8 B=1 ra=num:0
+[VM 924] pc=11 MOVE A=9 B=7 C=0 ra=num:3
+[VM 925] pc=12 CALL A=8 B=2 C=2 ra=func
+[VM 926] pc=13 GETTABUP A=9 B=1 ra=num:1.67938e+07
+[VM 927] pc=14 MOVE A=10 B=7 C=0 ra=num:36
+[VM 928] pc=15 CALL A=9 B=2 C=2 ra=func
+[VM 929] pc=16 LT A=0 B=2 C=9 ra=type:7
+[VM 930] pc=19 LE A=0 B=8 ra=type:7
+[VM 931] pc=21 GETTABUP A=10 B=1 ra=num:1.67938e+07
+[VM 932] pc=22 MOVE A=11 B=7 C=0 ra=num:2
+[VM 933] pc=23 CALL A=10 B=2 C=2 ra=func
+[VM 934] pc=24 GETTABUP A=11 B=1 ra=num:1.67938e+07
+[VM 935] pc=25 MOVE A=12 B=7 C=0 ra=num:2
+[VM 936] pc=26 CALL A=11 B=2 C=2 ra=func
+[VM 937] pc=27 LT A=0 B=10 ra=type:7
+[VM 938] pc=29 LT A=0 B=2 C=10 ra=type:7
+[VM 939] pc=32 LT A=0 B=11 ra=type:7
+[VM 940] pc=34 LT A=0 B=2 C=11 ra=type:7
+[VM 941] pc=37 FORLOOP A=3 ra=num:5
+[VM 942] pc=8 GETTABLE A=7 B=0 ra=num:1.67938e+07
+[VM 943] pc=9 GETTABLE A=7 B=7 C=6 ra=type:5
+[VM 944] pc=10 GETTABUP A=8 B=1 ra=num:36
+[VM 945] pc=11 MOVE A=9 B=7 C=0 ra=num:2
+[VM 946] pc=12 CALL A=8 B=2 C=2 ra=func
+[VM 947] pc=13 GETTABUP A=9 B=1 ra=num:8.38865e+06
+[VM 948] pc=14 MOVE A=10 B=7 C=0 ra=num:38
+[VM 949] pc=15 CALL A=9 B=2 C=2 ra=func
+[VM 950] pc=16 LT A=0 B=2 C=9 ra=type:7
+[VM 951] pc=19 LE A=0 B=8 ra=type:7
+[VM 952] pc=21 GETTABUP A=10 B=1 ra=num:8.38865e+06
+[VM 953] pc=22 MOVE A=11 B=7 C=0 ra=num:0
+[VM 954] pc=23 CALL A=10 B=2 C=2 ra=func
+[VM 955] pc=24 GETTABUP A=11 B=1 ra=num:8.38865e+06
+[VM 956] pc=25 MOVE A=12 B=7 C=0 ra=num:1
+[VM 957] pc=26 CALL A=11 B=2 C=2 ra=func
+[VM 958] pc=27 LT A=0 B=10 ra=type:7
+[VM 959] pc=29 LT A=0 B=2 C=10 ra=type:7
+[VM 960] pc=32 LT A=0 B=11 ra=type:7
+[VM 961] pc=34 LT A=0 B=2 C=11 ra=type:7
+[VM 962] pc=37 FORLOOP A=3 ra=num:6
+[VM 963] pc=38 RETURN A=2 B=2 C=0 ra=num:3
+[VM 964] pc=119 GETTABLE A=8 B=2 ra=type:7
+[VM 965] pc=120 GETTABLE A=8 B=8 ra=type:5
+[VM 966] pc=121 ADD A=9 B=7 ra=type:5
+[VM 967] pc=122 LOADK A=10 B=0 C=19 ra=num:3
+[VM 968] pc=123 CALL A=8 B=3 C=2 ra=func
+[VM 969] pc=124 NEWTABLE A=9 B=0 C=0 ra=num:8
+[VM 970] pc=125 LOADK A=10 B=0 C=5 ra=num:240
+[VM 971] pc=126 GETTABLE A=11 B=0 ra=num:8
+[VM 972] pc=127 LEN A=11 B=11 C=0 ra=type:5
+[VM 973] pc=128 LOADK A=12 B=0 C=5 ra=num:6
+[VM 974] pc=129 FORPREP A=10 ra=num:1
+[VM 975] pc=573 FORLOOP A=10 C=67 ra=num:0
+[VM 976] pc=130 GETTABLE A=14 B=0 ra=num:6
+[VM 977] pc=131 GETTABLE A=14 B=14 C=13 ra=type:5
+[VM 978] pc=132 GETTABUP A=15 B=6 ra=num:8.38865e+06
+[VM 979] pc=133 MOVE A=16 B=14 C=0 ra=num:38
+[VM 980] pc=134 CALL A=15 B=2 C=2 ra=func
+[VM 981] pc=135 LOADBOOL A=16 B=0 C=0 ra=num:5
+[VM 982] pc=136 GETTABUP A=17 B=6 ra=num:5
+[VM 983] pc=137 EQ A=0 B=15 C=17 ra=type:7
+[VM 984] pc=193 GETTABUP A=17 B=6 ra=num:1
+[VM 985] pc=194 EQ A=0 B=15 C=17 ra=type:7
+[VM 986] pc=268 GETTABUP A=17 B=6 ra=num:6
+[VM 987] pc=269 EQ A=0 B=15 C=17 ra=type:7
+[VM 988] pc=331 GETTABUP A=17 B=6 ra=num:7
+[VM 989] pc=332 EQ A=0 B=15 C=17 ra=type:7
+[VM 990] pc=419 GETTABUP A=17 B=6 ra=num:8
+[VM 991] pc=420 EQ A=0 B=15 C=17 ra=type:7
+[VM 992] pc=494 GETTABUP A=17 B=6 ra=num:10
+[VM 993] pc=495 EQ A=0 B=15 C=17 ra=type:7
+[VM 994] pc=566 TEST A=16 B=0 C=1 ra=bool:0
+[VM 995] pc=568 GETTABLE A=17 B=2 ra=num:12
+[VM 996] pc=569 GETTABLE A=17 B=17 ra=type:5
+[VM 997] pc=570 MOVE A=18 B=9 C=0 ra=num:1
+[VM 998] pc=571 MOVE A=19 B=14 C=0 ra=num:0
+[VM 999] pc=572 CALL A=17 B=3 C=1 ra=func
+[VM 1000] pc=573 FORLOOP A=10 C=67 ra=num:1
+[VM 1001] pc=130 GETTABLE A=14 B=0 ra=num:5
+[VM 1002] pc=131 GETTABLE A=14 B=14 C=13 ra=type:5
+[VM 1003] pc=132 GETTABUP A=15 B=6 ra=num:5
+[VM 1004] pc=133 MOVE A=16 B=14 C=0 ra=bool:0
+[VM 1005] pc=134 CALL A=15 B=2 C=2 ra=func
+[VM 1006] pc=135 LOADBOOL A=16 B=0 C=0 ra=num:65
+[VM 1007] pc=136 GETTABUP A=17 B=6 ra=num:1
+[VM 1008] pc=137 EQ A=0 B=15 C=17 ra=type:7
+[VM 1009] pc=139 GETTABUP A=17 B=6 ra=num:1
+[VM 1010] pc=140 MOVE A=18 B=14 C=0 ra=type:5
+[VM 1011] pc=141 CALL A=17 B=2 C=2 ra=func
+[VM 1012] pc=142 GETTABLE A=18 B=6 C=17 ra=num:65
+[VM 1013] pc=143 TEST A=18 B=0 C=0 ra=type:5
+[VM 1014] pc=145 GETTABUP A=18 B=6 ra=type:5
+[VM 1015] pc=146 MOVE A=19 B=14 C=0 ra=num:0
+[VM 1016] pc=147 CALL A=18 B=2 C=2 ra=func
+[VM 1017] pc=148 GETTABLE A=19 B=6 C=17 ra=num:65
+[VM 1018] pc=149 MOVE A=20 B=8 C=0 ra=num:1
+[VM 1019] pc=150 LOADK A=21 B=0 C=5 ra=num:0
+[VM 1020] pc=151 GETTABLE A=22 B=19 ra=type:7
+[VM 1021] pc=152 LOADK A=23 B=0 C=5 ra=str:'code'
+[VM 1022] pc=153 FORPREP A=21 C=10 ra=num:1
+[VM 1023] pc=165 FORLOOP A=21 ra=num:0
+[VM 1024] pc=154 GETTABLE A=25 B=2 ra=type:5
+[VM 1025] pc=155 GETTABLE A=25 B=25 ra=type:5
+[VM 1026] pc=156 MOVE A=26 B=9 C=0 ra=str:'world'
+[VM 1027] pc=157 GETTABUP A=27 B=6 ra=str:'hello world'
+[VM 1028] pc=158 GETTABUP A=28 B=6 ra=num:7
+[VM 1029] pc=159 ADD A=29 B=20 C=24 ra=num:11
+[VM 1030] pc=160 SUB A=29 B=29 ra=num:9
+[VM 1031] pc=161 GETTABLE A=30 B=19 ra=str:'world'
+[VM 1032] pc=162 GETTABLE A=30 B=30 C=24 ra=type:5
+[VM 1033] pc=163 CALL A=27 B=4 C=0 ra=func
+[VM 1034] pc=164 CALL A=25 B=0 C=1 ra=func
+[VM 1035] pc=165 FORLOOP A=21 ra=num:1
+[VM 1036] pc=154 GETTABLE A=25 B=2 ra=func
+[VM 1037] pc=155 GETTABLE A=25 B=25 ra=type:5
+[VM 1038] pc=156 MOVE A=26 B=9 C=0 ra=type:5
+[VM 1039] pc=157 GETTABUP A=27 B=6 ra=num:82433
+[VM 1040] pc=158 GETTABUP A=28 B=6 ra=num:2
+[VM 1041] pc=159 ADD A=29 B=20 C=24 ra=num:8
+[VM 1042] pc=160 SUB A=29 B=29 ra=num:10
+[VM 1043] pc=161 GETTABLE A=30 B=19 ra=num:5
+[VM 1044] pc=162 GETTABLE A=30 B=30 C=24 ra=type:5
+[VM 1045] pc=163 CALL A=27 B=4 C=0 ra=func
+[VM 1046] pc=164 CALL A=25 B=0 C=1 ra=func
+[VM 1047] pc=165 FORLOOP A=21 ra=num:2
+[VM 1048] pc=154 GETTABLE A=25 B=2 ra=func
+[VM 1049] pc=155 GETTABLE A=25 B=25 ra=type:5
+[VM 1050] pc=156 MOVE A=26 B=9 C=0 ra=type:5
+[VM 1051] pc=157 GETTABUP A=27 B=6 ra=num:115265
+[VM 1052] pc=158 GETTABUP A=28 B=6 ra=num:3
+[VM 1053] pc=159 ADD A=29 B=20 C=24 ra=num:9
+[VM 1054] pc=160 SUB A=29 B=29 ra=num:11
+[VM 1055] pc=161 GETTABLE A=30 B=19 ra=num:7
+[VM 1056] pc=162 GETTABLE A=30 B=30 C=24 ra=type:5
+[VM 1057] pc=163 CALL A=27 B=4 C=0 ra=func
+[VM 1058] pc=164 CALL A=25 B=0 C=1 ra=func
+[VM 1059] pc=165 FORLOOP A=21 ra=num:3
+[VM 1060] pc=154 GETTABLE A=25 B=2 ra=func
+[VM 1061] pc=155 GETTABLE A=25 B=25 ra=type:5
+[VM 1062] pc=156 MOVE A=26 B=9 C=0 ra=type:5
+[VM 1063] pc=157 GETTABUP A=27 B=6 ra=num:131713
+[VM 1064] pc=158 GETTABUP A=28 B=6 ra=num:4
+[VM 1065] pc=159 ADD A=29 B=20 C=24 ra=num:10
+[VM 1066] pc=160 SUB A=29 B=29 ra=num:12
+[VM 1067] pc=161 GETTABLE A=30 B=19 ra=num:8
+[VM 1068] pc=162 GETTABLE A=30 B=30 C=24 ra=type:5
+[VM 1069] pc=163 CALL A=27 B=4 C=0 ra=func
+[VM 1070] pc=164 CALL A=25 B=0 C=1 ra=func
+[VM 1071] pc=165 FORLOOP A=21 ra=num:4
+[VM 1072] pc=166 GETTABLE A=21 B=19 ra=num:4
+[VM 1073] pc=167 LE A=0 C=21 ra=type:7
+[VM 1074] pc=169 GETTABLE A=21 B=2 ra=num:4
+[VM 1075] pc=170 GETTABLE A=21 B=21 ra=type:5
+[VM 1076] pc=171 MOVE A=22 B=9 C=0 ra=num:4
+[VM 1077] pc=172 GETTABUP A=23 B=6 ra=num:1
+[VM 1078] pc=173 GETTABUP A=24 B=6 ra=num:4
+[VM 1079] pc=174 MOVE A=25 B=20 C=0 ra=func
+[VM 1080] pc=175 MOVE A=26 B=20 C=0 ra=type:5
+[VM 1081] pc=176 GETTABLE A=27 B=19 ra=num:99009
+[VM 1082] pc=177 ADD A=27 B=20 C=27 ra=num:4
+[VM 1083] pc=178 SUB A=27 B=27 ra=num:12
+[VM 1084] pc=179 CALL A=23 B=5 C=0 ra=func
+[VM 1085] pc=180 CALL A=21 B=0 C=1 ra=func
+[VM 1086] pc=181 GETTABLE A=21 B=2 ra=func
+[VM 1087] pc=182 GETTABLE A=21 B=21 ra=type:5
+[VM 1088] pc=183 MOVE A=22 B=9 C=0 ra=type:5
+[VM 1089] pc=184 GETTABUP A=23 B=6 ra=num:6.72896e+07
+[VM 1090] pc=185 GETTABUP A=24 B=6 ra=num:6
+[VM 1091] pc=186 MOVE A=25 B=18 C=0 ra=num:8
+[VM 1092] pc=187 MOVE A=26 B=20 C=0 ra=num:8
+[VM 1093] pc=188 LOADK A=27 B=0 C=2 ra=num:11
+[VM 1094] pc=189 CALL A=23 B=5 C=0 ra=func
+[VM 1095] pc=190 CALL A=21 B=0 C=1 ra=func
+[VM 1096] pc=191 LOADBOOL A=16 B=1 C=0 ra=bool:0
+[VM 1097] pc=192 JMP A=0 ra=type:7
+[VM 1098] pc=566 TEST A=16 B=0 C=1 ra=bool:1
+[VM 1099] pc=573 FORLOOP A=10 C=67 ra=num:2
+[VM 1100] pc=130 GETTABLE A=14 B=0 ra=num:65
+[VM 1101] pc=131 GETTABLE A=14 B=14 C=13 ra=type:5
+[VM 1102] pc=132 GETTABUP A=15 B=6 ra=num:1
+[VM 1103] pc=133 MOVE A=16 B=14 C=0 ra=bool:1
+[VM 1104] pc=134 CALL A=15 B=2 C=2 ra=func
+[VM 1105] pc=135 LOADBOOL A=16 B=0 C=0 ra=num:4.21082e+06
+[VM 1106] pc=136 GETTABUP A=17 B=6 ra=num:7
+[VM 1107] pc=137 EQ A=0 B=15 C=17 ra=type:7
+[VM 1108] pc=193 GETTABUP A=17 B=6 ra=num:1
+[VM 1109] pc=194 EQ A=0 B=15 C=17 ra=type:7
+[VM 1110] pc=268 GETTABUP A=17 B=6 ra=num:6
+[VM 1111] pc=269 EQ A=0 B=15 C=17 ra=type:7
+[VM 1112] pc=271 GETTABUP A=17 B=6 ra=num:7
+[VM 1113] pc=272 MOVE A=18 B=14 C=0 ra=num:1
+[VM 1114] pc=273 CALL A=17 B=2 C=2 ra=func
+[VM 1115] pc=274 GETTABUP A=18 B=6 ra=num:4.21082e+06
+[VM 1116] pc=275 MOVE A=19 B=14 C=0 ra=num:2
+[VM 1117] pc=276 CALL A=18 B=2 C=2 ra=func
+[VM 1118] pc=277 GETTABUP A=19 B=6 ra=num:4.21082e+06
+[VM 1119] pc=278 MOVE A=20 B=14 C=0 ra=num:0
+[VM 1120] pc=279 CALL A=19 B=2 C=2 ra=func
+[VM 1121] pc=280 LE A=0 C=19 ra=type:7
+[VM 1122] pc=282 SUB A=20 B=19 ra=num:4.21082e+06
+[VM 1123] pc=283 GETTABLE A=21 B=6 C=20 ra=num:257
+[VM 1124] pc=284 TEST A=21 B=0 C=0 ra=type:5
+[VM 1125] pc=286 GETTABLE A=21 B=6 C=20 ra=type:5
+[VM 1126] pc=287 MOVE A=22 B=8 C=0 ra=type:5
+[VM 1127] pc=288 LOADK A=23 B=0 C=5 ra=num:6.71089e+07
+[VM 1128] pc=289 GETTABLE A=24 B=21 ra=num:7
+[VM 1129] pc=290 LOADK A=25 B=0 C=5 ra=num:1
+[VM 1130] pc=291 FORPREP A=23 C=10 ra=num:1
+[VM 1131] pc=303 FORLOOP A=23 ra=num:0
+[VM 1132] pc=292 GETTABLE A=27 B=2 ra=num:0
+[VM 1133] pc=293 GETTABLE A=27 B=27 ra=type:5
+[VM 1134] pc=294 MOVE A=28 B=9 C=0 ra=num:6.71089e+07
+[VM 1135] pc=295 GETTABUP A=29 B=6 ra=num:11
+[VM 1136] pc=296 GETTABUP A=30 B=6 ra=num:6
+[VM 1137] pc=297 ADD A=31 B=22 C=26 ra=num:99009
+[VM 1138] pc=298 SUB A=31 B=31 ra=num:9
+[VM 1139] pc=299 GETTABLE A=32 B=21 ra=str:'sub'
+[VM 1140] pc=300 GETTABLE A=32 B=32 C=26 ra=type:5
+[VM 1141] pc=301 CALL A=29 B=4 C=0 ra=func
+[VM 1142] pc=302 CALL A=27 B=0 C=1 ra=func
+[VM 1143] pc=303 FORLOOP A=23 ra=num:1
+[VM 1144] pc=292 GETTABLE A=27 B=2 ra=func
+[VM 1145] pc=293 GETTABLE A=27 B=27 ra=type:5
+[VM 1146] pc=294 MOVE A=28 B=9 C=0 ra=type:5
+[VM 1147] pc=295 GETTABUP A=29 B=6 ra=num:66049
+[VM 1148] pc=296 GETTABUP A=30 B=6 ra=num:8
+[VM 1149] pc=297 ADD A=31 B=22 C=26 ra=num:8
+[VM 1150] pc=298 SUB A=31 B=31 ra=num:10
+[VM 1151] pc=299 GETTABLE A=32 B=21 ra=num:4
+[VM 1152] pc=300 GETTABLE A=32 B=32 C=26 ra=type:5
+[VM 1153] pc=301 CALL A=29 B=4 C=0 ra=func
+[VM 1154] pc=302 CALL A=27 B=0 C=1 ra=func
+[VM 1155] pc=303 FORLOOP A=23 ra=num:2
+[VM 1156] pc=292 GETTABLE A=27 B=2 ra=func
+[VM 1157] pc=293 GETTABLE A=27 B=27 ra=type:5
+[VM 1158] pc=294 MOVE A=28 B=9 C=0 ra=type:5
+[VM 1159] pc=295 GETTABUP A=29 B=6 ra=num:49729
+[VM 1160] pc=296 GETTABUP A=30 B=6 ra=num:9
+[VM 1161] pc=297 ADD A=31 B=22 C=26 ra=num:9
+[VM 1162] pc=298 SUB A=31 B=31 ra=num:11
+[VM 1163] pc=299 GETTABLE A=32 B=21 ra=num:3
+[VM 1164] pc=300 GETTABLE A=32 B=32 C=26 ra=type:5
+[VM 1165] pc=301 CALL A=29 B=4 C=0 ra=func
+[VM 1166] pc=302 CALL A=27 B=0 C=1 ra=func
+[VM 1167] pc=303 FORLOOP A=23 ra=num:3
+[VM 1168] pc=304 GETTABLE A=23 B=21 ra=num:3
+[VM 1169] pc=305 LE A=0 C=23 ra=type:7
+[VM 1170] pc=307 GETTABLE A=23 B=2 ra=num:3
+[VM 1171] pc=308 GETTABLE A=23 B=23 ra=type:5
+[VM 1172] pc=309 MOVE A=24 B=9 C=0 ra=num:3
+[VM 1173] pc=310 GETTABUP A=25 B=6 ra=num:1
+[VM 1174] pc=311 GETTABUP A=26 B=6 ra=num:3
+[VM 1175] pc=312 MOVE A=27 B=22 C=0 ra=func
+[VM 1176] pc=313 MOVE A=28 B=22 C=0 ra=type:5
+[VM 1177] pc=314 GETTABLE A=29 B=21 ra=num:33409
+[VM 1178] pc=315 ADD A=29 B=22 C=29 ra=num:3
+[VM 1179] pc=316 SUB A=29 B=29 ra=num:11
+[VM 1180] pc=317 CALL A=25 B=5 C=0 ra=func
+[VM 1181] pc=318 CALL A=23 B=0 C=1 ra=func
+[VM 1182] pc=319 GETTABLE A=23 B=2 ra=func
+[VM 1183] pc=320 GETTABLE A=23 B=23 ra=type:5
+[VM 1184] pc=321 MOVE A=24 B=9 C=0 ra=type:5
+[VM 1185] pc=322 GETTABUP A=25 B=6 ra=num:6.72732e+07
+[VM 1186] pc=323 GETTABUP A=26 B=6 ra=num:11
+[VM 1187] pc=324 MOVE A=27 B=17 C=0 ra=num:8
+[VM 1188] pc=325 MOVE A=28 B=18 C=0 ra=num:8
+[VM 1189] pc=326 MOVE A=29 B=22 C=0 ra=num:10
+[VM 1190] pc=327 CALL A=25 B=5 C=0 ra=func
+[VM 1191] pc=328 CALL A=23 B=0 C=1 ra=func
+[VM 1192] pc=329 LOADBOOL A=16 B=1 C=0 ra=bool:0
+[VM 1193] pc=330 JMP A=0 C=234 ra=type:7
+[VM 1194] pc=566 TEST A=16 B=0 C=1 ra=bool:1
+[VM 1195] pc=573 FORLOOP A=10 C=67 ra=num:3
+[VM 1196] pc=130 GETTABLE A=14 B=0 ra=num:4.21082e+06
+[VM 1197] pc=131 GETTABLE A=14 B=14 C=13 ra=type:5
+[VM 1198] pc=132 GETTABUP A=15 B=6 ra=num:7
+[VM 1199] pc=133 MOVE A=16 B=14 C=0 ra=bool:1
+[VM 1200] pc=134 CALL A=15 B=2 C=2 ra=func
+[VM 1201] pc=135 LOADBOOL A=16 B=0 C=0 ra=num:8.3888e+06
+[VM 1202] pc=136 GETTABUP A=17 B=6 ra=num:0
+[VM 1203] pc=137 EQ A=0 B=15 C=17 ra=type:7
+[VM 1204] pc=193 GETTABUP A=17 B=6 ra=num:1
+[VM 1205] pc=194 EQ A=0 B=15 C=17 ra=type:7
+[VM 1206] pc=268 GETTABUP A=17 B=6 ra=num:6
+[VM 1207] pc=269 EQ A=0 B=15 C=17 ra=type:7
+[VM 1208] pc=331 GETTABUP A=17 B=6 ra=num:7
+[VM 1209] pc=332 EQ A=0 B=15 C=17 ra=type:7
+[VM 1210] pc=419 GETTABUP A=17 B=6 ra=num:8
+[VM 1211] pc=420 EQ A=0 B=15 C=17 ra=type:7
+[VM 1212] pc=494 GETTABUP A=17 B=6 ra=num:10
+[VM 1213] pc=495 EQ A=0 B=15 C=17 ra=type:7
+[VM 1214] pc=566 TEST A=16 B=0 C=1 ra=bool:0
+[VM 1215] pc=568 GETTABLE A=17 B=2 ra=num:12
+[VM 1216] pc=569 GETTABLE A=17 B=17 ra=type:5
+[VM 1217] pc=570 MOVE A=18 B=9 C=0 ra=num:0
+[VM 1218] pc=571 MOVE A=19 B=14 C=0 ra=num:257
+[VM 1219] pc=572 CALL A=17 B=3 C=1 ra=func
+[VM 1220] pc=573 FORLOOP A=10 C=67 ra=num:4
+[VM 1221] pc=130 GETTABLE A=14 B=0 ra=num:8.3888e+06
+[VM 1222] pc=131 GETTABLE A=14 B=14 C=13 ra=type:5
+[VM 1223] pc=132 GETTABUP A=15 B=6 ra=num:0
+[VM 1224] pc=133 MOVE A=16 B=14 C=0 ra=bool:0
+[VM 1225] pc=134 CALL A=15 B=2 C=2 ra=func
+[VM 1226] pc=135 LOADBOOL A=16 B=0 C=0 ra=num:1.67938e+07
+[VM 1227] pc=136 GETTABUP A=17 B=6 ra=num:36
+[VM 1228] pc=137 EQ A=0 B=15 C=17 ra=type:7
+[VM 1229] pc=193 GETTABUP A=17 B=6 ra=num:1
+[VM 1230] pc=194 EQ A=0 B=15 C=17 ra=type:7
+[VM 1231] pc=268 GETTABUP A=17 B=6 ra=num:6
+[VM 1232] pc=269 EQ A=0 B=15 C=17 ra=type:7
+[VM 1233] pc=331 GETTABUP A=17 B=6 ra=num:7
+[VM 1234] pc=332 EQ A=0 B=15 C=17 ra=type:7
+[VM 1235] pc=419 GETTABUP A=17 B=6 ra=num:8
+[VM 1236] pc=420 EQ A=0 B=15 C=17 ra=type:7
+[VM 1237] pc=494 GETTABUP A=17 B=6 ra=num:10
+[VM 1238] pc=495 EQ A=0 B=15 C=17 ra=type:7
+[VM 1239] pc=566 TEST A=16 B=0 C=1 ra=bool:0
+[VM 1240] pc=568 GETTABLE A=17 B=2 ra=num:12
+[VM 1241] pc=569 GETTABLE A=17 B=17 ra=type:5
+[VM 1242] pc=570 MOVE A=18 B=9 C=0 ra=type:5
+[VM 1243] pc=571 MOVE A=19 B=14 C=0 ra=num:8.3888e+06
+[VM 1244] pc=572 CALL A=17 B=3 C=1 ra=func
+[VM 1245] pc=573 FORLOOP A=10 C=67 ra=num:5
+[VM 1246] pc=130 GETTABLE A=14 B=0 ra=num:1.67938e+07
+[VM 1247] pc=131 GETTABLE A=14 B=14 C=13 ra=type:5
+[VM 1248] pc=132 GETTABUP A=15 B=6 ra=num:36
+[VM 1249] pc=133 MOVE A=16 B=14 C=0 ra=bool:0
+[VM 1250] pc=134 CALL A=15 B=2 C=2 ra=func
+[VM 1251] pc=135 LOADBOOL A=16 B=0 C=0 ra=num:8.38865e+06
+[VM 1252] pc=136 GETTABUP A=17 B=6 ra=num:38
+[VM 1253] pc=137 EQ A=0 B=15 C=17 ra=type:7
+[VM 1254] pc=193 GETTABUP A=17 B=6 ra=num:1
+[VM 1255] pc=194 EQ A=0 B=15 C=17 ra=type:7
+[VM 1256] pc=268 GETTABUP A=17 B=6 ra=num:6
+[VM 1257] pc=269 EQ A=0 B=15 C=17 ra=type:7
+[VM 1258] pc=331 GETTABUP A=17 B=6 ra=num:7
+[VM 1259] pc=332 EQ A=0 B=15 C=17 ra=type:7
+[VM 1260] pc=419 GETTABUP A=17 B=6 ra=num:8
+[VM 1261] pc=420 EQ A=0 B=15 C=17 ra=type:7
+[VM 1262] pc=494 GETTABUP A=17 B=6 ra=num:10
+[VM 1263] pc=495 EQ A=0 B=15 C=17 ra=type:7
+[VM 1264] pc=566 TEST A=16 B=0 C=1 ra=bool:0
+[VM 1265] pc=568 GETTABLE A=17 B=2 ra=num:12
+[VM 1266] pc=569 GETTABLE A=17 B=17 ra=type:5
+[VM 1267] pc=570 MOVE A=18 B=9 C=0 ra=type:5
+[VM 1268] pc=571 MOVE A=19 B=14 C=0 ra=num:1.67938e+07
+[VM 1269] pc=572 CALL A=17 B=3 C=1 ra=func
+[VM 1270] pc=573 FORLOOP A=10 C=67 ra=num:6
+[VM 1271] pc=574 SETTABLE A=0 C=9 ra=type:7
+[VM 1272] pc=575 GETTABLE A=10 B=0 ra=num:6
+[VM 1273] pc=576 TEST A=10 B=0 C=0 ra=type:5
+[VM 1274] pc=578 NEWTABLE A=10 B=0 C=0 ra=type:5
+[VM 1275] pc=579 LOADK A=11 B=0 C=5 ra=num:6
+[VM 1276] pc=580 LEN A=12 B=9 C=0 ra=num:1
+[VM 1277] pc=581 LOADK A=13 B=0 C=5 ra=num:6
+[VM 1278] pc=582 FORPREP A=11 C=5 ra=num:1
+[VM 1279] pc=589 FORLOOP A=11 ra=num:0
+[VM 1280] pc=583 GETTABLE A=15 B=0 ra=num:38
+[VM 1281] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1282] pc=585 TEST A=15 B=0 C=1 ra=num:1
+[VM 1283] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1284] pc=589 FORLOOP A=11 ra=num:1
+[VM 1285] pc=583 GETTABLE A=15 B=0 ra=num:1
+[VM 1286] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1287] pc=585 TEST A=15 B=0 C=1 ra=num:1
+[VM 1288] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1289] pc=589 FORLOOP A=11 ra=num:2
+[VM 1290] pc=583 GETTABLE A=15 B=0 ra=num:1
+[VM 1291] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1292] pc=585 TEST A=15 B=0 C=1 ra=num:1
+[VM 1293] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1294] pc=589 FORLOOP A=11 ra=num:3
+[VM 1295] pc=583 GETTABLE A=15 B=0 ra=num:1
+[VM 1296] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1297] pc=585 TEST A=15 B=0 C=1 ra=num:1
+[VM 1298] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1299] pc=589 FORLOOP A=11 ra=num:4
+[VM 1300] pc=583 GETTABLE A=15 B=0 ra=num:1
+[VM 1301] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1302] pc=585 TEST A=15 B=0 C=1 ra=num:1
+[VM 1303] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1304] pc=589 FORLOOP A=11 ra=num:5
+[VM 1305] pc=583 GETTABLE A=15 B=0 ra=num:1
+[VM 1306] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1307] pc=585 TEST A=15 B=0 C=1 ra=num:1
+[VM 1308] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1309] pc=589 FORLOOP A=11 ra=num:6
+[VM 1310] pc=583 GETTABLE A=15 B=0 ra=num:1
+[VM 1311] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1312] pc=585 TEST A=15 B=0 C=1 ra=nil
+[VM 1313] pc=587 LOADK A=15 B=0 C=2 ra=nil
+[VM 1314] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1315] pc=589 FORLOOP A=11 ra=num:7
+[VM 1316] pc=583 GETTABLE A=15 B=0 ra=num:0
+[VM 1317] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1318] pc=585 TEST A=15 B=0 C=1 ra=nil
+[VM 1319] pc=587 LOADK A=15 B=0 C=2 ra=nil
+[VM 1320] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1321] pc=589 FORLOOP A=11 ra=num:8
+[VM 1322] pc=583 GETTABLE A=15 B=0 ra=num:0
+[VM 1323] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1324] pc=585 TEST A=15 B=0 C=1 ra=nil
+[VM 1325] pc=587 LOADK A=15 B=0 C=2 ra=nil
+[VM 1326] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1327] pc=589 FORLOOP A=11 ra=num:9
+[VM 1328] pc=583 GETTABLE A=15 B=0 ra=num:0
+[VM 1329] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1330] pc=585 TEST A=15 B=0 C=1 ra=nil
+[VM 1331] pc=587 LOADK A=15 B=0 C=2 ra=nil
+[VM 1332] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1333] pc=589 FORLOOP A=11 ra=num:10
+[VM 1334] pc=583 GETTABLE A=15 B=0 ra=num:0
+[VM 1335] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1336] pc=585 TEST A=15 B=0 C=1 ra=nil
+[VM 1337] pc=587 LOADK A=15 B=0 C=2 ra=nil
+[VM 1338] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1339] pc=589 FORLOOP A=11 ra=num:11
+[VM 1340] pc=583 GETTABLE A=15 B=0 ra=num:0
+[VM 1341] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1342] pc=585 TEST A=15 B=0 C=1 ra=nil
+[VM 1343] pc=587 LOADK A=15 B=0 C=2 ra=nil
+[VM 1344] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1345] pc=589 FORLOOP A=11 ra=num:12
+[VM 1346] pc=583 GETTABLE A=15 B=0 ra=num:0
+[VM 1347] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1348] pc=585 TEST A=15 B=0 C=1 ra=nil
+[VM 1349] pc=587 LOADK A=15 B=0 C=2 ra=nil
+[VM 1350] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1351] pc=589 FORLOOP A=11 ra=num:13
+[VM 1352] pc=583 GETTABLE A=15 B=0 ra=num:0
+[VM 1353] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1354] pc=585 TEST A=15 B=0 C=1 ra=nil
+[VM 1355] pc=587 LOADK A=15 B=0 C=2 ra=nil
+[VM 1356] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1357] pc=589 FORLOOP A=11 ra=num:14
+[VM 1358] pc=583 GETTABLE A=15 B=0 ra=num:0
+[VM 1359] pc=584 GETTABLE A=15 B=15 C=14 ra=type:5
+[VM 1360] pc=585 TEST A=15 B=0 C=1 ra=nil
+[VM 1361] pc=587 LOADK A=15 B=0 C=2 ra=nil
+[VM 1362] pc=588 SETTABLE A=10 B=14 C=15 ra=type:5
+[VM 1363] pc=589 FORLOOP A=11 ra=num:15
+[VM 1364] pc=590 SETTABLE A=0 C=10 ra=type:7
+[VM 1365] pc=591 GETTABLE A=10 B=2 ra=type:5
+[VM 1366] pc=592 GETTABLE A=10 B=10 ra=type:5
+[VM 1367] pc=593 GETTABLE A=11 B=2 ra=num:15
+[VM 1368] pc=594 GETTABLE A=11 B=11 ra=type:5
+[VM 1369] pc=595 GETTABLE A=12 B=0 ra=num:15
+[VM 1370] pc=596 ADD A=13 B=8 ra=num:1
+[VM 1371] pc=597 CALL A=11 B=3 C=2 ra=func
+[VM 1372] pc=598 LOADK A=12 B=0 C=43 ra=num:4
+[VM 1373] pc=599 CALL A=10 B=3 C=2 ra=func
+[VM 1374] pc=600 SETTABLE A=0 C=10 ra=type:7
+[VM 1375] pc=601 LEN A=10 B=4 C=0 ra=num:14
+[VM 1376] pc=602 RETURN A=10 B=2 C=0 ra=num:2
+[VM 1377] pc=10 ADD A=3 B=3 C=4 ra=num:0
+[VM 1378] pc=11 LOADK A=4 B=0 C=2 ra=num:2
+[VM 1379] pc=12 GETTABLE A=5 B=0 ra=type:7
+[VM 1380] pc=13 LEN A=5 B=5 C=0 ra=type:5
+[VM 1381] pc=14 LOADK A=6 B=0 C=2 ra=type:5
+[VM 1382] pc=15 FORPREP A=4 C=5 ra=num:1
+[VM 1383] pc=22 FORLOOP A=4 ra=num:0
+[VM 1384] pc=23 RETURN A=3 B=2 C=0 ra=num:2
+[VM 1385] pc=25 GETTABLE A=6 B=1 ra=func
+[VM 1386] pc=26 MOVE A=7 B=5 C=0 ra=type:7
+[VM 1387] pc=27 CALL A=6 B=2 C=2 ra=func
+[VM 1388] pc=28 GETTABLE A=7 B=0 ra=type:7
+[VM 1389] pc=29 GETTABLE A=7 B=7 ra=type:5
+[VM 1390] pc=30 SELF A=7 B=7 ra=type:7
+[VM 1391] pc=31 LOADK A=9 B=0 C=13 ra=type:5
+[VM 1392] pc=32 CALL A=7 B=3 C=1 ra=func
+=== running str_split result ===
+[VM 1393] pc=33 GETTABLE A=7 B=0 ra=func
+[VM 1394] pc=34 MOVE A=8 B=6 C=0 ra=type:7
+[VM 1395] pc=35 CALL A=7 B=2 C=2 ra=func
+[VM 1396] pc=36 MOVE A=8 B=7 C=0 ra=str:'LuaS'
+[VM 1397] pc=37 CALL A=8 B=1 C=1 ra=func
+[VM 1398] pc=0 GETUPVAL A=0 B=0 C=0 ra=func
+[VM 1399] pc=1 LOADK A=8 B=0 C=5 ra=type:5
+[VM 1400] pc=2 LOADK A=9 B=0 C=7 ra=type:5
+[VM 1401] pc=3 LOADK A=10 B=0 C=8 ra=type:7
+[VM 1402] pc=4 LOADK A=11 B=0 C=6 ra=str:'p'
+[VM 1403] pc=5 CONCAT A=8 B=8 C=11 ra=str:'he'
+[VM 1404] pc=6 MOVE A=1 B=8 C=0 ra=type:7
+[VM 1405] pc=7 LOADK A=8 B=0 C=4 ra=str:'hellmQworld'
+[VM 1406] pc=8 LOADK A=9 B=0 C=3 ra=str:'ll'
+[VM 1407] pc=9 LOADK A=10 B=0 C=2 ra=str:'mQ'
+[VM 1408] pc=10 CONCAT A=8 B=8 C=10 ra=str:'q'
+[VM 1409] pc=11 GETTABLE A=2 B=0 C=8 ra=type:5
+[VM 1410] pc=12 MOVE A=3 B=1 C=0 ra=num:0
+[VM 1411] pc=13 CALL A=2 B=2 C=1 ra=nil
+E:\LuaRes\luasafe\lua_luac_dbg.exe: [string "local a = "hello world"; print(a)"]:0: attempt to call a nil value (field 
+'?')
+stack traceback:
+	[string "local a = "hello world"; print(a)"]: in local 'f2'
+	test_str_split_dbg.lua:10: in main chunk
+	[C]: in ?

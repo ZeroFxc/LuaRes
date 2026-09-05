@@ -139,22 +139,23 @@ function str_split.obfuscate_function(proto, options)
     local seg_map = {}
     for idx in pairs(string_set) do
         local s = proto.k[idx + 1]
+        if os.getenv("STR_SPLIT_DEBUG") then
+            io.stderr:write(string.format("[str_split] idx=%d s='%s' len=%d\n", idx, tostring(s), #s))
+        end
         if #s >= min_len then
             local n = choose_segments(#s)
             local parts = split_string(s, n)
+            if os.getenv("STR_SPLIT_DEBUG") then
+                io.stderr:write(string.format("  n=%d parts={%s}\n", n, table.concat(parts, "|")))
+            end
             local perm = random_perm(n)
-            -- 按乱序添加到常量池，记录正确顺序的索引
             local correct_indices = {}
-            local shuffled = {}
+            local base0 = #proto.k
             for i = 1, n do
-                shuffled[perm[i]] = parts[i]
-            end
-            for i = 1, n do
-                proto.k[#proto.k + 1] = shuffled[i]
-            end
-            local base_idx = #proto.k - n
-            for i = 1, n do
-                correct_indices[i] = base_idx + perm[i] - 1  -- 0-based
+                local pos = perm[i]
+                local lua_idx = base0 + pos
+                proto.k[lua_idx] = parts[i]
+                correct_indices[i] = base0 + pos - 1
             end
             seg_map[idx] = {indices = correct_indices, n = n}
         end
@@ -188,14 +189,17 @@ function str_split.obfuscate_function(proto, options)
             if seg_map[bx] then
                 local a = luac.GETARG_A(inst)
                 local seg = seg_map[bx]
-                -- 按正确顺序加载段到连续寄存器
+                local key_reg = tmp_base
+                -- 按正确顺序加载段到临时寄存器（不覆盖目标寄存器后续的寄存器）
                 for j = 1, seg.n do
-                    table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, a + j - 1, seg.indices[j]))
+                    table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg + j - 1, seg.indices[j]))
                 end
                 -- CONCAT 拼接
                 if seg.n >= 2 then
-                    table.insert(new_code, luac.CREATE_ABC(luac.OP_CONCAT, a, a, a + seg.n - 1))
+                    table.insert(new_code, luac.CREATE_ABC(luac.OP_CONCAT, key_reg, key_reg, key_reg + seg.n - 1))
                 end
+                -- MOVE 回目标寄存器
+                table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, a, key_reg, 0))
                 handled = true
             end
         elseif op == luac.OP_GETTABUP then

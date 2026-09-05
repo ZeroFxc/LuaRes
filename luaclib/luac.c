@@ -10,6 +10,16 @@
 #define LUACLIB_AUTO_DECRYPT 1
 #endif
 
+/* debug trace for luaclib string load/dump (macro-controlled) */
+#ifndef LUACLIB_DEBUG
+#define LUACLIB_DEBUG 0
+#endif
+#if LUACLIB_DEBUG
+#define LC_TRACE(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LC_TRACE(...)
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -209,12 +219,13 @@ static char *LoadString(UndumpState *S) {
     for (size_t i = 0; i < len; i++) s[i] = (char)LoadByte(S);
     s[len] = '\0';
 #if LUACLIB_AUTO_DECRYPT
-    /* andlua: try to decrypt strings. If decrypted text is valid, use it. */
-    if (len > 0) {
+    /* andlua: only decrypt strings when bytecode is in encrypted format */
+    if (S->encrypted && len > 0) {
         unsigned char *tmp = luac_alloc(len);
         memcpy(tmp, s, len);
         andlua_decrypt_string(tmp, len);
-        if (andlua_is_valid_text(tmp, len)) {
+        int valid = andlua_is_valid_text(tmp, len);
+        if (valid) {
             memcpy(s, tmp, len);
         }
         free(tmp);
@@ -342,12 +353,22 @@ static int CheckHeader(UndumpState *S) {
         /* andlua encrypted format: skip 0x1C, rest is standard header */
         S->encrypted = 1;
         S->pos++;
+    } else if (first == 0x1A) {
+        /* andlua encrypted format: 0x1A + "Lua..." (no 0x1B marker) */
+        S->encrypted = 1;
+        S->pos++;
+        /* signature (no 0x1B, directly "Lua") */
+        if (LoadByte(S) != 'L') return -1;
+        if (LoadByte(S) != 'u') return -1;
+        if (LoadByte(S) != 'a') return -1;
+        goto after_sig;
     }
     /* signature */
     if (LoadByte(S) != 0x1B) return -1;
     if (LoadByte(S) != 'L') return -1;
     if (LoadByte(S) != 'u') return -1;
     if (LoadByte(S) != 'a') return -1;
+after_sig:
     /* version */
     if (LoadByte(S) != 0x53) return -1;
     /* format */
@@ -448,24 +469,7 @@ static void DumpConstants(DumpState *D, luac_Proto *f) {
             case LUA_TSHRSTR:
             case LUA_TLNGSTR: {
                 const char *s = f->k_str[i];
-#if LUACLIB_AUTO_DECRYPT
-                size_t len = s ? strlen(s) : 0;
-                if (len > 0) {
-                    unsigned char *tmp = luac_alloc(len);
-                    memcpy(tmp, s, len);
-                    andlua_decrypt_string(tmp, len);
-                    if (andlua_is_valid_text(tmp, len)) {
-                        DumpString(D, (const char *)tmp);
-                    } else {
-                        DumpString(D, s);
-                    }
-                    free(tmp);
-                } else {
-                    DumpString(D, s);
-                }
-#else
                 DumpString(D, s);
-#endif
                 break;
             }
         }

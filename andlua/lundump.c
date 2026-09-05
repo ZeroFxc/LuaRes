@@ -13,6 +13,17 @@
 #include <string.h>
 #include <stdint.h>
 
+/* debug trace for string load/decrypt (macro-controlled) */
+#ifndef LUADUMP_DEBUG
+#define LUADUMP_DEBUG 0
+#endif
+#if LUADUMP_DEBUG
+#include <stdio.h>
+#define LD_TRACE(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LD_TRACE(...)
+#endif
+
 #include "lua.h"
 
 #include "ldebug.h"
@@ -163,6 +174,11 @@ static TString *LoadString (LoadState *S) {
       char tmp[LUAI_MAXSHORTLEN + 1];
       memcpy(tmp, buff, len);
       decrypt_string((unsigned char *)tmp, len);
+      LD_TRACE("[LoadString] enc=%d len=%d raw=%02x%02x%02x dec=%02x%02x%02x valid=%d\n",
+        S->encrypted, (int)len,
+        (unsigned char)buff[0], (unsigned char)buff[1%len], (unsigned char)buff[2%len],
+        (unsigned char)tmp[0], (unsigned char)tmp[1%len], (unsigned char)tmp[2%len],
+        is_valid_text((unsigned char *)tmp, len));
       if (is_valid_text((unsigned char *)tmp, len))
         memcpy(buff, tmp, len);
     }

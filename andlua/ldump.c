@@ -12,6 +12,17 @@
 
 #include <stddef.h>
 
+/* debug trace for string dump/encrypt (macro-controlled) */
+#ifndef LUADUMP_DEBUG
+#define LUADUMP_DEBUG 0
+#endif
+#if LUADUMP_DEBUG
+#include <stdio.h>
+#define LD_TRACE(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LD_TRACE(...)
+#endif
+
 #include "lua.h"
 
 #include "lobject.h"
@@ -90,7 +101,10 @@ static void DumpString (const TString *s, DumpState *D) {
       size_t step = (size_t)first + len;
       size_t length = len;
       size_t i;
-      DumpByte((int)(first ^ (len % 255)), D);
+      unsigned char enc0 = first ^ (len % 255);
+      LD_TRACE("[DumpString] len=%d plain=%02x%02x%02x enc0=%02x\n",
+        (int)len, (unsigned char)str[0], (unsigned char)str[1%len], (unsigned char)str[2%len], enc0);
+      DumpByte((int)enc0, D);
       for (i = 1; i < len; i++) {
         length += step;
         DumpByte((int)((unsigned char)str[i] ^ (length % 255)), D);

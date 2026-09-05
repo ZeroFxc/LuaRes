@@ -1,8 +1,8 @@
-LOCAL_PATH := $(call my-dir)
+﻿LOCAL_PATH := $(call my-dir)
 ROOT_PATH := $(LOCAL_PATH)
 
-# Lua static library (andlua modified)
-include $(ROOT_PATH)/andlua/Android.mk
+# Lua static library (luasafe - andlua with bugfixes)
+include $(ROOT_PATH)/luasafe/Android.mk
 
-# luajava shared library (androlua - (long,int) params, modified)
+# luajava shared library (andluanewjava)
 include $(ROOT_PATH)/andluanewjava/Android.mk
