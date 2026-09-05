@@ -66,15 +66,18 @@ local function sort_function(proto)
         local ins = code[i]
         local op = ins % 64
 
-        if op == OP_LOADK or op == OP_LOADKX then
-            local old_bx = ins >> 14
+        if op == OP_LOADK then
+            local old_bx = luac.GETARG_Bx(ins)
             if remap[old_bx] then
-                code[i] = (ins & 0x3FFF) | (remap[old_bx] << 14)
+                code[i] = luac.SETARG_Bx(ins, remap[old_bx])
             end
+        elseif op == OP_LOADKX then
+            -- LOADKX 的 Bx 未使用, 常量索引在 EXTRAARG 中
+            -- 不更新 Bx
         elseif op == OP_EXTRAARG then
-            local old_ax = ins >> 6
+            local old_ax = luac.GETARG_Ax(ins)
             if remap[old_ax] then
-                code[i] = (ins & 0x3F) | (remap[old_ax] << 6)
+                code[i] = luac.SETARG_Ax(ins, remap[old_ax])
             end
         elseif op ~= OP_CLOSURE and op ~= 30 and op ~= 39 and op ~= 40 and op ~= 42 then
             -- iABC: 检查 B 和 C
@@ -96,7 +99,8 @@ local function sort_function(proto)
                 end
             end
             if changed then
-                code[i] = (ins & 0x3F) | ((ins >> 6 & 0xFF) << 6) | (c << 14) | (b << 23)
+                code[i] = luac.SETARG_B(ins, b)
+                code[i] = luac.SETARG_C(code[i], c)
             end
         end
     end

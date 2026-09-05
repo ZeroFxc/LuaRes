@@ -22,7 +22,11 @@ end
 
 local function protect(bytecode, options)
     options = options or {}
-    math.randomseed(os.time())
+    if options.seed then
+        math.randomseed(options.seed)
+    else
+        math.randomseed(os.time())
+    end
 
     local data = bytecode
     if type(data) == "string" and data:byte(1) == string.byte('=') then

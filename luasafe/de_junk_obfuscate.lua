@@ -46,6 +46,7 @@ local function is_junk_block(code, pos, n, num_consts)
     local invalid_op_count = 0
     local high_reg_count = 0
     local bad_const_count = 0
+    local dangerous_ops = 0  -- RETURN/CALL/TAILCALL/CLOSURE 等重要指令
     for i = pos, pos + n - 1 do
         local inst = code[i]
         local op = inst % 64
@@ -55,98 +56,86 @@ local function is_junk_block(code, pos, n, num_consts)
 
         -- 无效操作码 (>46)
         if op > 46 then invalid_op_count = invalid_op_count + 1 end
-        -- 高寄存器 (>= 200)
-        if a >= 200 then high_reg_count = high_reg_count + 1 end
-        if b < 256 and b >= 200 then high_reg_count = high_reg_count + 1 end
-        if c < 256 and c >= 200 then high_reg_count = high_reg_count + 1 end
+        -- 高寄存器 (>= 100)
+        if a >= 100 then high_reg_count = high_reg_count + 1 end
+        if b < 256 and b >= 100 then high_reg_count = high_reg_count + 1 end
+        if c < 256 and c >= 100 then high_reg_count = high_reg_count + 1 end
         -- 常量索引超出范围
         if op == 1 and b >= num_consts then bad_const_count = bad_const_count + 1 end
         if b >= 256 and (b - 256) >= num_consts then bad_const_count = bad_const_count + 1 end
         if c >= 256 and (c - 256) >= num_consts then bad_const_count = bad_const_count + 1 end
+        -- 危险指令（真实代码中常见，垃圾中出现概率低）
+        if op == 36 or op == 37 or op == 38 or op == 44 then
+            dangerous_ops = dangerous_ops + 1
+        end
     end
-    -- 要求: 无效操作码 >= 20% 或 (高寄存器 >= 30% 且 坏常量 >= 10%)
+    -- 严格判断: 无效操作码 >= 25% 且 危险指令 <= 10%
     local invalid_ratio = invalid_op_count / n
+    local dangerous_ratio = dangerous_ops / n
+    if invalid_ratio >= 0.25 and dangerous_ratio <= 0.10 then
+        return true
+    end
+    -- 备选: 无效操作码 >= 15% 且 高寄存器 >= 40% 且 坏常量 >= 15%
     local high_reg_ratio = high_reg_count / (n * 3)
     local bad_const_ratio = bad_const_count / n
-    if invalid_ratio >= 0.20 then return true end
-    if high_reg_ratio >= 0.30 and bad_const_ratio >= 0.10 then return true end
+    if invalid_ratio >= 0.15 and high_reg_ratio >= 0.40 and bad_const_ratio >= 0.15 then
+        return true
+    end
     return false
 end
 
 local function remove_in_func(p)
-    local removed = 0
-    local i = 1
-    while i <= #p.code do
-        local inst = p.code[i]
-        local op = inst % 64
+    local n = #p.code
+    if n < 2 then return 0 end
 
-        -- TFORCALL 不注入垃圾
-        if op == 41 then
-            i = i + 1
-        -- 检查下一条是否是 JMP sBx=N (6-21), A=0
-        elseif i + 1 <= #p.code then
-            local next_inst = p.code[i + 1]
-            local next_op = next_inst % 64
-            local next_a = (next_inst >> 6) & 0xFF
-            if next_op == 30 and next_a == 0 then  -- JMP, A=0
-                local bx = next_inst >> 14
+    -- 第一步: 贪心扫描, 标记哪些指令保留, 哪些移除
+    local keep = {}
+    local remove_blocks = {}  -- {{start, length}, ...}
+    local i = 1
+    while i <= n do
+        keep[i] = true
+        -- 检查下一条是否是注入的 JMP: A=0, sBx=6-21
+        if i + 1 <= n then
+            local jmp_inst = p.code[i + 1]
+            local jmp_op = jmp_inst % 64
+            local jmp_a = (jmp_inst >> 6) & 0xFF
+            if jmp_op == 30 and jmp_a == 0 then
+                local bx = jmp_inst >> 14
                 local sbx = bx - 131071
-                -- luac_obfuscate 的 JMP sBx = brush+1, brush=5-20, 所以 sBx=6-21
                 if sbx >= 6 and sbx <= 21 then
-                    -- 检查 JMP 目标是否在代码范围内
-                    local jmp_target = i + 1 + sbx + 1
-                    if jmp_target <= #p.code + 1 then
-                        local junk_start = i + 2
-                        local junk_len = sbx - 1
-                    -- 检查是否是逻辑指令（有两个 JMP）
-                    local is_logical = LOGICAL_OPS[op] ~= nil
-                    if is_logical then
-                        -- 逻辑指令: 原始 + JMP1 + JMP2 + 垃圾(sbx-2 条)
-                        -- JMP1 的 sBx 应该也是 6-21, A=0
-                        if junk_start <= #p.code then
-                            local jmp2 = p.code[junk_start]
-                            local jmp2_op = jmp2 % 64
-                            local jmp2_a = (jmp2 >> 6) & 0xFF
-                            if jmp2_op == 30 and jmp2_a == 0 then
-                                local bx2 = jmp2 >> 14
-                                local sbx2 = bx2 - 131071
-                                if sbx2 >= 6 and sbx2 <= 21 then
-                                    -- 确认是逻辑指令模式
-                                    local actual_junk_start = junk_start + 1
-                                    local actual_junk_len = sbx2 - 1
-                                    if is_junk_block(p.code, actual_junk_start, actual_junk_len, #p.k) then
-                                        -- 移除 JMP1 + JMP2 + 垃圾
-                                        local remove_len = 2 + actual_junk_len
-                                        adjust_jumps_remove(p.code, i + 1, remove_len)
-                                        for j = 1, remove_len do
-                                            table.remove(p.code, i + 1)
-                                        end
-                                        removed = removed + remove_len
-                                    end
-                                end
-                            end
-                        end
-                    else
-                        -- 非逻辑指令: 原始 + JMP + 随机指令 + 垃圾(sbx-2 条)
-                        -- 检查垃圾块
+                    local junk_start = i + 2
+                    local junk_end = i + 1 + sbx  -- JMP 跳过 sbx 条
+                    if junk_end <= n then
+                        local junk_len = sbx
+                        -- 检查是否是垃圾块
                         if is_junk_block(p.code, junk_start, junk_len, #p.k) then
-                            local remove_len = 1 + junk_len  -- JMP + 垃圾
-                            adjust_jumps_remove(p.code, i + 1, remove_len)
-                            for j = 1, remove_len do
-                                table.remove(p.code, i + 1)
-                            end
-                            removed = removed + remove_len
+                            -- 标记移除
+                            table.insert(remove_blocks, {start = i + 1, length = 1 + junk_len})
+                            i = junk_end + 1  -- 跳到下一个原始指令
+                            goto continue
                         end
                     end
-                    end  -- if jmp_target
                 end
             end
-            i = i + 1
-        else
-            i = i + 1
         end
+        i = i + 1
+        ::continue::
     end
-    return removed
+
+    if #remove_blocks == 0 then return 0 end
+
+    -- 第二步: 从后往前移除, 调整跳转偏移
+    local total_removed = 0
+    for idx = #remove_blocks, 1, -1 do
+        local block = remove_blocks[idx]
+        adjust_jumps_remove(p.code, block.start, block.length)
+        for j = 1, block.length do
+            table.remove(p.code, block.start)
+        end
+        total_removed = total_removed + block.length
+    end
+
+    return total_removed
 end
 
 function de_junk_obfuscate.remove(proto, options)

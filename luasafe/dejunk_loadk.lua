@@ -75,10 +75,15 @@ local function remove_in_func(p)
         if op == 1 then  -- LOADK
             local a = (inst >> 6) & 0xFF
             local bx = inst >> 14
-            -- 垃圾 LOADK: 目标是高寄存器，且加载数字常量，且后续未使用
-            if a >= threshold then
+            -- 垃圾 LOADK: 目标是高寄存器，加载数字常量，
+            -- 且下一条指令是 LOADK 到同一寄存器（立即覆盖，之前的值肯定未使用）
+            if a >= threshold and i + 1 <= #p.code then
                 local const = p.k[bx + 1]
-                if type(const) == "number" and not reg_used_after(p.code, i + 1, a) then
+                local next_inst = p.code[i + 1]
+                local next_op = next_inst % 64
+                local next_a = (next_inst >> 6) & 0xFF
+                if type(const) == "number" and next_op == 1 and next_a == a then
+                    -- 下一条 LOADK 覆盖同一寄存器，当前 LOADK 是垃圾
                     adjust_jumps_remove(p.code, i, 1)
                     table.remove(p.code, i)
                     removed = removed + 1

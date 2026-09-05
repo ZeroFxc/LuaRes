@@ -69,9 +69,16 @@ local function remove_in_func(p)
         if op == 0 then  -- MOVE
             local a = (inst >> 6) & 0xFF
             local b = (inst >> 23) & 0x1FF
-            -- 垃圾 MOVE: 源和目标都是高寄存器，且目标后续未使用
-            if a >= threshold and b >= threshold then
-                if not reg_used_after(p.code, i + 1, a) then
+            -- 垃圾 MOVE: 源和目标都是高寄存器，
+            -- 且下一条指令写入同一目标寄存器（立即覆盖，之前的值肯定未使用）
+            if a >= threshold and b >= threshold and i + 1 <= #p.code then
+                local next_inst = p.code[i + 1]
+                local next_op = next_inst % 64
+                local next_a = (next_inst >> 6) & 0xFF
+                -- 下一条指令写入同一寄存器（A 字段是目标寄存器）
+                -- 排除 JMP（A 字段不是目标寄存器）和条件指令（下一条必须是 JMP）
+                if next_a == a and next_op ~= 30 and next_op ~= 31 and next_op ~= 32
+                   and next_op ~= 33 and next_op ~= 34 and next_op ~= 35 then
                     adjust_jumps_remove(p.code, i, 1)
                     table.remove(p.code, i)
                     removed = removed + 1

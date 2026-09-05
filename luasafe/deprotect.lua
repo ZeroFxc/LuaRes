@@ -35,8 +35,7 @@ local function clean(bytecode, options)
     end
 
     -- 2. Remove luac_obfuscate junk (JMP + random garbage)
-    -- 注意: 此模块尚不稳定, 默认禁用。可通过 options.enable_de_junk_obfuscate=true 启用
-    if options.enable_de_junk_obfuscate and not options.no_de_junk_obfuscate then
+    if not options.no_de_junk_obfuscate then
         local m = load_mod("de_junk_obfuscate")
         if m and m.remove then
             local r = m.remove(proto)
@@ -76,7 +75,9 @@ local function clean(bytecode, options)
     end
 
     -- 6. Remove junk LOADK (high register, unused)
-    if not options.no_dejunk_loadk then
+    -- Disabled by default: can expose out-of-bounds register instructions
+    -- to executable paths, causing intermittent crashes. Enable with options.enable_dejunk_loadk=true
+    if options.enable_dejunk_loadk and not options.no_dejunk_loadk then
         local m = load_mod("dejunk_loadk")
         if m and m.remove then
             local r = m.remove(proto)
@@ -86,7 +87,8 @@ local function clean(bytecode, options)
     end
 
     -- 7. Remove junk MOVE (high register, unused)
-    if not options.no_dejunk_move then
+    -- Disabled by default: same reason as dejunk_loadk
+    if options.enable_dejunk_move and not options.no_dejunk_move then
         local m = load_mod("dejunk_move")
         if m and m.remove then
             local r = m.remove(proto)
@@ -106,8 +108,7 @@ local function clean(bytecode, options)
     end
 
     -- 9. Sort constant pool (beautify, cannot restore original order)
-    -- 注意: 此模块尚不稳定, 默认禁用。可通过 options.enable_deconst_shuffle=true 启用
-    if options.enable_deconst_shuffle and not options.no_deconst_shuffle then
+    if not options.no_deconst_shuffle then
         local m = load_mod("deconst_shuffle")
         if m and m.sort then
             local r = m.sort(proto)
