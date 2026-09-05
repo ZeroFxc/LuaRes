@@ -75,32 +75,17 @@ static void DumpString (const TString *s, DumpState *D) {
     DumpByte(0, D);
   else {
     size_t len = tsslen(s);  /* string length */
-    size_t size = len + 1;   /* andlua: size field = len + 1 */
+    size_t size = len + 1;   /* size field = len + 1 */
     const char *str = getstr(s);
-    unsigned char first = (unsigned char)str[0];  /* andlua uses first char, not extra */
-    unsigned char *buff;
-    size_t i;
-    unsigned char key;
 
-    /* andlua encrypted string dump: write len bytes (full string encrypted) */
-    buff = (unsigned char *)luaM_malloc(D->L, len + 1);  /* fix: at least 1 byte for empty strings */
-    if (len > 0) {
-      buff[0] = first ^ (unsigned char)(len % 255);
-      key = (unsigned char)(len % 255);
-      for (i = 1; i < len; i++) {
-        key = (unsigned char)((len + first + key) % 255);
-        buff[i] = (unsigned char)str[i] ^ key;
-      }
-    }
-
+    /* plaintext dump: no andlua string encryption */
     if (size < 0xFF)
       DumpByte(cast_int(size), D);
     else {
       DumpByte(0xFF, D);
       DumpInt(cast_int(size), D);
     }
-    DumpBlock(buff, len, D);  /* write len bytes, not size */
-    luaM_free(D->L, buff);
+    DumpBlock(str, len, D);  /* write len bytes of plaintext */
   }
 }
 
