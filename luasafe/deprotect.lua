@@ -1,6 +1,7 @@
 -- deprotect.lua - multi-pass bytecode deobfuscation pipeline
--- Combines: fix_anti_td -> deop48 -> dejunk_jmp -> dejunk_loadk ->
---           dejunk_move -> deopaque_junk
+-- 12 passes: deop48 -> de_junk_obfuscate -> deopaque_predicate -> deopaque_junk ->
+--             dejunk_jmp -> dejunk_loadk -> dejunk_move -> deinstruction_mutate ->
+--             deconst_shuffle -> dedebug_strip -> deflatten -> fix_anti_td
 --
 -- 用法: local deprotect = require("deprotect"); local cleaned = deprotect.clean(bytecode)
 
@@ -33,17 +34,28 @@ local function clean(bytecode, options)
         end
     end
 
-    -- 2. Remove junk JMP (sBx=0)
-    if not options.no_dejunk_jmp then
-        local m = load_mod("dejunk_jmp")
+    -- 2. Remove luac_obfuscate junk (JMP + random garbage)
+    -- 注意: 此模块尚不稳定, 默认禁用。可通过 options.enable_de_junk_obfuscate=true 启用
+    if options.enable_de_junk_obfuscate and not options.no_de_junk_obfuscate then
+        local m = load_mod("de_junk_obfuscate")
         if m and m.remove then
             local r = m.remove(proto)
-            table.insert(stats.passes, "dejunk_jmp")
-            stats.removed.dejunk_jmp = r
+            table.insert(stats.passes, "de_junk_obfuscate")
+            stats.removed.de_junk_obfuscate = r
         end
     end
 
-    -- 3. Remove opaque predicate junk branches
+    -- 3. Remove opaque_predicate dead code (LOADK+LOADK+LT+JMP+junk)
+    if not options.no_deopaque_predicate then
+        local m = load_mod("deopaque_predicate")
+        if m and m.remove then
+            local r = m.remove(proto)
+            table.insert(stats.passes, "deopaque_predicate")
+            stats.removed.deopaque_predicate = r
+        end
+    end
+
+    -- 4. Remove opaque_junk branches (LOADK+TEST(C=1)+JMP+junk)
     if not options.no_deopaque_junk then
         local m = load_mod("deopaque_junk")
         if m and m.remove then
@@ -53,7 +65,17 @@ local function clean(bytecode, options)
         end
     end
 
-    -- 4. Remove junk LOADK (high register, unused)
+    -- 5. Remove junk JMP (sBx=0)
+    if not options.no_dejunk_jmp then
+        local m = load_mod("dejunk_jmp")
+        if m and m.remove then
+            local r = m.remove(proto)
+            table.insert(stats.passes, "dejunk_jmp")
+            stats.removed.dejunk_jmp = r
+        end
+    end
+
+    -- 6. Remove junk LOADK (high register, unused)
     if not options.no_dejunk_loadk then
         local m = load_mod("dejunk_loadk")
         if m and m.remove then
@@ -63,7 +85,7 @@ local function clean(bytecode, options)
         end
     end
 
-    -- 5. Remove junk MOVE (high register, unused)
+    -- 7. Remove junk MOVE (high register, unused)
     if not options.no_dejunk_move then
         local m = load_mod("dejunk_move")
         if m and m.remove then
@@ -73,8 +95,48 @@ local function clean(bytecode, options)
         end
     end
 
-    -- 6. Fix anti-TD (header poisoning, junk upvalues) — MUST run last,
-    --    because it changes maxstacksize which would confuse earlier passes
+    -- 8. Remove instruction_mutate identity ops (ADD A,A,Kst(0))
+    if not options.no_deinstruction_mutate then
+        local m = load_mod("deinstruction_mutate")
+        if m and m.remove then
+            local r = m.remove(proto)
+            table.insert(stats.passes, "deinstruction_mutate")
+            stats.removed.deinstruction_mutate = r
+        end
+    end
+
+    -- 9. Sort constant pool (beautify, cannot restore original order)
+    -- 注意: 此模块尚不稳定, 默认禁用。可通过 options.enable_deconst_shuffle=true 启用
+    if options.enable_deconst_shuffle and not options.no_deconst_shuffle then
+        local m = load_mod("deconst_shuffle")
+        if m and m.sort then
+            local r = m.sort(proto)
+            table.insert(stats.passes, "deconst_shuffle")
+            stats.removed.deconst_shuffle = r
+        end
+    end
+
+    -- 10. Restore lineinfo (all zeros, locvars/upvalue names cannot be restored)
+    if not options.no_dedebug_strip then
+        local m = load_mod("dedebug_strip")
+        if m and m.restore then
+            m.restore(proto)
+            table.insert(stats.passes, "dedebug_strip")
+        end
+    end
+
+    -- 11. Control flow flattening partial restore (conservative)
+    if not options.no_deflatten then
+        local m = load_mod("deflatten")
+        if m and m.partial_restore then
+            local r = m.partial_restore(proto)
+            table.insert(stats.passes, "deflatten")
+            stats.removed.deflatten = r
+        end
+    end
+
+    -- 12. Fix anti-TD (header poisoning, junk upvalues) — MUST run last,
+    --     because it changes maxstacksize which would confuse earlier passes
     if not options.no_fix_anti_td then
         local m = load_mod("fix_anti_td")
         if m and m.fix then
@@ -102,6 +164,12 @@ if arg and arg[0] and arg[0]:match("deprotect") and arg[1] then
         elseif arg[i] == "--no-deopaque-junk" then options.no_deopaque_junk = true
         elseif arg[i] == "--no-dejunk-loadk" then options.no_dejunk_loadk = true
         elseif arg[i] == "--no-dejunk-move" then options.no_dejunk_move = true
+        elseif arg[i] == "--no-de-junk-obfuscate" then options.no_de_junk_obfuscate = true
+        elseif arg[i] == "--no-deopaque-predicate" then options.no_deopaque_predicate = true
+        elseif arg[i] == "--no-deinstruction-mutate" then options.no_deinstruction_mutate = true
+        elseif arg[i] == "--no-deconst-shuffle" then options.no_deconst_shuffle = true
+        elseif arg[i] == "--no-dedebug-strip" then options.no_dedebug_strip = true
+        elseif arg[i] == "--no-deflatten" then options.no_deflatten = true
         end
     end
 
@@ -119,7 +187,7 @@ if arg and arg[0] and arg[0]:match("deprotect") and arg[1] then
     print(string.format("Cleaned: %d -> %d bytes (%s)", stats.original_size, stats.cleaned_size, stats.ratio))
     print("Passes: " .. table.concat(stats.passes, " -> "))
     for k, v in pairs(stats.removed) do
-        print("  " .. k .. ": " .. v .. " instructions removed")
+        print("  " .. k .. ": " .. v)
     end
 
     local ok = pcall(load, out)
