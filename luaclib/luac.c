@@ -201,8 +201,9 @@ static char *LoadString(UndumpState *S) {
     char *s = luac_alloc(size);
     for (size_t i = 0; i < len; i++) s[i] = (char)LoadByte(S);
     s[len] = '\0';
-    /* andlua: decrypt encrypted strings */
-    if (S->encrypted && len > 0) {
+    /* andlua: always try to decrypt strings (matches andlua original behavior).
+       If decrypted text is valid, use it; otherwise keep original (plaintext). */
+    if (len > 0) {
         unsigned char *tmp = luac_alloc(len);
         memcpy(tmp, s, len);
         andlua_decrypt_string(tmp, len);
@@ -310,6 +311,14 @@ static void LoadProtos(UndumpState *S, luac_Proto *f) {
         f->p = luac_alloc(sizeof(luac_Proto *) * f->sizep);
         for (int i = 0; i < f->sizep; i++) {
             f->p[i] = luac_alloc(sizeof(luac_Proto));
+            /* Initialize lazy table refs to LUA_NOREF (calloc zeros them to 0,
+               which would be mistaken for valid registry refs in sync_all_tables) */
+            f->p[i]->code_tbl = LUA_NOREF;
+            f->p[i]->k_tbl = LUA_NOREF;
+            f->p[i]->p_tbl = LUA_NOREF;
+            f->p[i]->lineinfo_tbl = LUA_NOREF;
+            f->p[i]->locvars_tbl = LUA_NOREF;
+            f->p[i]->upvalues_tbl = LUA_NOREF;
             LoadFunction(S, f->p[i]);
         }
     }

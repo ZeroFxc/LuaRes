@@ -87,6 +87,15 @@ local function protect(bytecode, options)
         end
     end
 
+    -- 7. Anti-TD decompiler protection (poison headers, strip lineinfo, junk source)
+    if not options.no_anti_td then
+        local m = load_mod("anti_td")
+        if m and m.protect then
+            m.protect(proto, options.anti_td_options)
+            table.insert(stats.passes, "anti_td")
+        end
+    end
+
     local out = luac.dump(proto)
     stats.protected_size = #out
     stats.ratio = string.format("%.1f%%", (#out / #data) * 100)
@@ -105,6 +114,7 @@ if arg and arg[0] and arg[0]:match("protect") and arg[1] and arg[2] then
         elseif arg[i] == "--no-mutate" then options.no_mutate = true
         elseif arg[i] == "--no-shuffle" then options.no_shuffle = true
         elseif arg[i] == "--no-strip" then options.no_strip = true
+        elseif arg[i] == "--no-anti-td" then options.no_anti_td = true
         end
     end
 

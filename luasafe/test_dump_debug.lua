@@ -1,0 +1,8 @@
+local luac = require("luac")
+local f = io.open("E:/LuaRes/fangtd.lua", "rb")
+local data = f:read("*a")
+f:close()
+local p = luac.undump(data, false)
+print("undump OK, main sizep=" .. p.sizep)
+local out = luac.dump(p)
+print("dump size=" .. #out)

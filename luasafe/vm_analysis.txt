@@ -1,0 +1,86 @@
+=== OP_48 Deep Analysis ===
+Total OP_48 instructions: 18009
+
+=== OP_48 A register distribution (top 10) ===
+  A=127: 18007 (100.0%)
+  A=200: 1 (0.0%)
+  A=192: 1 (0.0%)
+
+=== OP_48 B distribution (top 10) ===
+  B=343 (0x157): 657 (3.6%)
+  B=351 (0x15F): 610 (3.4%)
+  B=333 (0x14D): 561 (3.1%)
+  B=331 (0x14B): 558 (3.1%)
+  B=373 (0x175): 543 (3.0%)
+  B=323 (0x143): 543 (3.0%)
+  B=303 (0x12F): 540 (3.0%)
+  B=315 (0x13B): 493 (2.7%)
+  B=299 (0x12B): 489 (2.7%)
+  B=377 (0x179): 465 (2.6%)
+
+=== OP_48 C distribution (top 10) ===
+  C=30 (0x1E): 3725 (20.7%)
+  C=74 (0x4A): 2891 (16.1%)
+  C=50 (0x32): 2272 (12.6%)
+  C=66 (0x42): 2143 (11.9%)
+  C=62 (0x3E): 1634 (9.1%)
+  C=106 (0x6A): 1282 (7.1%)
+  C=58 (0x3A): 963 (5.3%)
+  C=54 (0x36): 640 (3.6%)
+  C=154 (0x9A): 523 (2.9%)
+  C=94 (0x5E): 490 (2.7%)
+
+=== OP_48 context patterns (top 15) ===
+  OP_48->OP_48->OP_48: 4104
+  JMP->OP_48->LOADK: 3554
+  FORPREP->OP_48->LOADK: 3536
+  JMP->OP_48->SETTABLE: 1140
+  FORPREP->OP_48->SETTABLE: 1111
+  FORPREP->OP_48->CALL: 429
+  JMP->OP_48->CALL: 408
+  JMP->OP_48->MOVE: 371
+  JMP->OP_48->OP_48: 356
+  OP_48->OP_48->RETURN: 356
+  FORPREP->OP_48->MOVE: 324
+  FORPREP->OP_48->CLOSURE: 218
+  JMP->OP_48->CLOSURE: 211
+  FORPREP->OP_48->LE: 203
+  FORPREP->OP_48->LT: 202
+
+=== VM Interpreter Functions (OP_48 density > 10%) ===
+  main/226/2: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+  main/223: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+  main/283: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+  main/161: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+  main/127: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+  main/387: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+  main/87: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+  main/317: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+  main/229: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+  main/321: 22 ins, OP_48=19 (86.4%), LOADK=0, FORPREP=0, constants=0
+
+=== First VM Function Code Dump (first 60 instructions) ===
+  [  1] GETUPVAL      A=1 B=0 C=0
+  [  2] JMP           sBx=19
+  [  3] OP_48         A=127 B=345 C=30
+  [  4] OP_48         A=127 B=329 C=50
+  [  5] OP_48         A=127 B=285 C=50
+  [  6] OP_48         A=127 B=343 C=106
+  [  7] OP_48         A=127 B=287 C=50
+  [  8] OP_48         A=127 B=289 C=74
+  [  9] OP_48         A=127 B=297 C=74
+  [ 10] OP_48         A=127 B=329 C=50
+  [ 11] OP_48         A=127 B=289 C=74
+  [ 12] OP_48         A=127 B=307 C=74
+  [ 13] OP_48         A=127 B=377 C=30
+  [ 14] OP_48         A=127 B=379 C=30
+  [ 15] OP_48         A=127 B=301 C=62
+  [ 16] OP_48         A=127 B=333 C=66
+  [ 17] OP_48         A=127 B=333 C=66
+  [ 18] OP_48         A=127 B=329 C=50
+  [ 19] OP_48         A=127 B=373 C=50
+  [ 20] OP_48         A=127 B=325 C=74
+  [ 21] OP_48         A=127 B=323 C=58
+  [ 22] RETURN        A=0 B=1 C=0
+
+Done.
