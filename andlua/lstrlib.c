@@ -1631,6 +1631,29 @@ static const luaL_Reg strlib[] = {
 };
 
 
+/* andlua extension: s[i] returns byte value, other keys fall back to string lib */
+static int str_index (lua_State *L) {
+  lua_settop(L, 2);
+  if (lua_type(L, 2) == LUA_TNUMBER) {
+    size_t len;
+    const char *s = lua_tolstring(L, 1, &len);
+    lua_Integer idx = lua_tointegerx(L, 2, NULL);
+    if (idx < 0)
+      idx = (lua_Integer)len + idx + 1;
+    if (idx < 1 || (size_t)idx > len)
+      lua_pushnil(L);
+    else
+      lua_pushinteger(L, (unsigned char)s[idx - 1]);
+  } else {
+    lua_getfield(L, LUA_REGISTRYINDEX, "string_metatable_index");
+    lua_pushvalue(L, 2);
+    lua_gettable(L, -2);
+    lua_rotate(L, -2, -1);
+    lua_settop(L, -2);
+  }
+  return 1;
+}
+
 static void createmetatable (lua_State *L) {
   lua_createtable(L, 0, 1);  /* table to be metatable for strings */
   lua_pushliteral(L, "");  /* dummy string */
@@ -1638,7 +1661,9 @@ static void createmetatable (lua_State *L) {
   lua_setmetatable(L, -2);  /* set table as metatable for strings */
   lua_pop(L, 1);  /* pop dummy string */
   lua_pushvalue(L, -2);  /* get string library */
-  lua_setfield(L, -2, "__index");  /* metatable.__index = string */
+  lua_setfield(L, LUA_REGISTRYINDEX, "string_metatable_index");  /* save for fallback */
+  lua_pushcfunction(L, str_index);
+  lua_setfield(L, -2, "__index");  /* metatable.__index = str_index */
   lua_pop(L, 1);  /* pop metatable */
 }
 
