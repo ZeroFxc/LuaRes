@@ -78,14 +78,24 @@ static void DumpString (const TString *s, DumpState *D) {
     size_t size = len + 1;   /* size field = len + 1 */
     const char *str = getstr(s);
 
-    /* plaintext dump: no andlua string encryption */
+    /* andlua encrypted string dump (inverse of decrypt_string in lundump.c) */
     if (size < 0xFF)
       DumpByte(cast_int(size), D);
     else {
       DumpByte(0xFF, D);
       DumpInt(cast_int(size), D);
     }
-    DumpBlock(str, len, D);  /* write len bytes of plaintext */
+    if (len > 0) {
+      unsigned char first = (unsigned char)str[0];
+      size_t step = (size_t)first + len;
+      size_t length = len;
+      size_t i;
+      DumpByte((int)(first ^ (len % 255)), D);
+      for (i = 1; i < len; i++) {
+        length += step;
+        DumpByte((int)((unsigned char)str[i] ^ (length % 255)), D);
+      }
+    }
   }
 }
 

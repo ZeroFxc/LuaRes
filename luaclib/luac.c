@@ -7,7 +7,7 @@
 /* Auto-decrypt andlua-encrypted strings on load/dump.
    Default OFF: strings are stored as-is.  Set to 1 to enable. */
 #ifndef LUACLIB_AUTO_DECRYPT
-#define LUACLIB_AUTO_DECRYPT 0
+#define LUACLIB_AUTO_DECRYPT 1
 #endif
 
 #include <stdio.h>
