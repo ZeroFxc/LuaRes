@@ -642,18 +642,6 @@ int callMethod(lua_State *L) {
         luaL_error(L, "can not call the function %s", methodName);
     }
 
-    /* C-layer compatibility: convert nil args to empty string for Java method calls */
-    {
-        int top = lua_gettop(L);
-        int i;
-        for (i = 1; i <= top; i++) {
-            if (lua_isnil(L, i)) {
-                lua_pushstring(L, "");
-                lua_replace(L, i);
-            }
-        }
-    }
-
     str = (*javaEnv)->NewStringUTF(javaEnv, methodName);
 
     ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, call_method,
