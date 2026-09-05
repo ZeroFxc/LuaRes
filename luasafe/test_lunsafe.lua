@@ -29,6 +29,19 @@ unsafe.TypeWrite.Double(p2, 3.14159)
 local d = unsafe.TypeRead.Double(p2)
 print("TypeRead.Double:", d)
 assert(math.abs(d - 3.14159) < 0.0001, "TypeRead.Double mismatch")
+
+-- Test Long (8 bytes) - important on Windows where long=4 bytes
+unsafe.TypeWrite.Long(p2, 0x123456789ABCDEF0)
+local lv = unsafe.TypeRead.Long(p2)
+print("TypeRead.Long:", string.format("0x%X", lv))
+assert(lv == 0x123456789ABCDEF0, "TypeRead.Long mismatch: got " .. tostring(lv))
+
+-- Test UnsignedLong
+unsafe.TypeWrite.UnsignedLong(p2, 0xFEDCBA9876543210)
+local ulv = unsafe.TypeRead.UnsignedLong(p2)
+print("TypeRead.UnsignedLong:", string.format("0x%X", ulv))
+assert(ulv == 0xFEDCBA9876543210, "TypeRead.UnsignedLong mismatch")
+
 unsafe.free(p2)
 print("TypeRead/TypeWrite OK")
 
