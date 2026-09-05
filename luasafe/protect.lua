@@ -96,7 +96,18 @@ local function protect(bytecode, options)
         end
     end
 
-    -- 8. Junk JMP instructions (JMP sBx=0, harmless NOP-like jumps)
+    -- 8. Junk LOADK instructions (load numeric constants to high registers)
+    if not options.no_junk_loadk then
+        local m = load_mod("junk_loadk")
+        if m and m.inject then
+            m.inject(proto, {
+                count = options.junk_loadk_count or 30,
+            })
+            table.insert(stats.passes, "junk_loadk")
+        end
+    end
+
+    -- 9. Junk JMP instructions (JMP sBx=0, harmless NOP-like jumps)
     if not options.no_junk_jmp then
         local m = load_mod("junk_jmp")
         if m and m.inject then
@@ -144,6 +155,8 @@ if arg and arg[0] and arg[0]:match("protect") and arg[1] and arg[2] then
         elseif arg[i]:match("^--op48%-mode=") then options.op48_mode = arg[i]:match("=(%w+)")
         elseif arg[i] == "--no-junk-jmp" then options.no_junk_jmp = true
         elseif arg[i]:match("^--junk%-jmp%-count=") then options.junk_jmp_count = tonumber(arg[i]:match("=(%d+)"))
+        elseif arg[i] == "--no-junk-loadk" then options.no_junk_loadk = true
+        elseif arg[i]:match("^--junk%-loadk%-count=") then options.junk_loadk_count = tonumber(arg[i]:match("=(%d+)"))
         end
     end
 
