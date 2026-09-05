@@ -1,0 +1,26 @@
+# Build artifacts
+libs/
+obj/
+*.o
+*.a
+*.so
+*.exe
+*.dll
+
+# IDA database files
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+*.i64
+*.idb
+
+# Python
+__pycache__/
+*.pyc
+
+# Temp
+*.tmp
+*.bak
+*~
