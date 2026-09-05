@@ -96,6 +96,30 @@ local function protect(bytecode, options)
         end
     end
 
+    -- 8. Junk JMP instructions (JMP sBx=0, harmless NOP-like jumps)
+    if not options.no_junk_jmp then
+        local m = load_mod("junk_jmp")
+        if m and m.inject then
+            m.inject(proto, {
+                count = options.junk_jmp_count or 30,
+            })
+            table.insert(stats.passes, "junk_jmp")
+        end
+    end
+
+    -- 9. OP_48 junk instructions (andlua VM ignores invalid opcode 48)
+    --    Must run last, injects at end of code / after last RETURN
+    if not options.no_op48 then
+        local m = load_mod("op48_junk")
+        if m and m.inject then
+            m.inject(proto, {
+                count = options.op48_count or 50,
+                mode = options.op48_mode or "blocks",
+            })
+            table.insert(stats.passes, "op48_junk")
+        end
+    end
+
     local out = luac.dump(proto)
     stats.protected_size = #out
     stats.ratio = string.format("%.1f%%", (#out / #data) * 100)
@@ -115,6 +139,11 @@ if arg and arg[0] and arg[0]:match("protect") and arg[1] and arg[2] then
         elseif arg[i] == "--no-shuffle" then options.no_shuffle = true
         elseif arg[i] == "--no-strip" then options.no_strip = true
         elseif arg[i] == "--no-anti-td" then options.no_anti_td = true
+        elseif arg[i] == "--no-op48" then options.no_op48 = true
+        elseif arg[i]:match("^--op48%-count=") then options.op48_count = tonumber(arg[i]:match("=(%d+)"))
+        elseif arg[i]:match("^--op48%-mode=") then options.op48_mode = arg[i]:match("=(%w+)")
+        elseif arg[i] == "--no-junk-jmp" then options.no_junk_jmp = true
+        elseif arg[i]:match("^--junk%-jmp%-count=") then options.junk_jmp_count = tonumber(arg[i]:match("=(%d+)"))
         end
     end
 

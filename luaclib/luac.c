@@ -243,7 +243,11 @@ static void LoadConstants(UndumpState *S, luac_Proto *f) {
                 case LUA_TNUMINT: f->k_num[i] = (double)LoadInteger(S); break;
                 case LUA_TSHRSTR:
                 case LUA_TLNGSTR: f->k_str[i] = LoadString(S); break;
-                default: fprintf(stderr, "luac: unknown constant tag %d\n", t); exit(1);
+                default:
+                    /* 未知常量 tag（混淆注入的垃圾），当作 nil 处理，不读取数据 */
+                    fprintf(stderr, "luac: warning: unknown constant tag %d at index %d, treating as nil\n", t, i);
+                    f->k_tag[i] = LUA_TNIL;
+                    break;
             }
         }
     }

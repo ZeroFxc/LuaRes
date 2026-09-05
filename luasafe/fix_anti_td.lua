@@ -20,12 +20,25 @@ local function fix_proto(p, is_main)
         if p.lastlinedefined < 0 then p.lastlinedefined = 0 end
     end
 
-    -- 修复 sizeupvalues 异常
-    if p.sizeupvalues > 100 then
+    -- 修复 sizeupvalues 异常（luac 库用 p.upvalues table，不是 upval_instack）
+    if p.sizeupvalues > 50 then
+        p.upvalues = {}
         p.sizeupvalues = 0
-        p.upval_instack = {}
-        p.upval_idx = {}
-        p.upval_name = {}
+    end
+
+    -- 修复异常的 upvalue 数据（instack 只能是 0 或 1）
+    if p.sizeupvalues > 0 and p.sizeupvalues <= 50 then
+        local new_uv = {}
+        for i = 1, #p.upvalues do
+            local uv = p.upvalues[i]
+            if uv.instack == 0 or uv.instack == 1 then
+                table.insert(new_uv, uv)
+            end
+        end
+        if #new_uv ~= #p.upvalues then
+            p.upvalues = new_uv
+            p.sizeupvalues = #new_uv
+        end
     end
 
     -- 修复 lineinfo：如果数量与 code 不匹配，重建为全 0
