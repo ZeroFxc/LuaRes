@@ -117,8 +117,10 @@ function str_encrypt.encrypt_function(proto, options)
 
     -- 计算寄存器分配（用足够高的寄存器避免冲突）
     local max_reg = calc_max_reg(proto)
-    local dec_reg = math.min(max_reg + 10, 240)    -- CALL 用的函数寄存器
+    local dec_reg = math.min(max_reg + 10, 235)    -- CALL 用的函数寄存器
     local arg_reg = dec_reg + 1                      -- 参数寄存器
+    local table_reg = dec_reg + 2                    -- GETTABUP 临时表寄存器
+    local key_reg = dec_reg + 3                      -- GETTABUP 临时 key 寄存器
 
     -- 构造解密函数并添加到 proto.p
     local dec_proto = make_decrypt_proto(key)
@@ -128,10 +130,27 @@ function str_encrypt.encrypt_function(proto, options)
         dec_proto_idx = #proto.p - 1  -- 0-based
     end
 
+    -- 判断 RK 值是否是被加密的字符串常量（RK >= 256 时常量索引为 RK-256）
+    local function is_enc_rk(rk)
+        local idx = (rk >= 256) and (rk - 256) or rk
+        for _, i in ipairs(string_indices) do
+            if idx == i then return true end
+        end
+        return false
+    end
+
+    -- 发射解密序列：src_reg 中的加密字符串 -> dst_reg
+    local function emit_decrypt(code, src_reg, dst_reg)
+        table.insert(code, luac.CREATE_ABx(luac.OP_CLOSURE, dec_reg, dec_proto_idx))
+        table.insert(code, luac.CREATE_ABC(luac.OP_MOVE, arg_reg, src_reg, 0))
+        table.insert(code, luac.CREATE_ABC(luac.OP_CALL, dec_reg, 2, 2))
+        table.insert(code, luac.CREATE_ABC(luac.OP_MOVE, dst_reg, dec_reg, 0))
+    end
+
     -- 构建新的指令序列
     local new_code = {}
 
-    -- 复制原始代码，替换字符串 LOADK
+    -- 复制原始代码，替换字符串 LOADK 和 GETTABUP
     for i = 1, #proto.code do
         local inst = proto.code[i]
         local op = luac.GET_OPCODE(inst)
@@ -145,14 +164,40 @@ function str_encrypt.encrypt_function(proto, options)
                 local a = luac.GETARG_A(inst)
                 -- 1. LOADK a, bx （加载加密字符串到 a）
                 table.insert(new_code, inst)
-                -- 2. CLOSURE dec_reg, dec_proto_idx （创建解密函数闭包）
-                table.insert(new_code, luac.CREATE_ABx(luac.OP_CLOSURE, dec_reg, dec_proto_idx))
-                -- 3. MOVE arg_reg, a （参数放到 arg_reg）
-                table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, arg_reg, a, 0))
-                -- 4. CALL dec_reg, 2, 2 （调用解密函数，1个参数，1个返回值到 dec_reg）
-                table.insert(new_code, luac.CREATE_ABC(luac.OP_CALL, dec_reg, 2, 2))
-                -- 5. MOVE a, dec_reg （把结果移回 a）
-                table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, a, dec_reg, 0))
+                -- 2-5. 解密 a -> a
+                emit_decrypt(new_code, a, a)
+            else
+                table.insert(new_code, inst)
+            end
+        elseif op == luac.OP_GETTABUP then
+            local a = luac.GETARG_A(inst)
+            local b = luac.GETARG_B(inst)
+            local c = luac.GETARG_C(inst)
+            if is_enc_rk(c) then
+                local kidx = (c >= 256) and (c - 256) or c
+                -- GETUPVAL table_reg, b （获取 upvalue 表）
+                table.insert(new_code, luac.CREATE_ABC(luac.OP_GETUPVAL, table_reg, b, 0))
+                -- LOADK key_reg, kidx （加载加密的 key）
+                table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg, kidx))
+                -- 解密 key_reg -> key_reg
+                emit_decrypt(new_code, key_reg, key_reg)
+                -- GETTABLE a, table_reg, key_reg （用解密后的 key 获取值）
+                table.insert(new_code, luac.CREATE_ABC(luac.OP_GETTABLE, a, table_reg, key_reg))
+            else
+                table.insert(new_code, inst)
+            end
+        elseif op == luac.OP_GETTABLE then
+            local a = luac.GETARG_A(inst)
+            local b = luac.GETARG_B(inst)
+            local c = luac.GETARG_C(inst)
+            if is_enc_rk(c) then
+                local kidx = c - 256
+                -- LOADK key_reg, kidx （加载加密的 key）
+                table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg, kidx))
+                -- 解密 key_reg -> key_reg
+                emit_decrypt(new_code, key_reg, key_reg)
+                -- GETTABLE a, b, key_reg （用解密后的 key 获取值，key_reg 是寄存器）
+                table.insert(new_code, luac.CREATE_ABC(luac.OP_GETTABLE, a, b, key_reg))
             else
                 table.insert(new_code, inst)
             end
@@ -176,7 +221,7 @@ function str_encrypt.encrypt_function(proto, options)
         proto.lineinfo = new_lineinfo
     end
     -- 更新 maxstacksize
-    proto.maxstacksize = math.min(math.max(proto.maxstacksize, arg_reg + 1), 250)
+    proto.maxstacksize = math.min(math.max(proto.maxstacksize, key_reg + 1), 250)
 
     return #loadks
 end
