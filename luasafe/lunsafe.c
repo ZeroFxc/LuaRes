@@ -660,8 +660,8 @@ static int lasm_replaceInst(lua_State *L) {
     luaL_checktype(L, 2, LUA_TUSERDATA);
     Instruction *newcode = (Instruction *)lua_touserdata(L, 2);
     int count = (int)luaL_checkinteger(L, 3);
-    if (f->code != NULL) luaM_freearray(L, f->code, f->sizecode);
-    Instruction *code = luaM_newvector(L, count, Instruction);
+    if (f->code != NULL) free(f->code);
+    Instruction *code = (Instruction *)malloc(count * sizeof(Instruction));
     f->code = code;
     memcpy(code, newcode, count * sizeof(Instruction));
     f->sizecode = count;
