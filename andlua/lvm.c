@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** $Id: lvm.c,v 2.268 2016/02/05 19:59:14 roberto Exp $
 ** Lua virtual machine
 ** See Copyright Notice in lua.h
@@ -787,6 +787,16 @@ void luaV_finishOp (lua_State *L) {
 #define LOGD(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #endif
 
+/* VM instruction trace debug. Set to 1 to enable, recompile. */
+#ifndef LUA_VM_DEBUG
+#define LUA_VM_DEBUG 0
+#endif
+
+#if LUA_VM_DEBUG
+#include <stdio.h>
+static int vm_trace_count = 0;
+#define VM_TRACE_MAX 3000
+#endif
 
 /* andlua tforeach iterator: C closure with 1 upvalue = current key */
 static int tforeach_iter (lua_State *L) {
@@ -834,6 +844,27 @@ void luaV_execute (lua_State *L) {
     Instruction i;
     StkId ra;
     vmfetch();
+#if LUA_VM_DEBUG
+    if (vm_trace_count < VM_TRACE_MAX) {
+      int pc = (int)(ci->u.l.savedpc - 1 - cl->p->code);
+      int op = GET_OPCODE(i);
+      const char *opname = (op < 47) ? luaP_opnames[op] : "??";
+      fprintf(stderr, "[VM %d] pc=%d %s A=%d", vm_trace_count, pc, opname, GETARG_A(i));
+      if (op <= 46) {
+        int b = GETARG_B(i), c = GETARG_C(i);
+        if (b < 255) fprintf(stderr, " B=%d", b);
+        if (c < 255) fprintf(stderr, " C=%d", c);
+      }
+      if (ttisnumber(ra)) fprintf(stderr, " ra=num:%g", nvalue(ra));
+      else if (ttisstring(ra)) fprintf(stderr, " ra=str:'%s'", getstr(tsvalue(ra)));
+      else if (ttisfunction(ra)) fprintf(stderr, " ra=func");
+      else if (ttisnil(ra)) fprintf(stderr, " ra=nil");
+      else if (ttisboolean(ra)) fprintf(stderr, " ra=bool:%d", bvalue(ra));
+      else fprintf(stderr, " ra=type:%d", ttype(ra));
+      fprintf(stderr, "\n");
+      vm_trace_count++;
+    }
+#endif
     vmdispatch (GET_OPCODE(i)) {
       vmcase(OP_MOVE) {
         setobjs2s(L, ra, RB(i));
@@ -1457,4 +1488,7 @@ void luaV_execute (lua_State *L) {
 }
 
 /* }================================================================== */
+
+
+
 

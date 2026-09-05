@@ -3,6 +3,13 @@
 ** Equivalent to com.nwdxlgzs.luac53support Java library
 ** Supports: undump, dump, Proto editing, Instruction manipulation
 */
+
+/* Auto-decrypt andlua-encrypted strings on load/dump.
+   Default OFF: strings are stored as-is.  Set to 1 to enable. */
+#ifndef LUACLIB_AUTO_DECRYPT
+#define LUACLIB_AUTO_DECRYPT 0
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -201,8 +208,8 @@ static char *LoadString(UndumpState *S) {
     char *s = luac_alloc(size);
     for (size_t i = 0; i < len; i++) s[i] = (char)LoadByte(S);
     s[len] = '\0';
-    /* andlua: always try to decrypt strings (matches andlua original behavior).
-       If decrypted text is valid, use it; otherwise keep original (plaintext). */
+#if LUACLIB_AUTO_DECRYPT
+    /* andlua: try to decrypt strings. If decrypted text is valid, use it. */
     if (len > 0) {
         unsigned char *tmp = luac_alloc(len);
         memcpy(tmp, s, len);
@@ -212,6 +219,7 @@ static char *LoadString(UndumpState *S) {
         }
         free(tmp);
     }
+#endif
     return s;
 }
 
@@ -440,9 +448,9 @@ static void DumpConstants(DumpState *D, luac_Proto *f) {
             case LUA_TSHRSTR:
             case LUA_TLNGSTR: {
                 const char *s = f->k_str[i];
+#if LUACLIB_AUTO_DECRYPT
                 size_t len = s ? strlen(s) : 0;
                 if (len > 0) {
-                    /* try andlua decrypt first; if result is valid text, use it */
                     unsigned char *tmp = luac_alloc(len);
                     memcpy(tmp, s, len);
                     andlua_decrypt_string(tmp, len);
@@ -455,6 +463,9 @@ static void DumpConstants(DumpState *D, luac_Proto *f) {
                 } else {
                     DumpString(D, s);
                 }
+#else
+                DumpString(D, s);
+#endif
                 break;
             }
         }

@@ -16,43 +16,6 @@ local function xor_crypt(s, key)
     return table.concat(bytes)
 end
 
--- andlua 内置字符串解密（和 lundump.c 的 decrypt_string 一致）
-local function andlua_decrypt_string(s)
-    local len = #s
-    if len == 0 then return s end
-    local bytes = {string.byte(s, 1, len)}
-    local first = bytes[1] ~ (len % 255)
-    bytes[1] = first
-    local step = first + len
-    local length = len
-    for i = 2, len do
-        length = length + step
-        bytes[i] = bytes[i] ~ (length % 255)
-    end
-    return string.char(table.unpack(bytes))
-end
-
--- 检查是否是有效文本（简单版：没有 0 字节，主要是可打印 ASCII）
-local function is_valid_text(s)
-    for i = 1, #s do
-        local b = string.byte(s, i)
-        if b == 0 then return false end
-        if b < 0x20 and b ~= 0x09 and b ~= 0x0A and b ~= 0x0D then return false end
-        if b == 0x7F then return false end
-    end
-    return true
-end
-
--- 确保字符串是明文：如果是 andlua 加密的，先解密
-local function ensure_plaintext(s)
-    if #s == 0 then return s end
-    local decrypted = andlua_decrypt_string(s)
-    if is_valid_text(decrypted) then
-        return decrypted
-    end
-    return s  -- 已经是明文
-end
-
 -- 递归收集所有 proto（避免处理时添加新函数导致无限递归）
 local function collect_protos(proto, list)
     list = list or {}
@@ -147,11 +110,6 @@ function str_encrypt.encrypt_function(proto, options)
     local loadks, string_indices = find_string_loadks(proto)
     if #string_indices == 0 then return 0 end
 
-    -- 先确保所有字符串是明文（解密 andlua 内置加密）
-    for _, idx in ipairs(string_indices) do
-        proto.k[idx + 1] = ensure_plaintext(proto.k[idx + 1])
-    end
-
     -- 加密所有字符串常量
     for _, idx in ipairs(string_indices) do
         proto.k[idx + 1] = xor_crypt(proto.k[idx + 1], key)
@@ -159,10 +117,8 @@ function str_encrypt.encrypt_function(proto, options)
 
     -- 计算寄存器分配（用足够高的寄存器避免冲突）
     local max_reg = calc_max_reg(proto)
-    local func_save = math.min(max_reg + 10, 240)  -- 保存解密函数的安全寄存器
-    local dec_reg = func_save + 1                       -- CALL 用的函数寄存器
-    local arg_reg = dec_reg + 1                          -- 参数寄存器
-    -- ret_reg = dec_reg (CALL 返回值存到 dec_reg)
+    local dec_reg = math.min(max_reg + 10, 240)    -- CALL 用的函数寄存器
+    local arg_reg = dec_reg + 1                      -- 参数寄存器
 
     -- 构造解密函数并添加到 proto.p
     local dec_proto = make_decrypt_proto(key)
@@ -174,9 +130,6 @@ function str_encrypt.encrypt_function(proto, options)
 
     -- 构建新的指令序列
     local new_code = {}
-
-    -- 开头插入：CLOSURE func_save, dec_proto_idx （解密函数保存到安全寄存器）
-    table.insert(new_code, luac.CREATE_ABx(luac.OP_CLOSURE, func_save, dec_proto_idx))
 
     -- 复制原始代码，替换字符串 LOADK
     for i = 1, #proto.code do
@@ -192,8 +145,8 @@ function str_encrypt.encrypt_function(proto, options)
                 local a = luac.GETARG_A(inst)
                 -- 1. LOADK a, bx （加载加密字符串到 a）
                 table.insert(new_code, inst)
-                -- 2. MOVE dec_reg, func_save （把解密函数移到 CALL 寄存器）
-                table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, dec_reg, func_save, 0))
+                -- 2. CLOSURE dec_reg, dec_proto_idx （创建解密函数闭包）
+                table.insert(new_code, luac.CREATE_ABx(luac.OP_CLOSURE, dec_reg, dec_proto_idx))
                 -- 3. MOVE arg_reg, a （参数放到 arg_reg）
                 table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, arg_reg, a, 0))
                 -- 4. CALL dec_reg, 2, 2 （调用解密函数，1个参数，1个返回值到 dec_reg）
@@ -214,6 +167,14 @@ function str_encrypt.encrypt_function(proto, options)
     end
 
     proto.code = new_code
+    -- 同步 lineinfo 长度，使其和 code 匹配（新增指令行号用 0 填充）
+    if proto.lineinfo then
+        local new_lineinfo = {}
+        for i = 1, #new_code do
+            new_lineinfo[i] = proto.lineinfo[i] or 0
+        end
+        proto.lineinfo = new_lineinfo
+    end
     -- 更新 maxstacksize
     proto.maxstacksize = math.min(math.max(proto.maxstacksize, arg_reg + 1), 250)
 
