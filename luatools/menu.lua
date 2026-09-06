@@ -213,10 +213,30 @@ local function get_fn(mod, mode)
     end
 end
 
-local function compile_source(src)
-    local func = load(src)
-    local bc = string.dec(string.dump(func))
-    return luac.undump(bc, false)
+local function compile_source(data)
+    -- 尝试1: 作为Lua源码加载
+    local func, err = load(data)
+    if func then
+        local bc = string.dec(string.dump(func))
+        return luac.undump(bc, false)
+    end
+    -- 尝试2: 作为andlua加密字节码(string.dec解密壳)
+    local ok, dec = pcall(string.dec, data)
+    if ok and dec and #dec > 0 then
+        local ok2, proto = pcall(luac.undump, dec, false)
+        if ok2 and proto then return proto end
+    end
+    -- 尝试3: 作为未加密字节码直接加载
+    local ok3, proto2 = pcall(luac.undump, data, false)
+    if ok3 and proto2 then return proto2 end
+    -- 尝试4: 作为源码文件路径读取
+    local fin = io.open(data, 'rb')
+    if fin then
+        local src = fin:read('*a')
+        fin:close()
+        return compile_source(src)
+    end
+    error('无法解析输入: 不是有效的Lua源码、字节码或文件路径')
 end
 
 local function execute(mode, modules, input, output)
@@ -233,12 +253,7 @@ local function execute(mode, modules, input, output)
     local data = fin:read('*a')
     fin:close()
 
-    local proto
-    if mode == 'reverse' then
-        proto = luac.undump(data, false)
-    else
-        proto = compile_source(data)
-    end
+    local proto = compile_source(data)
 
     local total = 0
     for _, name in ipairs(modules) do

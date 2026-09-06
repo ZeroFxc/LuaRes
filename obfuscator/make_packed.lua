@@ -1,0 +1,6 @@
+local f = load('print("hello from packed")')
+local d = string.dump(f)
+local out = io.open('E:/LuaRes/obfuscator/packed.luac', 'wb')
+out:write(d)
+out:close()
+print('packed size:', #d)
