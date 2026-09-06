@@ -170,11 +170,13 @@ typedef struct {
     size_t pos;
     size_t len;
     int encrypted;  /* 1 = andlua encrypted strings */
+    int error;  /* set when read goes past end of buffer */
 } UndumpState;
 
 static unsigned char LoadByte(UndumpState *S) {
     if (S->pos >= S->len) {
-        /* tolerate: packers may corrupt sizecode; zero-fill remainder */
+        S->error = 1;
+        S->pos++;
         return 0;
     }
     return S->buf[S->pos++];
@@ -208,12 +210,15 @@ static long long LoadInteger(UndumpState *S) {
     return v;
 }
 
+static int g_longfmt_short = 0;  /* count strings using 0xFF format but size <= 253 */
 static char *LoadString(UndumpState *S) {
     size_t size = LoadByte(S);
+    int used_longfmt = (size == 0xFF);
     if (size == 0xFF) {
         size = 0;
         for (int i = 0; i < 4; i++) size |= ((size_t)LoadByte(S)) << (i * 8);
     }
+    if (used_longfmt && size <= 253) g_longfmt_short++;
     if (size == 0) return NULL;
     size_t len = size - 1;  /* size includes null terminator, but only len bytes stored */
     char *s = luac_alloc(size);
@@ -335,6 +340,7 @@ static void LoadUpvalues(UndumpState *S, luac_Proto *f) {
 }
 
 static void LoadFunction(UndumpState *S, luac_Proto *f) {
+    size_t func_start = S->pos;
     f->source = LoadString(S);
     f->linedefined = LoadInt(S);
     f->lastlinedefined = LoadInt(S);
@@ -342,9 +348,11 @@ static void LoadFunction(UndumpState *S, luac_Proto *f) {
     f->is_vararg = LoadByte(S);
     f->maxstacksize = LoadByte(S);
 #if LUACLIB_DEBUG
-    fprintf(stderr, "[luac] LoadFunction: source='%s' line=%d-%d numparams=%d vararg=%d maxstack=%d\n",
-            f->source ? f->source : "(null)", f->linedefined, f->lastlinedefined,
-            f->numparams, f->is_vararg, f->maxstacksize);
+    if (func_start >= 11200 && func_start <= 11400) {
+        fprintf(stderr, "[luac] LoadFunction start=%zu source='%s' line=%d-%d np=%d va=%d ms=%d\n",
+                func_start, f->source ? f->source : "(null)", f->linedefined, f->lastlinedefined,
+                f->numparams, f->is_vararg, f->maxstacksize);
+    }
 #endif
     LoadCode(S, f);
     LoadConstants(S, f);
@@ -491,12 +499,19 @@ static void DumpInteger(DumpState *D, long long v) {
     for (int i = 0; i < 8; i++) DumpByte(D, buf[i]);
 }
 
+static int g_dump_empty_str = 0;
 static void DumpString(DumpState *D, const char *s) {
     if (!s) {
         DumpByte(D, 0);
         return;
     }
     size_t len = strlen(s);
+    if (len == 0) {
+        g_dump_empty_str++;
+#if LUACLIB_DEBUG
+        if (g_dump_empty_str <= 5) fprintf(stderr, "[DumpString] empty string at pos=%zu\n", D->pos);
+#endif
+    }
 #if LUACLIB_DEBUG
     fprintf(stderr, "[luac] DumpString: len=%zu '%s'\n", len, s);
 #endif
@@ -689,7 +704,8 @@ static void create_locvars_table(lua_State *L, luac_Proto *f) {
     lua_newtable(L);
     for (int i = 0; i < f->sizelocvars; i++) {
         lua_newtable(L);
-        lua_pushstring(L, f->locvar_name[i] ? f->locvar_name[i] : "");
+        if (f->locvar_name[i]) lua_pushstring(L, f->locvar_name[i]);
+        else lua_pushnil(L);
         lua_setfield(L, -2, "varname");
         lua_pushinteger(L, f->locvar_startpc[i]);
         lua_setfield(L, -2, "startpc");
@@ -703,7 +719,8 @@ static void create_upvalues_table(lua_State *L, luac_Proto *f) {
     lua_newtable(L);
     for (int i = 0; i < f->sizeupvalues; i++) {
         lua_newtable(L);
-        lua_pushstring(L, f->upval_name[i] ? f->upval_name[i] : "");
+        if (f->upval_name[i]) lua_pushstring(L, f->upval_name[i]);
+        else lua_pushnil(L);
         lua_setfield(L, -2, "name");
         lua_pushinteger(L, f->upval_instack[i]);
         lua_setfield(L, -2, "instack");
@@ -858,7 +875,8 @@ static void sync_locvars_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
         for (int i = 0; i < n; i++) {
             lua_rawgeti(L, -1, i + 1);
             lua_getfield(L, -1, "varname");
-            f->locvar_name[i] = luac_strdup(lua_tostring(L, -1));
+            if (lua_isnil(L, -1)) f->locvar_name[i] = NULL;
+            else f->locvar_name[i] = luac_strdup(lua_tostring(L, -1));
             lua_pop(L, 1);
             lua_getfield(L, -1, "startpc");
             f->locvar_startpc[i] = (int)lua_tointeger(L, -1);
@@ -889,7 +907,8 @@ static void sync_upvalues_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
         for (int i = 0; i < n; i++) {
             lua_rawgeti(L, -1, i + 1);
             lua_getfield(L, -1, "name");
-            f->upval_name[i] = luac_strdup(lua_tostring(L, -1));
+            if (lua_isnil(L, -1)) f->upval_name[i] = NULL;
+            else f->upval_name[i] = luac_strdup(lua_tostring(L, -1));
             lua_pop(L, 1);
             lua_getfield(L, -1, "instack");
             f->upval_instack[i] = (unsigned char)lua_tointeger(L, -1);
@@ -1046,7 +1065,11 @@ static int proto_index(lua_State *L) {
     if (strcmp(key, "maxstacksize") == 0) { lua_pushinteger(L, f->maxstacksize); return 1; }
     if (strcmp(key, "linedefined") == 0) { lua_pushinteger(L, f->linedefined); return 1; }
     if (strcmp(key, "lastlinedefined") == 0) { lua_pushinteger(L, f->lastlinedefined); return 1; }
-    if (strcmp(key, "source") == 0) { lua_pushstring(L, f->source ? f->source : ""); return 1; }
+    if (strcmp(key, "source") == 0) {
+        if (f->source) lua_pushstring(L, f->source);
+        else lua_pushnil(L);
+        return 1;
+    }
 
     lua_pushnil(L);
     return 1;
@@ -1063,7 +1086,11 @@ static int proto_newindex(lua_State *L) {
     if (strcmp(key, "lastlinedefined") == 0) { f->lastlinedefined = (int)luaL_checkinteger(L, 3); return 0; }
     if (strcmp(key, "source") == 0) {
         free(f->source);
-        f->source = luac_strdup(luaL_checkstring(L, 3));
+        if (lua_isnil(L, 3)) {
+            f->source = NULL;
+        } else {
+            f->source = luac_strdup(luaL_checkstring(L, 3));
+        }
         return 0;
     }
     /* code/k/p/lineinfo/locvars/upvalues are table references;
@@ -1150,6 +1177,7 @@ static int luac_undump(lua_State *L) {
     S.pos = 0;
     S.len = len;
     S.encrypted = 0;
+    S.error = 0;
 
     if (CheckHeader(&S) != 0) {
         return luaL_error(L, "luac.undump: invalid bytecode header");
@@ -1162,9 +1190,21 @@ static int luac_undump(lua_State *L) {
     luac_Proto *f = luac_alloc(sizeof(luac_Proto));
     LoadFunction(&S, f);
 
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] undump done: parsed=%zu total=%zu tail=%zu longfmt_short=%d\n", S.pos, S.len, S.len - S.pos, g_longfmt_short);
+#endif
+
     push_proto(L, f);
     /* f is now owned by userdata; don't free */
     return 1;
+}
+
+static int g_null_src, g_empty_src, g_other_src;
+static void count_source(luac_Proto *pp) {
+    if (!pp->source) g_null_src++;
+    else if (pp->source[0] == 0) g_empty_src++;
+    else g_other_src++;
+    for (int i = 0; i < pp->sizep; i++) count_source(pp->p[i]);
 }
 
 static int luac_dump(lua_State *L) {
@@ -1172,6 +1212,12 @@ static int luac_dump(lua_State *L) {
 
     /* sync all Lua tables back to C */
     sync_all_tables(L, f);
+
+    g_null_src = g_empty_src = g_other_src = 0;
+    count_source(f);
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[dump debug] null_src=%d empty_src=%d other_src=%d\n", g_null_src, g_empty_src, g_other_src);
+#endif
 
     DumpState D;
     D.buf = NULL;
