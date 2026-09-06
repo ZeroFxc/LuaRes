@@ -194,8 +194,10 @@ local function file_menu(mode, default_input, default_output)
     local def_out = default_output or ((mode == 'forward') and 'output.luac' or 'output.lua')
     local input = ask('输入文件 (默认 ' .. def_in .. '): ')
     if input == '' then input = def_in end
+    input = input:gsub('^["\']', ''):gsub('["\']$', '')
     local output = ask('输出文件 (默认 ' .. def_out .. '): ')
     if output == '' then output = def_out end
+    output = output:gsub('^["\']', ''):gsub('["\']$', '')
     return input, output
 end
 

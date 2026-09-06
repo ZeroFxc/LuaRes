@@ -1,0 +1,6 @@
+1
+
+"..\obfuscator\hello.lua"
+"..\obfuscator\hello_out2.luac"
+
+0
