@@ -92,26 +92,62 @@ local function ask(prompt)
     return io.read('*l')
 end
 
-local function mode_menu()
+local CONFIG_FILE = 'E:/LuaRes/luatools/menu_config.lua'
+
+local function save_config(mode, modules, input, output)
+    local f = io.open(CONFIG_FILE, 'w')
+    if not f then return end
+    f:write('return {\n')
+    f:write(string.format('  mode = %q,\n', mode))
+    f:write('  modules = {')
+    for i, m in ipairs(modules) do
+        if i > 1 then f:write(', ') end
+        f:write(string.format('%q', m))
+    end
+    f:write('},\n')
+    f:write(string.format('  input = %q,\n', input or ''))
+    f:write(string.format('  output = %q,\n', output or ''))
+    f:write('}\n')
+    f:close()
+end
+
+local function load_config()
+    local f = io.open(CONFIG_FILE, 'r')
+    if not f then return nil end
+    local content = f:read('*a')
+    f:close()
+    local ok, cfg = pcall(load(content))
+    if ok and type(cfg) == 'table' then return cfg end
+    return nil
+end
+
+local function mode_menu(default_mode)
     clear_screen()
     print_header('选择模式')
     print('  [1] 混淆 (正向)')
     print('  [2] 去混淆 (反向)')
     print('  [0] 退出')
+    if default_mode then
+        print('  (上次: ' .. (default_mode == 'forward' and '混淆' or '去混淆') .. ')')
+    end
     print()
-    local choice = ask('请选择: ')
+    local choice = ask('请选择 (回车用上次): ')
+    if choice == '' and default_mode then return default_mode end
     if choice == '1' then return 'forward'
     elseif choice == '2' then return 'reverse'
     elseif choice == '0' then os.exit(0)
-    else return mode_menu() end
+    else return mode_menu(default_mode) end
 end
 
-local function module_menu(mode)
+local function module_menu(mode, saved_modules)
     local order = (mode == 'forward') and FORWARD_ORDER or REVERSE_ORDER
     local selected = {}
     local default_set = {}
     if mode == 'forward' then
         for _, m in ipairs(DEFAULT_FORWARD) do default_set[m] = true end
+    end
+    if saved_modules then
+        for _, m in ipairs(saved_modules) do default_set[m] = true end
     end
     for _, m in ipairs(order) do selected[m] = default_set[m] or false end
 
@@ -151,15 +187,15 @@ local function module_menu(mode)
     end
 end
 
-local function file_menu(mode)
+local function file_menu(mode, default_input, default_output)
     clear_screen()
     print_header('文件路径')
-    local default_in = (mode == 'forward') and 'input.lua' or 'input.luac'
-    local default_out = (mode == 'forward') and 'output.luac' or 'output.lua'
-    local input = ask('输入文件 (默认 ' .. default_in .. '): ')
-    if input == '' then input = default_in end
-    local output = ask('输出文件 (默认 ' .. default_out .. '): ')
-    if output == '' then output = default_out end
+    local def_in = default_input or ((mode == 'forward') and 'input.lua' or 'input.luac')
+    local def_out = default_output or ((mode == 'forward') and 'output.luac' or 'output.lua')
+    local input = ask('输入文件 (默认 ' .. def_in .. '): ')
+    if input == '' then input = def_in end
+    local output = ask('输出文件 (默认 ' .. def_out .. '): ')
+    if output == '' then output = def_out end
     return input, output
 end
 
@@ -236,19 +272,23 @@ local function execute(mode, modules, input, output)
     print(string.format('输出: %s (%d bytes)', output, #out_bc))
     print(string.format('总计变更: %d', total))
     print()
+    save_config(mode, modules, input, output)
     ask('按回车返回主菜单...')
 end
 
 local function main()
+    local cfg = load_config()
     while true do
-        local mode = mode_menu()
-        local modules = module_menu(mode)
+        local mode = mode_menu(cfg and cfg.mode)
+        local saved_mods = (cfg and cfg.mode == mode) and cfg.modules or nil
+        local modules = module_menu(mode, saved_mods)
         if #modules == 0 then
             print('未选择任何模块!')
             ask('按回车继续...')
         else
-            local input, output = file_menu(mode)
+            local input, output = file_menu(mode, cfg and cfg.input, cfg and cfg.output)
             execute(mode, modules, input, output)
+            cfg = load_config()  -- 刷新配置
         end
     end
 end
