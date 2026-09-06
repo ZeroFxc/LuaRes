@@ -1,26 +1,14 @@
--- test string.dec + load with built-in encryption
-local function f()
-  print("hello world from dumped function")
-  local t = {key = "value"}
-  print(t.key)
+local f = io.open('C:/Users/ruilo/Downloads/main(3).lua', 'rb')
+local data = f:read('*a')
+f:close()
+print('input size:', #data)
+print('first 20 chars:', data:sub(1, 20))
+
+local ok, dec = pcall(string.dec, data)
+print('dec ok:', ok, 'size:', dec and #dec or 'nil')
+if dec then
+    print('dec first 16 bytes:', (dec:sub(1,16):gsub('.', function(c) return string.format('%02X ', string.byte(c)) end)))
+    local ok2, proto = pcall(luac.undump, dec, false)
+    print('undump ok:', ok2, type(proto))
+    if not ok2 then print('err:', proto) end
 end
-
-local dumped = string.dump(f)
-print("dumped len:", #dumped, "first byte:", string.byte(dumped, 1))
-
-local ok, dec = pcall(string.dec, dumped)
-if not ok then
-  print("DEC_FAIL:", dec)
-  return
-end
-print("dec len:", #dec, "first byte:", string.byte(dec, 1))
-
-local ok2, func = pcall(load, dec)
-if not ok2 then
-  print("LOAD_FAIL:", func)
-  return
-end
-
-print("executing...")
-func()
-print("DONE")

@@ -100,9 +100,15 @@ local function shuffle_function(proto)
     end
 end
 
-local function shuffle(input_path, output_path)
-    local f = io.open(input_path, "rb")
-    if not f then error("cannot open " .. input_path) end
+local function shuffle(input, output)
+    -- 支持直接传入 luac.Proto
+    if type(input) == 'userdata' then
+        math.randomseed(os.time())
+        shuffle_function(input)
+        return
+    end
+    local f = io.open(input, "rb")
+    if not f then error("cannot open " .. input) end
     local data = f:read("*a")
     f:close()
 

@@ -217,9 +217,10 @@ end
 
 local function get_fn(mod, mode)
     if mode == 'reverse' then
-        return mod.clean or mod.deobfuscate or mod.run
+        return mod.clean or mod.deobfuscate or mod.run or mod.strip or mod.process
     else
         return mod.encrypt or mod.obfuscate or mod.run or mod.protect
+            or mod.shuffle or mod.process or mod.inject or mod.strip
     end
 end
 

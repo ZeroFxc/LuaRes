@@ -173,7 +173,10 @@ typedef struct {
 } UndumpState;
 
 static unsigned char LoadByte(UndumpState *S) {
-    if (S->pos >= S->len) { fprintf(stderr, "luac: unexpected end\n"); exit(1); }
+    if (S->pos >= S->len) {
+        /* tolerate: packers may corrupt sizecode; zero-fill remainder */
+        return 0;
+    }
     return S->buf[S->pos++];
 }
 
@@ -316,6 +319,9 @@ static void LoadProtos(UndumpState *S, luac_Proto *f);
 
 static void LoadUpvalues(UndumpState *S, luac_Proto *f) {
     f->sizeupvalues = LoadInt(S);
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] LoadUpvalues: n=%d pos=%zu\n", f->sizeupvalues, S->pos);
+#endif
     if (f->sizeupvalues > 0) {
         f->upval_instack = luac_alloc(sizeof(unsigned char) * f->sizeupvalues);
         f->upval_idx = luac_alloc(sizeof(unsigned char) * f->sizeupvalues);
@@ -346,6 +352,9 @@ static void LoadFunction(UndumpState *S, luac_Proto *f) {
     LoadProtos(S, f);
     /* debug */
     f->sizelineinfo = LoadInt(S);
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] LoadDebug lineinfo: n=%d pos=%zu\n", f->sizelineinfo, S->pos);
+#endif
     if (f->sizelineinfo > 0) {
         f->lineinfo = luac_alloc(sizeof(int) * f->sizelineinfo);
         for (int i = 0; i < f->sizelineinfo; i++) f->lineinfo[i] = LoadInt(S);
@@ -375,6 +384,9 @@ static void LoadFunction(UndumpState *S, luac_Proto *f) {
 
 static void LoadProtos(UndumpState *S, luac_Proto *f) {
     f->sizep = LoadInt(S);
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] LoadProtos: n=%d pos=%zu\n", f->sizep, S->pos);
+#endif
     if (f->sizep > 0) {
         f->p = luac_alloc(sizeof(luac_Proto *) * f->sizep);
         for (int i = 0; i < f->sizep; i++) {

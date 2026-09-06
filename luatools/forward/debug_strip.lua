@@ -17,9 +17,13 @@ local function strip_function(proto)
     end
 end
 
-local function strip(input_path, output_path)
-    local f = io.open(input_path, "rb")
-    if not f then error("cannot open " .. input_path) end
+local function strip(input, output)
+    if type(input) == 'userdata' then
+        strip_function(input)
+        return
+    end
+    local f = io.open(input, "rb")
+    if not f then error("cannot open " .. input) end
     local data = f:read("*a")
     f:close()
 
