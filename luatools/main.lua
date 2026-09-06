@@ -1,11 +1,6 @@
 -- luatools/main.lua - 字节码混淆/去混淆 CLI 主入口
--- 用法:
---   lua main.lua --list                    列出所有模块
---   lua main.lua input.lua output.luac     用默认模块混淆
---   lua main.lua input.lua output.luac --all            开启所有正向模块
---   lua main.lua input.lua output.luac -m str_encrypt -m bool_obfuscate
---   lua main.lua input.luac output.lua --deobf --all   去混淆模式
---   lua main.lua input.lua output.luac --no str_encrypt  排除指定模块
+
+os.execute("chcp 65001 >nul 2>nul")
 
 package.path = package.path
     .. ";E:/LuaRes/luatools/forward/?.lua"

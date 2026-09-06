@@ -1,6 +1,8 @@
 -- luatools/menu.lua - 交互式菜单版字节码混淆/去混淆工具
 -- 用法: lua_luac2.exe menu.lua
 
+os.execute("chcp 65001 >nul 2>nul")
+
 package.path = package.path
     .. ";E:/LuaRes/luatools/forward/?.lua"
     .. ";E:/LuaRes/luatools/reverse/?.lua"
