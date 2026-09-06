@@ -43,7 +43,7 @@ local proto_passes = {
     {'junk_loadk', 'junk_loadk', 'inject'},
     {'junk_move', 'junk_move', 'inject'},
     {'op48_junk', 'op48_junk', 'inject'},
-    {'anti_td', 'anti_td', 'protect'},
+    {'antidec', 'antidec', 'protect'},
 }
 
 local function run_file_pass(name, mod_name, func_name)
@@ -102,7 +102,7 @@ local function run_proto_pass(name, mod_name, func_name, args)
     return true
 end
 
--- 按顺序执行：先 proto 级别的基础混淆，再文件级别的复杂混淆，最后 anti_td
+-- 按顺序执行：先 proto 级别的基础混淆，再文件级别的复杂混淆，最后 antidec
 print()
 print('=== 第一阶段：基础混淆（proto接口）===')
 run_proto_pass('bool_obfuscate', 'bool_obfuscate', 'obfuscate')
@@ -132,7 +132,7 @@ run_file_pass('debug_strip', 'debug_strip', 'strip')
 
 print()
 print('=== 第五阶段：防TD ===')
-run_proto_pass('anti_td', 'anti_td', 'protect')
+run_proto_pass('antidec', 'antidec', 'protect')
 
 -- 复制到输出
 os.remove(output)

@@ -67,7 +67,7 @@ local function inject_in_func(p, count)
 
     -- 增加 maxstacksize 以容纳高寄存器
     -- 注意：luac.Proto 的 maxstacksize 是 8 位存储，不能超过 255
-    -- anti_td 可能已经设为 250，所以这里限制不超过 250
+    -- antidec 可能已经设为 250，所以这里限制不超过 250
     local old_maxstack = p.maxstacksize
     local extra_regs = math.min(count, 20)
     local new_maxstack = math.min(old_maxstack + extra_regs, 250)

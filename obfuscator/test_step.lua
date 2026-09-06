@@ -29,9 +29,9 @@ print("Calling dejunk_move...")
 local r5 = require("dejunk_move").remove(p)
 print("dejunk_move removed: " .. r5)
 
-print("Calling fix_anti_td...")
-local r6 = require("fix_anti_td").fix(p)
-print("fix_anti_td done: " .. r6)
+print("Calling fix_antidec...")
+local r6 = require("fix_antidec").fix(p)
+print("fix_antidec done: " .. r6)
 
 print("Dumping...")
 local out = luac.dump(p)

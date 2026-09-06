@@ -1,5 +1,5 @@
 local luac = require("luac")
-local anti_td = require("anti_td")
+local antidec = require("antidec")
 
 local test_func = function()
     local function add(a, b) return a + b end
@@ -11,7 +11,7 @@ local bc = string.dec(string.dump(test_func))
 
 -- 测试 1: 只 poison_header
 local p1 = luac.undump(bc, false)
-anti_td.protect(p1, {poison_header=true, strip_lineinfo=false, junk_source=false, junk_constants=false})
+antidec.protect(p1, {poison_header=true, strip_lineinfo=false, junk_source=false, junk_constants=false})
 local out1 = luac.dump(p1)
 local ok1, f1 = pcall(load, out1)
 print("1 poison_header only: load=" .. tostring(ok1))
@@ -22,7 +22,7 @@ end
 
 -- 测试 2: 只 strip_lineinfo
 local p2 = luac.undump(bc, false)
-anti_td.protect(p2, {poison_header=false, strip_lineinfo=true, junk_source=false, junk_constants=false})
+antidec.protect(p2, {poison_header=false, strip_lineinfo=true, junk_source=false, junk_constants=false})
 local out2 = luac.dump(p2)
 local ok3, f2 = pcall(load, out2)
 print("2 strip_lineinfo only: load=" .. tostring(ok3))
@@ -33,7 +33,7 @@ end
 
 -- 测试 3: 只 junk_source
 local p3 = luac.undump(bc, false)
-anti_td.protect(p3, {poison_header=false, strip_lineinfo=false, junk_source=true, junk_constants=false})
+antidec.protect(p3, {poison_header=false, strip_lineinfo=false, junk_source=true, junk_constants=false})
 local out3 = luac.dump(p3)
 local ok5, f3 = pcall(load, out3)
 print("3 junk_source only: load=" .. tostring(ok5))
@@ -44,7 +44,7 @@ end
 
 -- 测试 4: 只 junk_constants
 local p4 = luac.undump(bc, false)
-anti_td.protect(p4, {poison_header=false, strip_lineinfo=false, junk_source=false, junk_constants=true})
+antidec.protect(p4, {poison_header=false, strip_lineinfo=false, junk_source=false, junk_constants=true})
 local out4 = luac.dump(p4)
 local ok7, f4 = pcall(load, out4)
 print("4 junk_constants only: load=" .. tostring(ok7))

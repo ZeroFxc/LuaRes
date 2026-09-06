@@ -11,9 +11,9 @@ print("Protected: " .. #prot .. " bytes")
 local options_list = {
     {name="all", opts={}},
     {name="no_opaque", opts={no_deopaque_junk=true}},
-    {name="no_fix", opts={no_fix_anti_td=true}},
-    {name="no_opaque_no_fix", opts={no_deopaque_junk=true, no_fix_anti_td=true}},
-    {name="only_deop48", opts={no_dejunk_jmp=true, no_deopaque_junk=true, no_dejunk_loadk=true, no_dejunk_move=true, no_fix_anti_td=true}},
+    {name="no_fix", opts={no_fix_antidec=true}},
+    {name="no_opaque_no_fix", opts={no_deopaque_junk=true, no_fix_antidec=true}},
+    {name="only_deop48", opts={no_dejunk_jmp=true, no_deopaque_junk=true, no_dejunk_loadk=true, no_dejunk_move=true, no_fix_antidec=true}},
 }
 
 for _, item in ipairs(options_list) do

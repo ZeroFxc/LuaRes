@@ -19,7 +19,7 @@ for seed = 1, 20 do
            or k:match("debug_strip") or k:match("const_shuffle") or k:match("instruction_mutate")
            or k:match("luac_flatten") or k:match("luac_obfuscate")
            or k:match("opaque_predicate") or k:match("opaque_junk")
-           or k:match("anti_td") or k:match("op48_junk")) then
+           or k:match("antidec") or k:match("op48_junk")) then
             package.loaded[k] = nil
         end
     end

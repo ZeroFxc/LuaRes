@@ -16,7 +16,7 @@ OUTPUT_LUA = os.path.join(LUASAFE_DIR, "combo_test.lua")
 
 # 模块搭配定义: (名称, 阶段列表)
 # 阶段: ("proto", [(模块名, 函数名, 参数), ...]) 或 ("file", [(模块名, 函数名), ...])
-# 标准顺序: 基础proto → 文件模块 → 垃圾proto → 控制流文件 → anti_td
+# 标准顺序: 基础proto → 文件模块 → 垃圾proto → 控制流文件 → antidec
 P_BOOL = ("bool_obfuscate", "obfuscate", None)
 P_NUM = ("num_obfuscate", "obfuscate", None)
 P_STR = ("str_split", "obfuscate", None)
@@ -26,7 +26,7 @@ P_JJ = ("junk_jmp", "inject", None)
 P_JL = ("junk_loadk", "inject", None)
 P_JM = ("junk_move", "inject", None)
 P_OP48 = ("op48_junk", "inject", None)
-P_ANTITD = ("anti_td", "protect", None)
+P_ANTITD = ("antidec", "protect", None)
 F_CS = ("const_shuffle", "shuffle")
 F_IM = ("instruction_mutate", "process")
 F_OP = ("opaque_predicate", "process")

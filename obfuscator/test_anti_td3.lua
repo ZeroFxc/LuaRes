@@ -1,5 +1,5 @@
 local luac = require("luac")
-local anti_td = require("anti_td")
+local antidec = require("antidec")
 
 local test_func = function()
     local function add(a, b) return a + b end
@@ -14,7 +14,7 @@ local bc = string.dec(string.dump(test_func))
 
 local function test(name, opts)
     local p = luac.undump(bc, false)
-    anti_td.protect(p, opts)
+    antidec.protect(p, opts)
     local out = luac.dump(p)
     local ok, f = pcall(load, out)
     if not ok then

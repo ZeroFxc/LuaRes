@@ -26,7 +26,7 @@ local function test_with_n_passes(n)
     for i = 1, n do
         passes[i][2](proto)
     end
-    require("fix_anti_td").fix(proto)
+    require("fix_antidec").fix(proto)
     local out = luac.dump(proto)
     local ok, f = pcall(load, out)
     if not ok then

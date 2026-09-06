@@ -1,5 +1,5 @@
 local luac = require("luac")
-local anti_td = require("anti_td")
+local antidec = require("antidec")
 
 -- 测试脚本
 local test_func = function()
@@ -18,7 +18,7 @@ local p = luac.undump(bc, false)
 print("Original main: numparams=" .. p.numparams .. " maxstack=" .. p.maxstacksize .. " lineinfo=" .. #p.lineinfo)
 
 -- 应用 anti-td 保护
-anti_td.protect(p, {junk_constants = true})
+antidec.protect(p, {junk_constants = true})
 print("Protected main: numparams=" .. p.numparams .. " maxstack=" .. p.maxstacksize .. " lineinfo=" .. #p.lineinfo .. " sizek=" .. #p.k)
 
 local out = luac.dump(p)

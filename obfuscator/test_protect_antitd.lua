@@ -12,7 +12,7 @@ end
 local bc = string.dec(string.dump(test_func))
 print("Original size: " .. #bc)
 
--- 完整 pipeline（含 anti_td）
+-- 完整 pipeline（含 antidec）
 local out, stats = protect(bc, {})
 print("Protected size: " .. #out)
 print("Passes: " .. table.concat(stats.passes, " -> "))
@@ -28,9 +28,9 @@ else
     print("  Error: " .. tostring(f))
 end
 
--- 测试不含 anti_td
-print("\n--- Without anti_td ---")
-local out2, stats2 = protect(bc, {no_anti_td = true})
+-- 测试不含 antidec
+print("\n--- Without antidec ---")
+local out2, stats2 = protect(bc, {no_antidec = true})
 print("Protected size: " .. #out2)
 print("Passes: " .. table.concat(stats2.passes, " -> "))
 local ok3, f2 = pcall(load, out2)

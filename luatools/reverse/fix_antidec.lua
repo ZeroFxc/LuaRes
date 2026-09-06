@@ -1,11 +1,11 @@
--- fix_anti_td.lua: 修复被 anti-TD 混淆的 andlua Lua 5.3 字节码
+-- fix_antidec.lua: 修复被 anti-TD 混淆的 andlua Lua 5.3 字节码
 -- andlua header 格式: 33 字节 (4 sig + 1 ver + 1 fmt + 6 LUAC_DATA + 5 sizes + 8 LUAC_INT + 8 LUAC_NUM)
--- 用法 as library: local fix_anti_td = require("fix_anti_td"); fix_anti_td.fix(proto)
--- 用法 as CLI: lua_luac.exe fix_anti_td.lua <input.lua> <output.lua>
+-- 用法 as library: local fix_antidec = require("fix_antidec"); fix_antidec.fix(proto)
+-- 用法 as CLI: lua_luac.exe fix_antidec.lua <input.lua> <output.lua>
 
 local luac = require("luac")
 
-local fix_anti_td = {}
+local fix_antidec = {}
 
 -- 计算代码中实际使用的最大寄存器编号
 local function calc_max_reg(p)
@@ -131,14 +131,14 @@ local function fix_proto(p, is_main)
     end
 end
 
-function fix_anti_td.fix(proto, options)
+function fix_antidec.fix(proto, options)
     options = options or {}
     fix_proto(proto, true)
     return 0  -- 返回移除的指令数（anti-td 不移除指令，只修复头部）
 end
 
 -- CLI
-if arg and arg[0] and arg[0]:match("fix_anti_td") and arg[1] and arg[2] then
+if arg and arg[0] and arg[0]:match("fix_antidec") and arg[1] and arg[2] then
     local input = arg[1]
     local output = arg[2]
 
@@ -170,7 +170,7 @@ if arg and arg[0] and arg[0]:match("fix_anti_td") and arg[1] and arg[2] then
     print("Total functions: " .. count(p))
 
     -- 修复所有函数
-    fix_anti_td.fix(p)
+    fix_antidec.fix(p)
     print("All protos fixed")
 
     -- dump
@@ -189,4 +189,4 @@ if arg and arg[0] and arg[0]:match("fix_anti_td") and arg[1] and arg[2] then
     print("Written to " .. output)
 end
 
-return fix_anti_td
+return fix_antidec

@@ -6,7 +6,7 @@ local func = load("print('hello world')")
 local bc = string.dec(string.dump(func))
 print("Original size: " .. #bc)
 
--- 只开 anti_td + op48
+-- 只开 antidec + op48
 local out, stats = protect.protect(bc, {
     no_strip = true,
     no_shuffle = true,
@@ -14,7 +14,7 @@ local out, stats = protect.protect(bc, {
     no_flatten = true,
     no_opaque = true,
     no_obfuscate = true,
-    no_anti_td = false,
+    no_antidec = false,
     no_op48 = false,
     op48_count = 100,
     op48_mode = "blocks",

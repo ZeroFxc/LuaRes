@@ -1,7 +1,7 @@
 -- deprotect.lua - multi-pass bytecode deobfuscation pipeline
 -- 12 passes: deop48 -> de_junk_obfuscate -> deopaque_predicate -> deopaque_junk ->
 --             dejunk_jmp -> dejunk_loadk -> dejunk_move -> deinstruction_mutate ->
---             deconst_shuffle -> dedebug_strip -> deflatten -> fix_anti_td
+--             deconst_shuffle -> dedebug_strip -> deflatten -> fix_antidec
 --
 -- 用法: local deprotect = require("deprotect"); local cleaned = deprotect.clean(bytecode)
 
@@ -138,12 +138,12 @@ local function clean(bytecode, options)
 
     -- 12. Fix anti-TD (header poisoning, junk upvalues) — MUST run last,
     --     because it changes maxstacksize which would confuse earlier passes
-    if not options.no_fix_anti_td then
-        local m = load_mod("fix_anti_td")
+    if not options.no_fix_antidec then
+        local m = load_mod("fix_antidec")
         if m and m.fix then
             local r = m.fix(proto)
-            table.insert(stats.passes, "fix_anti_td")
-            stats.removed.fix_anti_td = r
+            table.insert(stats.passes, "fix_antidec")
+            stats.removed.fix_antidec = r
         end
     end
 
@@ -159,7 +159,7 @@ if arg and arg[0] and arg[0]:match("deprotect") and arg[1] then
     local output = arg[2] or input:gsub("%.lua$", "_clean.lua")
     local options = {}
     for i = 3, #arg do
-        if arg[i] == "--no-fix-anti-td" then options.no_fix_anti_td = true
+        if arg[i] == "--no-fix-anti-td" then options.no_fix_antidec = true
         elseif arg[i] == "--no-deop48" then options.no_deop48 = true
         elseif arg[i] == "--no-dejunk-jmp" then options.no_dejunk_jmp = true
         elseif arg[i] == "--no-deopaque-junk" then options.no_deopaque_junk = true

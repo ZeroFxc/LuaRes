@@ -1,5 +1,5 @@
 local luac = require("luac")
-local anti_td = require("anti_td")
+local antidec = require("antidec")
 
 -- 编译 hello.lua
 local func, err = loadfile("E:/LuaRes/luasafe/hello.lua")
@@ -15,8 +15,8 @@ print("Original size: " .. #bc)
 local p = luac.undump(bc, false)
 print("Original main: numparams=" .. p.numparams .. " sizeupvalues=" .. p.sizeupvalues .. " lineinfo=" .. #p.lineinfo)
 
--- 只开启 anti_td 防护（所有选项都开启）
-anti_td.protect(p, {
+-- 只开启 antidec 防护（所有选项都开启）
+antidec.protect(p, {
     poison_header = true,
     strip_lineinfo = true,
     junk_source = true,

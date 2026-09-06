@@ -70,7 +70,7 @@ require('luac_flatten').flatten("tmp.luac","tmp2.luac"); os.remove("tmp.luac"); 
 require('debug_strip').strip("tmp.luac","tmp2.luac"); os.remove("tmp.luac"); os.rename("tmp2.luac","tmp.luac")
 local f4 = io.open("tmp.luac","rb"); local d2 = f4:read("*a"); f4:close(); os.remove("tmp.luac")
 proto = luac.undump(d2, false)
-require('anti_td').protect(proto)
+require('antidec').protect(proto)
 """),
 ]
 

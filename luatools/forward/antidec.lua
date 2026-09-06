@@ -1,4 +1,4 @@
--- anti_td.lua: Anti-TD decompiler protection for andlua Lua 5.3 bytecode
+-- antidec.lua: Anti-TD decompiler protection for andlua Lua 5.3 bytecode
 -- 利用 andlua 加载器不校验的字段，干扰 TD 反编译器
 -- 注意：LUAC_NUM=370.5 是 andlua 内核内置的，不需要在这里处理
 
@@ -9,7 +9,7 @@ math.randomseed(os.time() + math.floor(os.clock() * 1000000))
 -- 消耗前几个随机数（Lua 的 math.random 前几个值分布不好）
 for _ = 1, 10 do math.random() end
 
-local anti_td = {}
+local antidec = {}
 
 -- 垃圾字符串生成器
 local function junk_string(len)
@@ -122,7 +122,7 @@ end
 --   junk_upvalues = true,   -- 注入垃圾 upvalue（防 TD 关键手段）
 --   junk_constants = false, -- 注入乱码常量（可能增加体积）
 -- }
-function anti_td.protect(proto, options)
+function antidec.protect(proto, options)
     options = options or {}
     if options.poison_header == nil then options.poison_header = true end
     if options.strip_lineinfo == nil then options.strip_lineinfo = true end
@@ -154,14 +154,14 @@ if not MODULE_NAME then
     local input = arg[1]
     local output = arg[2]
     if not input or not output then
-        print("Usage: lua_luac.exe anti_td.lua <input.lua> <output.lua>")
+        print("Usage: lua_luac.exe antidec.lua <input.lua> <output.lua>")
         os.exit(1)
     end
     local f = io.open(input, "rb")
     local data = f:read("*a")
     f:close()
     local p = luac.undump(data, false)
-    anti_td.protect(p, {junk_constants = true})
+    antidec.protect(p, {junk_constants = true})
     local out = luac.dump(p)
     local fout = io.open(output, "wb")
     fout:write(out)
@@ -169,4 +169,4 @@ if not MODULE_NAME then
     print("Protected: " .. #data .. " -> " .. #out .. " bytes")
 end
 
-return anti_td
+return antidec
