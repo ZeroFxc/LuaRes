@@ -77,18 +77,18 @@ local function collect_string_refs(proto)
                 end
             end
         elseif op == luac.OP_SETTABUP then
-            local c = luac.GETARG_C(inst)
-            if c >= 256 then
-                local idx = c - 256
+            local b = luac.GETARG_B(inst)
+            if b >= 256 then
+                local idx = b - 256
                 if type(proto.k[idx + 1]) == "string" then
                     refs[#refs + 1] = {pos = i, op = op, kind = "settabup", idx = idx}
                     string_set[idx] = true
                 end
             end
         elseif op == luac.OP_SETTABLE then
-            local c = luac.GETARG_C(inst)
-            if c >= 256 then
-                local idx = c - 256
+            local b = luac.GETARG_B(inst)
+            if b >= 256 then
+                local idx = b - 256
                 if type(proto.k[idx + 1]) == "string" then
                     refs[#refs + 1] = {pos = i, op = op, kind = "settable", idx = idx}
                     string_set[idx] = true
@@ -248,20 +248,24 @@ function str_split.obfuscate_function(proto, options)
                 end
             end
         elseif op == luac.OP_SETTABUP then
-            local a = luac.GETARG_A(inst)
-            local b = luac.GETARG_B(inst)
-            local c = luac.GETARG_C(inst)
-            if c >= 256 then
-                local idx = c - 256
+            local a = luac.GETARG_A(inst)  -- upvalue index
+            local b = luac.GETARG_B(inst)  -- key (RKB)
+            local c = luac.GETARG_C(inst)  -- value (RKC)
+            if b >= 256 then
+                local idx = b - 256
                 if seg_map[idx] then
                     local seg = seg_map[idx]
                     local key_reg = tmp_base
                     local table_reg = tmp_base + seg.n
                     local val_reg = tmp_base + seg.n + 1
-                    -- MOVE val_reg, a （保存要设置的值）
-                    table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, val_reg, a, 0))
-                    -- GETUPVAL table_reg, b
-                    table.insert(new_code, luac.CREATE_ABC(luac.OP_GETUPVAL, table_reg, b, 0))
+                    -- 保存 value 到 val_reg
+                    if c >= 256 then
+                        table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, val_reg, c - 256))
+                    else
+                        table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, val_reg, c, 0))
+                    end
+                    -- GETUPVAL table_reg, a
+                    table.insert(new_code, luac.CREATE_ABC(luac.OP_GETUPVAL, table_reg, a, 0))
                     -- 加载段
                     for j = 1, seg.n do
                         table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg + j - 1, seg.indices[j]))
@@ -275,17 +279,21 @@ function str_split.obfuscate_function(proto, options)
                 end
             end
         elseif op == luac.OP_SETTABLE then
-            local a = luac.GETARG_A(inst)
-            local b = luac.GETARG_B(inst)
-            local c = luac.GETARG_C(inst)
-            if c >= 256 then
-                local idx = c - 256
+            local a = luac.GETARG_A(inst)  -- table
+            local b = luac.GETARG_B(inst)  -- key (RKB)
+            local c = luac.GETARG_C(inst)  -- value (RKC)
+            if b >= 256 then
+                local idx = b - 256
                 if seg_map[idx] then
                     local seg = seg_map[idx]
                     local key_reg = tmp_base
                     local val_reg = tmp_base + seg.n
-                    -- MOVE val_reg, a
-                    table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, val_reg, a, 0))
+                    -- 保存 value 到 val_reg
+                    if c >= 256 then
+                        table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, val_reg, c - 256))
+                    else
+                        table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, val_reg, c, 0))
+                    end
                     -- 加载段
                     for j = 1, seg.n do
                         table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg + j - 1, seg.indices[j]))
@@ -293,7 +301,8 @@ function str_split.obfuscate_function(proto, options)
                     if seg.n >= 2 then
                         table.insert(new_code, luac.CREATE_ABC(luac.OP_CONCAT, key_reg, key_reg, key_reg + seg.n - 1))
                     end
-                    table.insert(new_code, luac.CREATE_ABC(luac.OP_SETTABLE, b, key_reg, val_reg))
+                    -- SETTABLE a(table), key_reg, val_reg
+                    table.insert(new_code, luac.CREATE_ABC(luac.OP_SETTABLE, a, key_reg, val_reg))
                     handled = true
                 end
             end

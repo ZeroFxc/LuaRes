@@ -97,6 +97,8 @@ local function make_decrypt_proto(key)
             dec.upvalues[1].instack = 0
             dec.upvalues[1].idx = 0
         end
+        -- 关键：从临时 main proto 中移除 dec，防止 main 被 GC 时递归释放 dec
+        proto.p = {}
         return dec
     end
     return nil
@@ -115,20 +117,31 @@ function str_encrypt.encrypt_function(proto, options)
         proto.k[idx + 1] = xor_crypt(proto.k[idx + 1], key)
     end
 
-    -- 计算寄存器分配（用足够高的寄存器避免冲突）
-    local max_reg = calc_max_reg(proto)
-    local dec_reg = math.min(max_reg + 10, 235)    -- CALL 用的函数寄存器
-    local arg_reg = dec_reg + 1                      -- 参数寄存器
-    local table_reg = dec_reg + 2                    -- GETTABUP 临时表寄存器
-    local key_reg = dec_reg + 3                      -- GETTABUP 临时 key 寄存器
-
     -- 构造解密函数并添加到 proto.p
     local dec_proto = make_decrypt_proto(key)
     local dec_proto_idx = 0
+    local dec_maxstack = 12  -- 默认
     if dec_proto then
         proto.p[#proto.p + 1] = dec_proto
         dec_proto_idx = #proto.p - 1  -- 0-based
+        dec_maxstack = dec_proto.maxstacksize or 12
     end
+
+    -- 计算寄存器分配
+    -- dec_reg 必须放在父函数原始栈顶之后，否则解密函数的栈帧（以及其内部C函数调用的栈帧）
+    -- 会覆盖父函数的高寄存器
+    local original_maxstack = proto.maxstacksize
+    local dec_reg = original_maxstack  -- 函数寄存器放在原始栈顶
+    local arg_reg = dec_reg + 1         -- 参数寄存器
+    -- 解密函数栈帧从 dec_reg+1 开始，占 dec_maxstack 个寄存器
+    -- 内部C函数调用可能再扩展，留额外空间
+    local safe_base = dec_reg + dec_maxstack + 16
+    local table_reg = safe_base                      -- GETTABUP 临时表寄存器
+    local key_reg = safe_base + 1                    -- 临时 key 寄存器
+    local val_reg = safe_base + 2                    -- 临时 value 寄存器
+
+    -- 父函数需要足够的栈空间
+    local needed_stack = val_reg + 1
 
     -- 判断 RK 值是否是被加密的字符串常量（RK >= 256 时常量索引为 RK-256）
     local function is_enc_rk(rk)
@@ -201,6 +214,81 @@ function str_encrypt.encrypt_function(proto, options)
             else
                 table.insert(new_code, inst)
             end
+        elseif op == luac.OP_SETTABUP then
+            local a = luac.GETARG_A(inst)  -- upvalue index
+            local b = luac.GETARG_B(inst)  -- key (RKB)
+            local c = luac.GETARG_C(inst)  -- value (RKC)
+            local key_enc = is_enc_rk(b)
+            local val_enc = is_enc_rk(c)
+            if key_enc or val_enc then
+                -- GETUPVAL table_reg, a
+                table.insert(new_code, luac.CREATE_ABC(luac.OP_GETUPVAL, table_reg, a, 0))
+                -- 处理 key
+                if key_enc then
+                    local kidx = b - 256
+                    table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg, kidx))
+                    emit_decrypt(new_code, key_reg, key_reg)
+                else
+                    -- key 是寄存器或明文，直接 MOVE 到 key_reg
+                    if b >= 256 then
+                        table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg, b - 256))
+                    else
+                        table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, key_reg, b, 0))
+                    end
+                end
+                -- 处理 value
+                if val_enc then
+                    local vidx = c - 256
+                    table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, val_reg, vidx))
+                    emit_decrypt(new_code, val_reg, val_reg)
+                else
+                    if c >= 256 then
+                        table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, val_reg, c - 256))
+                    else
+                        table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, val_reg, c, 0))
+                    end
+                end
+                -- SETTABLE table_reg, key_reg, val_reg
+                table.insert(new_code, luac.CREATE_ABC(luac.OP_SETTABLE, table_reg, key_reg, val_reg))
+            else
+                table.insert(new_code, inst)
+            end
+        elseif op == luac.OP_SETTABLE then
+            local a = luac.GETARG_A(inst)  -- table
+            local b = luac.GETARG_B(inst)  -- key (RKB)
+            local c = luac.GETARG_C(inst)  -- value (RKC)
+            local key_enc = is_enc_rk(b)
+            local val_enc = is_enc_rk(c)
+            if key_enc or val_enc then
+                -- 处理 key
+                if key_enc then
+                    local kidx = b - 256
+                    table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg, kidx))
+                    emit_decrypt(new_code, key_reg, key_reg)
+                else
+                    if b >= 256 then
+                        table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg, b - 256))
+                    else
+                        table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, key_reg, b, 0))
+                    end
+                end
+                -- 处理 value
+                if val_enc then
+                    local vidx = c - 256
+                    table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, val_reg, vidx))
+                    emit_decrypt(new_code, val_reg, val_reg)
+                else
+                    if c >= 256 then
+                        table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, val_reg, c - 256))
+                    else
+                        table.insert(new_code, luac.CREATE_ABC(luac.OP_MOVE, val_reg, c, 0))
+                    end
+                end
+                -- SETTABLE a, key_reg, val_reg
+                table.insert(new_code, luac.CREATE_ABC(luac.OP_SETTABLE, a, key_reg, val_reg))
+            else
+                table.insert(new_code, inst)
+            end
         else
             table.insert(new_code, inst)
         end
@@ -221,7 +309,7 @@ function str_encrypt.encrypt_function(proto, options)
         proto.lineinfo = new_lineinfo
     end
     -- 更新 maxstacksize
-    proto.maxstacksize = math.min(math.max(proto.maxstacksize, key_reg + 1), 250)
+    proto.maxstacksize = math.min(math.max(proto.maxstacksize, needed_stack, dec_reg + 6), 250)
 
     return #loadks
 end

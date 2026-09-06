@@ -841,10 +841,12 @@ void luaV_execute (lua_State *L) {
       }
       vmcase(OP_LOADK) {
         TValue *rb = k + GETARG_Bx(i);
-        /*LOGD("type error %d %d",ttype(ra),ttype(rb));
-        if(ra->tt_!=LUA_TNIL&&rb->tt_!=LUA_TNIL&&ra->tt_<LUA_MULTRET&&rb->tt_<LUA_MULTRET&&rb->tt_!=ra->tt_){
-          luaG_runerror(L, "type error %d %d",ra->tt_,rb->tt_);
-        }*/
+#if LUA_VM_DEBUG
+        fprintf(stderr, "[VM] LOADK A=%d Bx=%d rb_tt=%d rb_ival=%lld rb_str=%s\n",
+            GETARG_A(i), GETARG_Bx(i), rb->tt_,
+            (rb->tt_ == 19) ? (long long)rb->value_.i : 0,
+            (rb->tt_ == 4 || rb->tt_ == 20 || rb->tt_ == 68) ? getstr(tsvalue(rb)) : "(non-str)");
+#endif
         setobj2s(L, ra, rb);
         vmbreak;
       }
@@ -922,6 +924,14 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_SETTABLE) {
         TValue *rb = RKB(i);
         TValue *rc = RKC(i);
+#if LUA_VM_DEBUG
+        fprintf(stderr, "[VM] SETTABLE A=%d B=%d C=%d ra_tt=%d rb_tt=%d rb_ival=%lld rc_tt=%d rc_str=%s\n",
+            GETARG_A(i), GETARG_B(i), GETARG_C(i),
+            ra->tt_, rb->tt_,
+            (rb->tt_ == 19) ? (long long)rb->value_.i : 0,
+            rc->tt_,
+            (rc->tt_ == 4 || rc->tt_ == 20 || rc->tt_ == 68) ? getstr(tsvalue(rc)) : "(non-str)");
+#endif
         if(ttistable(ra)) {
             Table *t = hvalue(ra);
             switch (t->type) {

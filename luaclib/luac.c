@@ -93,10 +93,8 @@ static void luac_free_proto(luac_Proto *p) {
     if (!p) return;
     int i;
     free(p->code);
-    if (p->p) {
-        for (i = 0; i < p->sizep; i++) luac_free_proto(p->p[i]);
-        free(p->p);
-    }
+    /* 不递归释放子proto：每个子proto有自己的userdata和__gc，由Lua GC管理 */
+    free(p->p);
     free(p->k_tag);
     if (p->k_str) {
         for (i = 0; i < p->sizek; i++) free(p->k_str[i]);
@@ -218,6 +216,11 @@ static char *LoadString(UndumpState *S) {
     char *s = luac_alloc(size);
     for (size_t i = 0; i < len; i++) s[i] = (char)LoadByte(S);
     s[len] = '\0';
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] LoadString: len=%zu encrypted=%d first_bytes=", len, S->encrypted);
+    for (size_t i = 0; i < len && i < 16; i++) fprintf(stderr, "%02x ", (unsigned char)s[i]);
+    fprintf(stderr, "\n");
+#endif
 #if LUACLIB_AUTO_DECRYPT
     /* andlua: only decrypt strings when bytecode is in encrypted format */
     if (S->encrypted && len > 0) {
@@ -225,6 +228,11 @@ static char *LoadString(UndumpState *S) {
         memcpy(tmp, s, len);
         andlua_decrypt_string(tmp, len);
         int valid = andlua_is_valid_text(tmp, len);
+#if LUACLIB_DEBUG
+        fprintf(stderr, "[luac]   decrypt: valid=%d decrypted=", valid);
+        for (size_t i = 0; i < len && i < 16; i++) fprintf(stderr, "%02x ", (unsigned char)tmp[i]);
+        fprintf(stderr, "\n");
+#endif
         if (valid) {
             memcpy(s, tmp, len);
         }
@@ -236,6 +244,9 @@ static char *LoadString(UndumpState *S) {
 
 static void LoadCode(UndumpState *S, luac_Proto *f) {
     f->sizecode = LoadInt(S);
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] LoadCode: sizecode=%d\n", f->sizecode);
+#endif
     if (f->sizecode > 0) {
         f->code = luac_alloc(sizeof(unsigned int) * f->sizecode);
         for (int i = 0; i < f->sizecode; i++) f->code[i] = LoadInstruction(S);
@@ -244,6 +255,9 @@ static void LoadCode(UndumpState *S, luac_Proto *f) {
 
 static void LoadConstants(UndumpState *S, luac_Proto *f) {
     f->sizek = LoadInt(S);
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] LoadConstants: sizek=%d\n", f->sizek);
+#endif
     if (f->sizek > 0) {
         f->k_tag = luac_alloc(sizeof(int) * f->sizek);
         f->k_str = luac_alloc(sizeof(char *) * f->sizek);
@@ -256,12 +270,38 @@ static void LoadConstants(UndumpState *S, luac_Proto *f) {
             f->k_num[i] = 0;
             f->k_bool[i] = 0;
             switch (t) {
-                case LUA_TNIL: break;
-                case LUA_TBOOLEAN: f->k_bool[i] = LoadByte(S); break;
-                case LUA_TNUMFLT: f->k_num[i] = LoadNumber(S); break;
-                case LUA_TNUMINT: f->k_num[i] = (double)LoadInteger(S); break;
+                case LUA_TNIL:
+#if LUACLIB_DEBUG
+                    fprintf(stderr, "[luac]   k[%d]=nil\n", i);
+#endif
+                    break;
+                case LUA_TBOOLEAN:
+                    f->k_bool[i] = LoadByte(S);
+#if LUACLIB_DEBUG
+                    fprintf(stderr, "[luac]   k[%d]=bool(%d)\n", i, f->k_bool[i]);
+#endif
+                    break;
+                case LUA_TNUMFLT:
+                    f->k_num[i] = LoadNumber(S);
+#if LUACLIB_DEBUG
+                    fprintf(stderr, "[luac]   k[%d]=numflt(%f)\n", i, f->k_num[i]);
+#endif
+                    break;
+                case LUA_TNUMINT:
+                    f->k_num[i] = (double)LoadInteger(S);
+#if LUACLIB_DEBUG
+                    fprintf(stderr, "[luac]   k[%d]=numint(%lld)\n", i, (long long)f->k_num[i]);
+#endif
+                    break;
                 case LUA_TSHRSTR:
-                case LUA_TLNGSTR: f->k_str[i] = LoadString(S); break;
+                case LUA_TLNGSTR:
+                    f->k_str[i] = LoadString(S);
+#if LUACLIB_DEBUG
+                    fprintf(stderr, "[luac]   k[%d]=str(len=%zu) '%s'\n", i,
+                            f->k_str[i] ? strlen(f->k_str[i]) : 0,
+                            f->k_str[i] ? f->k_str[i] : "(null)");
+#endif
+                    break;
                 default:
                     /* 未知常量 tag（混淆注入的垃圾），当作 nil 处理，不读取数据 */
                     fprintf(stderr, "luac: warning: unknown constant tag %d at index %d, treating as nil\n", t, i);
@@ -295,6 +335,11 @@ static void LoadFunction(UndumpState *S, luac_Proto *f) {
     f->numparams = LoadByte(S);
     f->is_vararg = LoadByte(S);
     f->maxstacksize = LoadByte(S);
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] LoadFunction: source='%s' line=%d-%d numparams=%d vararg=%d maxstack=%d\n",
+            f->source ? f->source : "(null)", f->linedefined, f->lastlinedefined,
+            f->numparams, f->is_vararg, f->maxstacksize);
+#endif
     LoadCode(S, f);
     LoadConstants(S, f);
     LoadUpvalues(S, f);
@@ -440,6 +485,9 @@ static void DumpString(DumpState *D, const char *s) {
         return;
     }
     size_t len = strlen(s);
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] DumpString: len=%zu '%s'\n", len, s);
+#endif
     size_t size = len + 1;  /* size includes null terminator */
     if (size <= 253) {
         DumpByte(D, (unsigned char)size);
@@ -458,20 +506,47 @@ static void DumpCode(DumpState *D, luac_Proto *f) {
 
 static void DumpConstants(DumpState *D, luac_Proto *f) {
     DumpInt(D, f->sizek);
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] DumpConstants: sizek=%d\n", f->sizek);
+#endif
     for (int i = 0; i < f->sizek; i++) {
         int t = f->k_tag[i];
         DumpByte(D, (unsigned char)t);
         switch (t) {
-            case LUA_TNIL: break;
-            case LUA_TBOOLEAN: DumpByte(D, (unsigned char)f->k_bool[i]); break;
-            case LUA_TNUMFLT: DumpNumber(D, f->k_num[i]); break;
-            case LUA_TNUMINT: DumpInteger(D, (long long)f->k_num[i]); break;
+            case LUA_TNIL:
+#if LUACLIB_DEBUG
+                fprintf(stderr, "[luac]   k[%d]=nil\n", i);
+#endif
+                break;
+            case LUA_TBOOLEAN:
+                DumpByte(D, (unsigned char)f->k_bool[i]);
+#if LUACLIB_DEBUG
+                fprintf(stderr, "[luac]   k[%d]=bool(%d)\n", i, f->k_bool[i]);
+#endif
+                break;
+            case LUA_TNUMFLT:
+                DumpNumber(D, f->k_num[i]);
+#if LUACLIB_DEBUG
+                fprintf(stderr, "[luac]   k[%d]=numflt(%f)\n", i, f->k_num[i]);
+#endif
+                break;
+            case LUA_TNUMINT:
+                DumpInteger(D, (long long)f->k_num[i]);
+#if LUACLIB_DEBUG
+                fprintf(stderr, "[luac]   k[%d]=numint(%lld)\n", i, (long long)f->k_num[i]);
+#endif
+                break;
             case LUA_TSHRSTR:
             case LUA_TLNGSTR: {
                 const char *s = f->k_str[i];
                 DumpString(D, s);
                 break;
             }
+            default:
+#if LUACLIB_DEBUG
+                fprintf(stderr, "[luac]   k[%d]=unknown tag %d\n", i, t);
+#endif
+                break;
         }
     }
 }
@@ -492,6 +567,11 @@ static void DumpUpvalues(DumpState *D, luac_Proto *f) {
 }
 
 static void DumpFunction(DumpState *D, luac_Proto *f) {
+#if LUACLIB_DEBUG
+    fprintf(stderr, "[luac] DumpFunction: source='%s' line=%d-%d numparams=%d maxstack=%d sizecode=%d sizek=%d sizep=%d\n",
+            f->source ? f->source : "(null)", f->linedefined, f->lastlinedefined,
+            f->numparams, f->maxstacksize, f->sizecode, f->sizek, f->sizep);
+#endif
     DumpString(D, f->source);
     DumpInt(D, f->linedefined);
     DumpInt(D, f->lastlinedefined);
@@ -727,17 +807,8 @@ static void sync_p_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
             lua_pop(L, 1);
         }
     }
-    /* Only free old protos that are not referenced in the new p array */
-    if (old_p) {
-        for (int i = 0; i < old_sizep; i++) {
-            int still_referenced = 0;
-            for (int j = 0; j < n; j++) {
-                if (f->p[j] == old_p[i]) { still_referenced = 1; break; }
-            }
-            if (!still_referenced) luac_free_proto(old_p[i]);
-        }
-        free(old_p);
-    }
+    /* 旧子proto有自己的userdata和__gc，不需要手动释放 */
+    free(old_p);
     lua_pop(L, 1);
 }
 
