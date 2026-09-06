@@ -1,4 +1,5 @@
 -- 全模块混淆处理脚本（文件传递版）
+package.path = package.path .. ";E:/LuaRes/luatools/forward/?.lua;E:/LuaRes/luatools/reverse/?.lua;E:/LuaRes/luatools/utils/?.lua"
 local luac = require('luac')
 
 local input = arg[1] or '../boolean.lua'

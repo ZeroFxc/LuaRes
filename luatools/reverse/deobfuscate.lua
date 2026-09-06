@@ -3,6 +3,7 @@
 --           optional debug info stripping
 -- Usage: lua deobfuscate.lua <input.luac> <output.luac> [--strip]
 
+package.path = package.path .. ";E:/LuaRes/luatools/forward/?.lua;E:/LuaRes/luatools/reverse/?.lua;E:/LuaRes/luatools/utils/?.lua"
 local luac = require("luac")
 
 local OP_EXTRAARG = luac.OP_EXTRAARG  -- 46, legal

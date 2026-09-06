@@ -1,4 +1,4 @@
-package.path = package.path .. ";E:/LuaRes/luatools/?.lua"
+package.path = package.path .. ";E:/LuaRes/luatools/forward/?.lua;E:/LuaRes/luatools/reverse/?.lua;E:/LuaRes/luatools/utils/?.lua"
 local luac = require('luac')
 
 local function compile_source(src)

@@ -1,5 +1,5 @@
 -- test_reverse.lua: 测试所有反向去混淆模块的 round-trip
-package.path = package.path .. ";E:/LuaRes/luatools/?.lua"
+package.path = package.path .. ";E:/LuaRes/luatools/forward/?.lua;E:/LuaRes/luatools/reverse/?.lua;E:/LuaRes/luatools/utils/?.lua"
 local luac = require('luac')
 
 local function compile_source(src)
