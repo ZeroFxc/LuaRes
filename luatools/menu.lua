@@ -224,6 +224,14 @@ local function get_fn(mod, mode)
     end
 end
 
+local function read_file(path)
+    local f = io.open(path, 'rb')
+    if not f then return nil end
+    local data = f:read('*a')
+    f:close()
+    return data
+end
+
 local function compile_source(data)
     -- 尝试1: 作为Lua源码加载
     local func, err = load(data)
@@ -240,12 +248,10 @@ local function compile_source(data)
     -- 尝试3: 作为未加密字节码直接加载
     local ok3, proto2 = pcall(luac.undump, data, false)
     if ok3 and proto2 then return proto2 end
-    -- 尝试4: 作为源码文件路径读取
-    local fin = io.open(data, 'rb')
-    if fin then
-        local src = fin:read('*a')
-        fin:close()
-        return compile_source(src)
+    -- 尝试4: 作为文件路径读取（支持中文路径）
+    local content = read_file(data)
+    if content then
+        return compile_source(content)
     end
     error('无法解析输入: 不是有效的Lua源码、字节码或文件路径')
 end
@@ -259,10 +265,8 @@ local function execute(mode, modules, input, output)
     print('模块: ' .. table.concat(modules, ', '))
     print('---')
 
-    local fin = io.open(input, 'rb')
-    if not fin then print('ERROR: 无法打开 ' .. input); return end
-    local data = fin:read('*a')
-    fin:close()
+    local data = read_file(input)
+    if not data then print('ERROR: 无法打开 ' .. input); return end
 
     local proto = compile_source(data)
 
