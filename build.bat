@@ -70,13 +70,12 @@ echo ========================================
 echo.
 cd /d E:\LuaRes
 echo LOCAL_PATH := $(call my-dir) > Android.mk
-echo ROOT_PATH := $(LOCAL_PATH) >> Android.mk
 echo. >> Android.mk
 echo # Lua static library (luasafe) >> Android.mk
-echo include $(ROOT_PATH)/luasafe/Android.mk >> Android.mk
+echo include E:/LuaRes/luasafe/Android.mk >> Android.mk
 echo. >> Android.mk
 echo # luajava shared library (androluajava) >> Android.mk
-echo include $(ROOT_PATH)/androluajava/Android.mk >> Android.mk
+echo include E:/LuaRes/androluajava/Android.mk >> Android.mk
 "%NDK%" NDK_PROJECT_PATH=E:\LuaRes APP_BUILD_SCRIPT=E:\LuaRes\Android.mk NDK_APPLICATION_MK=E:\LuaRes\Application.mk
 goto end
 
@@ -87,13 +86,12 @@ echo ========================================
 echo.
 cd /d E:\LuaRes
 echo LOCAL_PATH := $(call my-dir) > Android.mk
-echo ROOT_PATH := $(LOCAL_PATH) >> Android.mk
 echo. >> Android.mk
 echo # Lua static library (luasafe) >> Android.mk
-echo include $(ROOT_PATH)/luasafe/Android.mk >> Android.mk
+echo include E:/LuaRes/luasafe/Android.mk >> Android.mk
 echo. >> Android.mk
 echo # luajava shared library (oldaluajava) >> Android.mk
-echo include $(ROOT_PATH)/oldaluajava/Android.mk >> Android.mk
+echo include E:/LuaRes/oldaluajava/Android.mk >> Android.mk
 "%NDK%" NDK_PROJECT_PATH=E:\LuaRes APP_BUILD_SCRIPT=E:\LuaRes\Android.mk NDK_APPLICATION_MK=E:\LuaRes\Application.mk
 goto end
 
@@ -104,13 +102,12 @@ echo ========================================
 echo.
 cd /d E:\LuaRes
 echo LOCAL_PATH := $(call my-dir) > Android.mk
-echo ROOT_PATH := $(LOCAL_PATH) >> Android.mk
 echo. >> Android.mk
 echo # Lua static library (luasafe) >> Android.mk
-echo include $(ROOT_PATH)/luasafe/Android.mk >> Android.mk
+echo include E:/LuaRes/luasafe/Android.mk >> Android.mk
 echo. >> Android.mk
 echo # luajava shared library (andluanewjava) >> Android.mk
-echo include $(ROOT_PATH)/andluanewjava/Android.mk >> Android.mk
+echo include E:/LuaRes/andluanewjava/Android.mk >> Android.mk
 "%NDK%" NDK_PROJECT_PATH=E:\LuaRes APP_BUILD_SCRIPT=E:\LuaRes\Android.mk NDK_APPLICATION_MK=E:\LuaRes\Application.mk
 goto end
 

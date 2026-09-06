@@ -1,8 +1,8 @@
-LOCAL_PATH := $(call my-dir)
+﻿LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 LOCAL_CFLAGS := -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../andlua
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../luasafe $(LOCAL_PATH)/../luaclib
 LOCAL_CFLAGS += -std=c99
 
 #CAL_ARM_MODE := arm

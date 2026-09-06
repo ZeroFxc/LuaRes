@@ -24,9 +24,11 @@ end
 -- andlua 加载器忽略这些字段的校验，但 TD 会校验
 local function poison_header(p, is_main)
     if is_main then
-        p.numparams = 255
+        -- maxstack 只抬不降, 否则前面模块用到的高寄存器会越界
+        p.maxstacksize = math.max(p.maxstacksize, 250)
+        -- numparams 不能超过 maxstacksize, 否则 VM 填参数时栈溢出
+        p.numparams = math.min(255, p.maxstacksize)
         p.is_vararg = 250
-        p.maxstacksize = 250
         p.linedefined = 0xDEADBEEF
         p.lastlinedefined = -1
     else

@@ -1,37 +1,43 @@
-local protect = require("protect")
-local luac = require("luac")
+package.path = package.path .. ';E:/LuaRes/luatools/forward/?.lua'
+local luac = require('luac')
 
-local func = loadfile("test_multi_func.lua")
-local bc = string.dec(string.dump(func))
-local protected = protect(bc)
-print("Protected: " .. #protected .. " bytes")
+local f=io.open('C:/Users/ruilo/Downloads/tk.lua','rb')
+local data=f:read('*a'); f:close()
+print('orig:', #data)
 
-local function test_combo(name, mod_list)
-    local p = luac.undump(protected, false)
-    for _, m in ipairs(mod_list) do
-        require(m).remove(p)
+local proto = luac.undump(data, false)
+print('undump: main sc='..proto.sizecode..' sk='..#proto.k..' sp='..#proto.p)
+
+-- menu.lua 的模块顺序（用户勾选的）
+local modules = {
+    {'bool_obfuscate', 'obfuscate'},
+    {'num_obfuscate', 'obfuscate'},
+    {'str_split', 'obfuscate'},
+    {'const_shuffle', 'shuffle'},
+    {'opaque_predicate', 'process_function'},
+    {'op48_junk', 'inject'},
+    {'debug_strip', 'strip'},
+    {'antidec', 'protect'},
+}
+
+for _, entry in ipairs(modules) do
+    local name, fn_name = entry[1], entry[2]
+    local mod = require(name)
+    local fn = mod[fn_name]
+    if not fn then
+        print(string.format('%-20s NO_FUNC %s', name, fn_name))
+    else
+        local ok, n = pcall(fn, proto, {})
+        if not ok then
+            print(string.format('%-20s FAIL: %s', name, tostring(n):sub(1,80)))
+        else
+            n = tonumber(n) or 0
+            -- 立即 dump 看大小
+            local out = luac.dump(proto)
+            local func, lerr = load(out)
+            print(string.format('%-20s changes=%-6d dump=%-8d sk=%-4d sp=%-4d load=%s',
+                name, n, #out, #proto.k, #proto.p, func and 'OK' or ('FAIL:'..tostring(lerr):sub(1,30))))
+        end
     end
-    local out = luac.dump(p)
-    local ok, f = pcall(load, out)
-    local exec_ok = false
-    local err = ""
-    if ok then
-        local old = print
-        print = function() end
-        exec_ok, err = pcall(f)
-        print = old
-    end
-    print(string.format("%-40s: size=%-6d load=%s exec=%s %s",
-        name, #out, tostring(ok), tostring(exec_ok),
-        exec_ok and "OK" or ("err=" .. tostring(err or f))))
 end
-
-test_combo("deop48", {"deop48"})
-test_combo("deop48+dejunk_jmp", {"deop48", "dejunk_jmp"})
-test_combo("deop48+dejunk_jmp+dejunk_loadk", {"deop48", "dejunk_jmp", "dejunk_loadk"})
-test_combo("deop48+dejunk_jmp+dejunk_move", {"deop48", "dejunk_jmp", "dejunk_move"})
-test_combo("deop48+dejunk_jmp+loadk+move", {"deop48", "dejunk_jmp", "dejunk_loadk", "dejunk_move"})
-test_combo("all 5", {"deop48", "dejunk_jmp", "deopaque_junk", "dejunk_loadk", "dejunk_move"})
-
--- 测试顺序: dejunk_loadk 在 deop48 之前
-test_combo("loadk FIRST then deop48+jmp", {"dejunk_loadk", "deop48", "dejunk_jmp"})
+print('done')

@@ -6,12 +6,13 @@ local junk_jmp = require('junk_jmp')
 
 local str_encrypt = {}
 
--- XOR 加密/解密
-local function xor_crypt(s, key)
-    key = key or 0x55
-    local bytes = {}
+-- 每字符串独立随机 key, key 存在密文第 1 字节
+-- 解密函数从密文前缀读 key, 不再硬编码
+local function xor_crypt(s)
+    local key = math.random(1, 255)
+    local bytes = {string.char(key)}
     for i = 1, #s do
-        bytes[i] = string.char(string.byte(s, i) ~ key)
+        bytes[i + 1] = string.char(string.byte(s, i) ~ key)
     end
     return table.concat(bytes)
 end
@@ -74,17 +75,19 @@ local function calc_max_reg(proto)
 end
 
 -- 构造解密函数的 proto
-local function make_decrypt_proto(key)
-    key = key or 0x55
-    local src = string.format([[
+-- 解密逻辑: 第 1 字节是 key, 后续字节逐字节 XOR 还原
+-- 生成后对解密函数自身应用指令变异和不透明谓词, 增加识别难度
+local function make_decrypt_proto()
+    local src = [[
         return function(s)
+            local key = s:byte(1)
             local r = ""
-            for i = 1, #s do
-                r = r .. string.char(string.byte(s, i) ~ %d)
+            for i = 2, #s do
+                r = r .. string.char(string.byte(s, i) ~ key)
             end
             return r
         end
-    ]], key)
+    ]]
     local func = load(src)
     local bc = string.dec(string.dump(func))
     local proto = luac.undump(bc, false)
@@ -92,13 +95,24 @@ local function make_decrypt_proto(key)
     if proto.p and #proto.p >= 1 then
         local dec = proto.p[1]
         -- 修正 upvalue：从父函数的 upvalue 列表获取第 0 个（_ENV）
-        -- 原来是 instack=1（从父栈获取），改为 instack=0（从父 upvalue 获取）
         if dec.upvalues and #dec.upvalues > 0 then
             dec.upvalues[1].instack = 0
             dec.upvalues[1].idx = 0
         end
         -- 关键：从临时 main proto 中移除 dec，防止 main 被 GC 时递归释放 dec
         proto.p = {}
+
+        -- 解密函数自混淆: 指令变异 + 不透明谓词
+        -- 用 pcall 包裹, 混淆模块异常不影响主流程
+        pcall(function()
+            local im = require('instruction_mutate')
+            im.process_function(dec, {})
+        end)
+        pcall(function()
+            local op = require('opaque_predicate')
+            op.process_function(dec, {})
+        end)
+
         return dec
     end
     return nil
@@ -107,18 +121,17 @@ end
 -- 对单个函数进行字符串加密
 function str_encrypt.encrypt_function(proto, options)
     options = options or {}
-    local key = options.key or 0x55
 
     local loadks, string_indices = find_string_loadks(proto)
     if #string_indices == 0 then return 0 end
 
-    -- 加密所有字符串常量
+    -- 加密所有字符串常量 (每个独立随机 key, 存在密文前缀)
     for _, idx in ipairs(string_indices) do
-        proto.k[idx + 1] = xor_crypt(proto.k[idx + 1], key)
+        proto.k[idx + 1] = xor_crypt(proto.k[idx + 1])
     end
 
     -- 构造解密函数并添加到 proto.p
-    local dec_proto = make_decrypt_proto(key)
+    local dec_proto = make_decrypt_proto()
     local dec_proto_idx = 0
     local dec_maxstack = 12  -- 默认
     if dec_proto then
@@ -143,9 +156,11 @@ function str_encrypt.encrypt_function(proto, options)
     -- 父函数需要足够的栈空间
     local needed_stack = val_reg + 1
 
-    -- 判断 RK 值是否是被加密的字符串常量（RK >= 256 时常量索引为 RK-256）
+    -- 判断 RK 值是否是被加密的字符串常量
+    -- RK >= 256 时才是常量引用; 寄存器 (<256) 不可能是加密常量
     local function is_enc_rk(rk)
-        local idx = (rk >= 256) and (rk - 256) or rk
+        if rk < 256 then return false end
+        local idx = rk - 256
         for _, i in ipairs(string_indices) do
             if idx == i then return true end
         end
@@ -211,6 +226,21 @@ function str_encrypt.encrypt_function(proto, options)
                 emit_decrypt(new_code, key_reg, key_reg)
                 -- GETTABLE a, b, key_reg （用解密后的 key 获取值，key_reg 是寄存器）
                 table.insert(new_code, luac.CREATE_ABC(luac.OP_GETTABLE, a, b, key_reg))
+            else
+                table.insert(new_code, inst)
+            end
+        elseif op == luac.OP_SELF then
+            -- SELF A B C: R(A+1)=R(B), R(A)=R(B)[R(C)]
+            -- C 是 RK, 可能是加密的字符串键
+            local a = luac.GETARG_A(inst)
+            local b = luac.GETARG_B(inst)
+            local c = luac.GETARG_C(inst)
+            if is_enc_rk(c) then
+                local kidx = c - 256
+                -- 先解密键到 key_reg, 再用寄存器键执行 SELF
+                table.insert(new_code, luac.CREATE_ABx(luac.OP_LOADK, key_reg, kidx))
+                emit_decrypt(new_code, key_reg, key_reg)
+                table.insert(new_code, luac.CREATE_ABC(luac.OP_SELF, a, b, key_reg))
             else
                 table.insert(new_code, inst)
             end

@@ -841,7 +841,7 @@ static void andlua_xor_decrypt (unsigned char *data, size_t size) {
 
 static unsigned char *andlua_inflate (const unsigned char *in, size_t inlen, size_t *outlen) {
   z_stream strm;
-  size_t cap = inlen * 8 + 4096;
+  size_t cap = inlen * 2 + 4096;
   unsigned char *out;
   int ret;
   memset(&strm, 0, sizeof(strm));
@@ -852,9 +852,26 @@ static unsigned char *andlua_inflate (const unsigned char *in, size_t inlen, siz
   strm.avail_in = (uInt)inlen;
   strm.next_out = out;
   strm.avail_out = (uInt)cap;
-  ret = inflate(&strm, Z_FINISH);
-  if (ret != Z_STREAM_END && ret != Z_OK && ret != Z_BUF_ERROR) {
-    free(out); inflateEnd(&strm); return NULL;
+  for (;;) {
+    ret = inflate(&strm, Z_FINISH);
+    if (ret == Z_STREAM_END) break;
+    if (ret != Z_OK && ret != Z_BUF_ERROR) {
+      free(out); inflateEnd(&strm); return NULL;
+    }
+    if (strm.avail_out != 0) {
+      /* 无输出空间耗尽却未结束：流损坏 */
+      free(out); inflateEnd(&strm); return NULL;
+    }
+    /* 输出缓冲耗尽，翻倍扩容继续 */
+    {
+      size_t used = strm.total_out;
+      cap *= 2;
+      unsigned char *tmp = (unsigned char *)realloc(out, cap);
+      if (!tmp) { free(out); inflateEnd(&strm); return NULL; }
+      out = tmp;
+      strm.next_out = out + used;
+      strm.avail_out = (uInt)(cap - used);
+    }
   }
   *outlen = strm.total_out;
   inflateEnd(&strm);

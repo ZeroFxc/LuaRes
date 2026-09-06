@@ -42,67 +42,45 @@ local function adjust_jumps_remove(code, remove_pos, n)
     end
 end
 
--- XOR 解密
-local function xor_crypt(s, key)
+-- 新版解密: 密文第 1 字节是 key, 后续逐字节 XOR
+local function xor_decrypt(s)
+    if #s < 1 then return s end
+    local key = s:byte(1)
     local bytes = {}
-    for i = 1, #s do
-        bytes[i] = string.char(string.byte(s, i) ~ key)
+    for i = 2, #s do
+        bytes[i - 1] = string.char(string.byte(s, i) ~ key)
     end
     return table.concat(bytes)
 end
 
 -- 检查子proto是否是str_encrypt的解密函数
--- 特征: 常量池有 "byte"/"char"/"string", 代码有 BXOR, 是简单循环
+-- 特征: 常量池有 "byte"/"char", 有循环或BXOR
+-- 解密函数自混淆后指令可能被变换, 但 "byte"/"char" 常量和循环结构保留
 local function is_decrypt_proto(p)
     if not p.k or not p.code then return false end
     local has_byte = false
     local has_char = false
-    local has_string = false
+    local has_loop = false
     local has_bxor = false
     for i = 1, #p.k do
         if p.k[i] == "byte" then has_byte = true end
         if p.k[i] == "char" then has_char = true end
-        if p.k[i] == "string" then has_string = true end
     end
     for i = 1, #p.code do
-        if luac.GET_OPCODE(p.code[i]) == luac.OP_BXOR then has_bxor = true end
+        local op = luac.GET_OPCODE(p.code[i])
+        if op == luac.OP_BXOR then has_bxor = true end
+        if op == luac.OP_FORPREP or op == luac.OP_FORLOOP then has_loop = true end
     end
-    return has_byte and has_char and has_bxor
+    return has_byte and has_char and (has_bxor or has_loop)
 end
 
--- 从解密函数中提取XOR key
--- BXOR 指令的操作数是 LOADK 加载的数字常量
-local function extract_decrypt_key(p)
-    -- 找到 BXOR 指令，其操作数之一是常量（通过 LOADK 加载）
-    for i = 1, #p.code do
-        if luac.GET_OPCODE(p.code[i]) == luac.OP_BXOR then
-            local b = luac.GETARG_B(p.code[i])
-            local c = luac.GETARG_C(p.code[i])
-            -- 向前找 LOADK 加载到 b 或 c 的指令
-            for j = i - 1, math.max(1, i - 10), -1 do
-                if luac.GET_OPCODE(p.code[j]) == luac.OP_LOADK then
-                    local a = luac.GETARG_A(p.code[j])
-                    local bx = luac.GETARG_Bx(p.code[j])
-                    if a == b or a == c then
-                        local val = p.k[bx + 1]
-                        if type(val) == 'number' then
-                            return math.floor(val)
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return 0x55  -- 默认key
-end
-
--- 找到proto中的解密函数，返回 {idx, key} 或 nil
+-- 找到proto中的解密函数，返回 {idx} 或 nil
+-- 新版加密每个字符串自带 key, 不需要从解密函数提取固定 key
 local function find_decrypt_proto(proto)
     if not proto.p then return nil end
     for i = 1, #proto.p do
         if is_decrypt_proto(proto.p[i]) then
-            local key = extract_decrypt_key(proto.p[i])
-            return {idx = i - 1, key = key, proto = proto.p[i]}
+            return {idx = i - 1, proto = proto.p[i]}
         end
     end
     return nil
@@ -113,7 +91,6 @@ function destr.clean_function(proto)
     local dec_info = find_decrypt_proto(proto)
     if not dec_info then return 0 end
 
-    local key = dec_info.key
     local dec_idx = dec_info.idx
     local code = proto.code
     local count = 0
@@ -166,8 +143,9 @@ function destr.clean_function(proto)
                             -- GETTABUP模式: 前面还有 GETUPVAL table_reg, b
                             -- GETTABLE模式: 后面还有 GETTABLE a, b, mv_dst
 
-                            -- 检查后面是否有 GETTABLE 使用 mv_dst 作为 key
+                            -- 检查后面是否有 GETTABLE 或 SELF 使用 mv_dst 作为 key
                             local gettable_pos = nil
+                            local self_pos = nil
                             if i + 4 <= #code then
                                 local next_op = luac.GET_OPCODE(code[i + 4])
                                 if next_op == luac.OP_GETTABLE then
@@ -177,10 +155,32 @@ function destr.clean_function(proto)
                                     if gc == mv_dst then
                                         gettable_pos = i + 4
                                     end
+                                elseif next_op == luac.OP_SELF then
+                                    local sa = luac.GETARG_A(code[i + 4])
+                                    local sb = luac.GETARG_B(code[i + 4])
+                                    local sc = luac.GETARG_C(code[i + 4])
+                                    if sc == mv_dst then
+                                        self_pos = i + 4
+                                    end
                                 end
                             end
 
-                            if gettable_pos then
+                            if self_pos then
+                                -- SELF 模式: LOADK(加密键) + 解密序列 + SELF(寄存器键)
+                                -- 还原为 SELF sa, sb, loadk_const+256 (常量键)
+                                local sa = luac.GETARG_A(code[self_pos])
+                                local sb = luac.GETARG_B(code[self_pos])
+                                code[self_pos] = luac.CREATE_ABC(luac.OP_SELF, sa, sb, loadk_const + 256)
+                                -- 删除 LOADK + CLOSURE + MOVE + CALL + MOVE
+                                local remove_start = loadk_pos
+                                local remove_count = self_pos - loadk_pos
+                                for j = 1, remove_count do
+                                    table.remove(code, remove_start)
+                                end
+                                adjust_jumps_remove(code, remove_start, remove_count)
+                                count = count + 1
+                                i = remove_start
+                            elseif gettable_pos then
                                 -- GETTABLE 或 GETTABUP 模式
                                 -- 检查前面是否有 GETUPVAL (GETTABUP模式)
                                 local getupval_pos = nil
@@ -191,8 +191,9 @@ function destr.clean_function(proto)
                                     end
                                 end
 
-                                if getupval_pos then
+                                if getupval_pos and luac.GETARG_A(code[getupval_pos]) == luac.GETARG_B(code[gettable_pos]) then
                                     -- GETTABUP 模式: GETUPVAL + LOADK + 解密序列 + GETTABLE
+                                    -- 必须 GETUPVAL.A == GETTABLE.B (表寄存器匹配)
                                     -- 还原为 GETTABUP ga, gu_b, loadk_const+256
                                     local gu_b = luac.GETARG_B(code[getupval_pos])
                                     local ga = luac.GETARG_A(code[gettable_pos])
@@ -253,10 +254,10 @@ function destr.clean_function(proto)
         ::continue::
     end
 
-    -- 解密被标记的字符串常量
+    -- 解密被标记的字符串常量 (每个字符串自带 key 前缀)
     for idx in pairs(encrypted_consts) do
         if type(proto.k[idx + 1]) == 'string' then
-            proto.k[idx + 1] = xor_crypt(proto.k[idx + 1], key)
+            proto.k[idx + 1] = xor_decrypt(proto.k[idx + 1])
         end
     end
 
