@@ -14,10 +14,10 @@ echo ========================================
 echo   Select build target (UP/DOWN + ENTER)
 echo ========================================
 echo.
-if !selected!==0 (echo ^> 1. luasafe Windows (gcc)) else (echo   1. luasafe Windows (gcc))
-if !selected!==1 (echo ^> 2. androluajava NDK (luasafe+androluajava)) else (echo   2. androluajava NDK (luasafe+androluajava))
-if !selected!==2 (echo ^> 3. oldaluajava NDK (luasafe+oldaluajava)) else (echo   3. oldaluajava NDK (luasafe+oldaluajava))
-if !selected!==3 (echo ^> 4. andluanewjava NDK (luasafe+andluanewjava)) else (echo   4. andluanewjava NDK (luasafe+andluanewjava))
+if !selected!==0 (echo ^> 1. luasafe Windows gcc) else (echo   1. luasafe Windows gcc)
+if !selected!==1 (echo ^> 2. androluajava NDK) else (echo   2. androluajava NDK)
+if !selected!==2 (echo ^> 3. oldaluajava NDK) else (echo   3. oldaluajava NDK)
+if !selected!==3 (echo ^> 4. andluanewjava NDK) else (echo   4. andluanewjava NDK)
 echo.
 
 for /f "delims=" %%a in ('powershell -NoProfile -Command "$k=$Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown').VirtualKeyCode; if($k -eq 38){'UP'}elseif($k -eq 40){'DOWN'}elseif($k -eq 13){'ENTER'}else{'OTHER'}"') do set "key=%%a"
