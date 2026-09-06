@@ -19,6 +19,26 @@ local FORWARD_ORDER = {
     'antidec',
 }
 
+local FORWARD_DESC = {
+    bool_obfuscate = '布尔值混淆',
+    num_obfuscate = '数字运算混淆',
+    str_split = '字符串分割混淆',
+    str_encrypt = '字符串加密(运行时解密)',
+    const_shuffle = '常量池乱序',
+    instruction_mutate = '指令等价替换',
+    opaque_predicate = '不透明谓词死分支',
+    const_poison = '常量池投毒',
+    opaque_junk = '不透明谓词垃圾指令',
+    junk_jmp = '垃圾跳转指令',
+    junk_loadk = '垃圾LOADK指令',
+    junk_move = '垃圾MOVE指令',
+    op48_junk = 'OP48无效操作码垃圾',
+    luac_obfuscate = '控制流混淆',
+    luac_flatten = '控制流扁平化',
+    debug_strip = '调试信息剥离',
+    antidec = '反编译防护',
+}
+
 local REVERSE_ORDER = {
     'fix_antidec', 'deop48', 'dejunk_jmp', 'dejunk_loadk',
     'dejunk_move', 'deopaque_junk', 'deconst_poison',
@@ -27,6 +47,27 @@ local REVERSE_ORDER = {
     'destr_split', 'destr_encrypt',
     'deflatten', 'dedebug_strip', 'deprotect',
     'de_junk_obfuscate',
+}
+
+local REVERSE_DESC = {
+    fix_antidec = '修复反编译防护',
+    deop48 = '去除OP48垃圾指令',
+    dejunk_jmp = '去除垃圾跳转',
+    dejunk_loadk = '去除垃圾LOADK',
+    dejunk_move = '去除垃圾MOVE',
+    deopaque_junk = '去除不透明谓词垃圾',
+    deconst_poison = '去除常量池投毒',
+    deopaque_predicate = '去除不透明谓词死分支',
+    deinstruction_mutate = '还原指令等价替换',
+    deconst_shuffle = '还原常量池乱序',
+    denum_obfuscate = '还原数字混淆',
+    debool_obfuscate = '还原布尔值混淆',
+    destr_split = '还原字符串分割',
+    destr_encrypt = '还原字符串加密',
+    deflatten = '还原控制流扁平化',
+    dedebug_strip = '恢复调试信息(不可行)',
+    deprotect = '综合去保护',
+    de_junk_obfuscate = '综合垃圾指令去除',
 }
 
 local DEFAULT_FORWARD = {
@@ -79,7 +120,8 @@ local function module_menu(mode)
         print_header((mode == 'forward') and '选择混淆模块' or '选择去混淆模块')
         for i, m in ipairs(order) do
             local mark = selected[m] and '[x]' or '[ ]'
-            print(string.format('  %2d. %s %s', i, mark, m))
+            local desc = (mode == 'forward') and FORWARD_DESC[m] or REVERSE_DESC[m]
+            print(string.format('  %2d. %s %-22s %s', i, mark, m, desc or ''))
         end
         print()
         print('  a. 全选    n. 全不选    i. 反选    d. 恢复默认')
