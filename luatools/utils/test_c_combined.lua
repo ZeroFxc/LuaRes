@@ -1,0 +1,13 @@
+local luac = require('luac')
+local src = 'local a="hello" local b="world" local n=42 return a..b..tostring(n)'
+local bc = string.dec(string.dump(load(src)))
+local proto = luac.undump(bc, false)
+luac.str_encrypt_c(proto)
+luac.const_shuffle_c(proto)
+luac.num_obfuscate_c(proto)
+luac.bool_obfuscate_c(proto)
+luac.debug_strip_c(proto)
+local enc = luac.dump(proto)
+local result = load(enc)()
+print("combined result:", result)
+print(result == "helloworld42" and "PASS" or "FAIL")

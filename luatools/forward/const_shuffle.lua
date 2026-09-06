@@ -30,11 +30,28 @@ local function build_remap(perm)
 end
 
 local function shuffle_function(proto)
-    local n = #proto.k  -- use table length, not proto.sizek (may be stale)
+    -- proto.sizek is stale (cached from load time). Compute actual pool size
+    -- from non-nil k entries. Do NOT use code references to determine pool size:
+    -- an out-of-range reference (e.g. orphaned EXTRAARG from another module's bug)
+    -- must not inflate the pool. Such references are left unchanged (still invalid).
+    local max_idx = proto.sizek - 1  -- 0-based, minimum from stale sizek
+    for i = 1, #proto.k do
+        if proto.k[i] ~= nil then max_idx = math.max(max_idx, i - 1) end
+    end
+    local n = max_idx + 1  -- 1-based count
     if n <= 1 then
-        for i = 1, proto.sizep do shuffle_function(proto.p[i]) end
+        for i = 1, #proto.p do
+            if proto.p[i] then shuffle_function(proto.p[i]) end
+        end
         return
     end
+
+    -- fill holes with false so #proto.k == n and lua_rawlen is stable
+    for i = 1, n do
+        if proto.k[i] == nil then proto.k[i] = false end
+    end
+    -- clear stale entries beyond n
+    for i = n + 1, #proto.k do proto.k[i] = nil end
 
     local perm = rand_perm(n)
     local remap = build_remap(perm)
@@ -94,9 +111,9 @@ local function shuffle_function(proto)
         -- OP_CLOSURE: Bx is proto index, leave alone
     end
 
-    -- Recurse into sub-functions
-    for i = 1, proto.sizep do
-        shuffle_function(proto.p[i])
+    -- Recurse into sub-functions (use #proto.p, sizep may be stale)
+    for i = 1, #proto.p do
+        if proto.p[i] then shuffle_function(proto.p[i]) end
     end
 end
 

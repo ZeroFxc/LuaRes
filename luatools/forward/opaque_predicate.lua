@@ -9,7 +9,7 @@ local BITRK = 0x100
 
 -- Generate a random instruction (valid-ish but harmless)
 local function random_insn()
-    local op = math.random(0, 46)
+    local op = math.random(0, 45)  -- exclude 46 (EXTRAARG, requires LOADKX prefix + iAx format)
     local a = math.random(0, 15)
     local b = math.random(0, 15)
     local c = math.random(0, 15)
@@ -17,11 +17,18 @@ local function random_insn()
     if op == luac.OP_RETURN or op == luac.OP_CALL or op == luac.OP_TAILCALL then
         op = luac.OP_MOVE
     end
+    -- Avoid LOADKX (requires following EXTRAARG) and SETLIST with C=0 (requires EXTRAARG)
+    if op == luac.OP_LOADKX then
+        op = luac.OP_LOADK
+    end
     if op == luac.OP_JMP then
         return luac.CREATE_AsBx(luac.OP_JMP, 0, math.random(1, 5))
     elseif op == luac.OP_LOADK then
         return luac.CREATE_ABx(luac.OP_LOADK, a, math.random(0, 5))
     else
+        if op == luac.OP_SETLIST then
+            c = math.random(1, 15)  -- avoid C=0 which requires following EXTRAARG
+        end
         return luac.CREATE_ABC(op, a, b, c)
     end
 end

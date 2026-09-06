@@ -27,65 +27,20 @@
 
 #include "lua.h"
 #include "lauxlib.h"
+#include "luac.h"
 
-/*===========================================================================
-** Data structures
-**=========================================================================*/
-
-typedef struct luac_Proto {
-    unsigned int *code;
-    struct luac_Proto **p;
-    /* constants */
-    int *k_tag;
-    char **k_str;
-    int *k_str_len;
-    double *k_num;
-    int *k_bool;
-    /* debug */
-    int *lineinfo;
-    char **locvar_name;
-    int *locvar_name_len;
-    int *locvar_startpc;
-    int *locvar_endpc;
-    char **upval_name;
-    int *upval_name_len;
-    unsigned char *upval_instack;
-    unsigned char *upval_idx;
-    /* sizes */
-    int sizecode, sizep, sizek;
-    int sizelineinfo, sizelocvars, sizeupvalues;
-    /* header */
-    int numparams;
-    unsigned char is_vararg;
-    unsigned char maxstacksize;
-    int linedefined;
-    int lastlinedefined;
-    char *source;
-    int source_len;
-    /* cached Lua tables (registry refs) */
-    int code_tbl, p_tbl, k_tbl;
-    int lineinfo_tbl, locvars_tbl, upvalues_tbl;
-} luac_Proto;
-
-/* constant tags (matching Lua 5.3) */
-#define LUA_TNIL      0
-#define LUA_TBOOLEAN  1
-#define LUA_TNUMFLT   3
-#define LUA_TNUMINT   19  /* variant tag */
-#define LUA_TSHRSTR   4
-#define LUA_TLNGSTR   20
 
 /*===========================================================================
 ** Memory helpers
 **=========================================================================*/
 
-static void *luac_alloc(size_t sz) {
+void *luac_alloc(size_t sz) {
     void *p = calloc(1, sz);
     if (!p) { fprintf(stderr, "luac: out of memory\n"); exit(1); }
     return p;
 }
 
-static char *luac_strdup(const char *s) {
+char *luac_strdup(const char *s) {
     if (!s) return NULL;
     size_t len = strlen(s) + 1;
     char *p = luac_alloc(len);
@@ -93,7 +48,7 @@ static char *luac_strdup(const char *s) {
     return p;
 }
 
-static char *luac_strndup(const char *s, size_t len) {
+char *luac_strndup(const char *s, size_t len) {
     if (!s) return NULL;
     char *p = luac_alloc(len + 1);
     memcpy(p, s, len);
@@ -754,12 +709,12 @@ static void create_upvalues_table(lua_State *L, luac_Proto *f) {
 }
 
 /* Push Proto userdata onto stack */
-static void push_proto(lua_State *L, luac_Proto *f);
+void luac_push_proto(lua_State *L, luac_Proto *f);
 
 static void create_p_table(lua_State *L, luac_Proto *f) {
     lua_newtable(L);
     for (int i = 0; i < f->sizep; i++) {
-        push_proto(L, f->p[i]);
+        luac_push_proto(L, f->p[i]);
         lua_rawseti(L, -2, i + 1);
     }
 }
@@ -788,6 +743,16 @@ static void sync_k_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
     int n = (int)lua_rawlen(L, -1);
     /* free old */
     if (f->k_str) {
+        for (int i = 0; i < f->sizek; i++) {
+            if (f->k_str[i]) {
+                for (int j = i + 1; j < f->sizek; j++) {
+                    if (f->k_str[j] == f->k_str[i]) {
+                        fprintf(stderr, "[sync_k] DUP k_str ptr at %d and %d (sizek=%d)\n", i, j, f->sizek);
+                        f->k_str[j] = NULL;
+                    }
+                }
+            }
+        }
         for (int i = 0; i < f->sizek; i++) free(f->k_str[i]);
         free(f->k_str);
     }
@@ -992,6 +957,12 @@ static void sync_all_tables(lua_State *L, luac_Proto *f) {
     }
 }
 
+/* Public: sync all cached tables for proto userdata at stack idx */
+void luac_sync_proto(lua_State *L, int idx) {
+    luac_Proto *f = (luac_Proto *)luaL_checkudata(L, idx, "luac.Proto");
+    if (f) sync_all_tables(L, f);
+}
+
 /*===========================================================================
 ** Proto userdata
 **=========================================================================*/
@@ -1179,7 +1150,7 @@ static int proto_newindex(lua_State *L) {
     return 0;
 }
 
-static void push_proto(lua_State *L, luac_Proto *f) {
+void luac_push_proto(lua_State *L, luac_Proto *f) {
     luac_Proto *p = (luac_Proto *)lua_newuserdata(L, sizeof(luac_Proto));
     memcpy(p, f, sizeof(luac_Proto));
     /* reset table refs - the new userdata owns the C struct,
@@ -1233,7 +1204,7 @@ static int luac_undump(lua_State *L) {
     fprintf(stderr, "[luac] undump done: parsed=%zu total=%zu tail=%zu longfmt_short=%d\n", S.pos, S.len, S.len - S.pos, g_longfmt_short);
 #endif
 
-    push_proto(L, f);
+    luac_push_proto(L, f);
     /* f is now owned by userdata; don't free */
     return 1;
 }
@@ -1254,9 +1225,6 @@ static int luac_dump(lua_State *L) {
 
     g_null_src = g_empty_src = g_other_src = 0;
     count_source(f);
-#if LUACLIB_DEBUG
-    fprintf(stderr, "[dump debug] null_src=%d empty_src=%d other_src=%d\n", g_null_src, g_empty_src, g_other_src);
-#endif
 
     DumpState D;
     D.buf = NULL;
@@ -1480,6 +1448,9 @@ int luaopen_luac(lua_State *L) {
 
     /* module table */
     luaL_newlib(L, luac_funcs);
+
+    /* register C obfuscation modules */
+    luac_register_obfuscators(L, -1);
 
     /* opcode constants */
     for (int i = 0; opnames[i]; i++) {

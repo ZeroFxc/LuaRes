@@ -1,0 +1,11 @@
+local luac = require('luac')
+local src = 'return "hello"'
+local bc = string.dec(string.dump(load(src)))
+local proto = luac.undump(bc, false)
+print("undump ok, sizecode:", proto.sizecode)
+local n = luac.debug_strip_c(proto)
+print("debug_strip ok:", n)
+local enc = luac.dump(proto)
+print("dump ok, len:", #enc)
+local result = load(enc)()
+print("result:", result)

@@ -4,7 +4,7 @@
 --
 -- 原理:
 --   LOADK R(high), 1    -- 加载 true
---   TEST R(high), 0     -- if not R(high) then pc++ (R(high)=true, 不跳过)
+--   TEST R(high), 1     -- 此Lua TEST: C=1时 isfalse(ra)才跳过; true->不跳过->JMP
 --   JMP sBx=N           -- 跳过 N 条垃圾指令
 --   [垃圾指令 N 条]      -- 永远不会执行
 --   真实代码继续
@@ -53,10 +53,14 @@ local function make_loadk(a, bx)
     return (1) | ((a & 0xFF) << 6) | ((bx & 0x3FFFF) << 14)
 end
 
+local function make_loadbool(a, b)
+    -- LOADBOOL A B C: R(A) = (B != 0), if C then pc++
+    return (3) | ((a & 0xFF) << 6) | ((b & 0x1FF) << 14)
+end
+
 local function make_test(a, c)
-    -- TEST A C: andlua 实现与标准 Lua 相反
-    -- C=1: if l_isfalse(R(A)) then pc++ (R(A) truthy 时执行 JMP)
-    -- C=0: if !l_isfalse(R(A)) then pc++ (R(A) truthy 时跳过 JMP)
+    -- 此Lua TEST: if (C ? isfalse(ra) : !isfalse(ra)) then skip next
+    -- C=1+true: isfalse(true)=0 -> false -> 不跳过 -> 执行JMP
     return (34) | ((a & 0xFF) << 6) | ((c & 0x1FF) << 14)
 end
 
@@ -75,8 +79,8 @@ local function make_junk_inst(high_reg)
         -- LOADK high, const (需要常量池有值，用 0)
         return make_loadk(high_reg, 0)
     elseif r == 2 then
-        -- NEWTABLE high
-        return (10) | ((high_reg & 0xFF) << 6)
+        -- NEWTABLE high (op=11, not SETTABLE op=10)
+        return (11) | ((high_reg & 0xFF) << 6)
     elseif r == 3 then
         -- ADD high, high, high
         return (12) | ((high_reg & 0xFF) << 6) | ((high_reg & 0x1FF) << 23) | ((high_reg & 0x1FF) << 14)
@@ -121,11 +125,11 @@ local function inject_in_func(p, count)
         -- 垃圾分支大小（3-8 条）
         local junk_size = math.random(3, 8)
 
-        -- 构建分支: LOADK + TEST + JMP + [junk]
+        -- 构建分支: LOADBOOL(true) + TEST + JMP + [junk]
         -- JMP sBx = junk_size (跳过 junk_size 条垃圾指令)
         local branch = {}
-        table.insert(branch, make_loadk(high_reg, 0))  -- R(high) = k[0]
-        table.insert(branch, make_test(high_reg, 1))     -- if l_isfalse(R(high)) then pc++ (andlua语义)
+        table.insert(branch, make_loadbool(high_reg, 1))  -- R(high) = true (truthy)
+        table.insert(branch, make_test(high_reg, 1))     -- C=1+true: 不跳过JMP
         table.insert(branch, make_jmp(junk_size))         -- 跳过垃圾指令
         for i = 1, junk_size do
             table.insert(branch, make_junk_inst(high_reg + (i % extra)))

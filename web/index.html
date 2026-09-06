@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luac 字节码混淆工具</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f1117;color:#e1e4e8;min-height:100vh}
+.header{background:linear-gradient(135deg,#1a1d27,#0f1117);border-bottom:1px solid #2d333b;padding:16px 32px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:18px;font-weight:600;letter-spacing:.5px}
+.header h1 span{color:#58a6ff}
+.header .right{display:flex;align-items:center;gap:12px}
+.header .badge{font-size:12px;color:#8b949e;background:#161b22;padding:4px 10px;border-radius:12px;border:1px solid #2d333b}
+.header .help-btn{font-size:12px;color:#58a6ff;background:transparent;border:1px solid #30363d;padding:4px 12px;border-radius:6px;cursor:pointer}
+.header .help-btn:hover{background:#1c2128}
+.container{max-width:1400px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.container{grid-template-columns:1fr}}
+.card{background:#161b22;border:1px solid #2d333b;border-radius:12px;padding:18px}
+.card h2{font-size:14px;font-weight:600;margin-bottom:14px;color:#c9d1d9;display:flex;align-items:center;gap:8px}
+.card h2::before{content:'';width:3px;height:14px;background:#58a6ff;border-radius:2px}
+.upload-zone{border:2px dashed #30363d;border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;background:#0d1117}
+.upload-zone:hover,.upload-zone.dragover{border-color:#58a6ff;background:#0d111780}
+.upload-zone svg{width:36px;height:36px;color:#484f58;margin-bottom:10px}
+.upload-zone p{font-size:13px;color:#8b949e}
+.upload-zone .filename{margin-top:6px;font-size:12px;color:#58a6ff;word-break:break-all}
+.file-info{margin-top:10px;font-size:12px;color:#8b949e;display:flex;gap:16px;flex-wrap:wrap}
+.file-info span b{color:#c9d1d9}
+
+/* Module selection - scrollable */
+.module-scroll{max-height:560px;overflow-y:auto;padding-right:6px}
+.module-scroll::-webkit-scrollbar{width:6px}
+.module-scroll::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+.module-scroll::-webkit-scrollbar-thumb:hover{background:#484f58}
+.group{border:1px solid #2d333b;border-radius:8px;margin-bottom:10px;overflow:hidden}
+.group-header{background:#0d1117;padding:7px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.group-header span{font-size:12px;font-weight:500;color:#c9d1d9}
+.group-header .count{font-size:11px;color:#8b949e}
+.group-items{padding:6px 10px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.group-items.single{grid-template-columns:1fr}
+.module-item{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:5px;cursor:pointer;transition:background .15s}
+.module-item:hover{background:#1c2128}
+.module-item input[type=checkbox]{accent-color:#58a6ff;width:13px;height:13px;cursor:pointer;flex-shrink:0}
+.module-item label{font-size:11.5px;color:#8b949e;cursor:pointer;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.module-item input:checked+label{color:#c9d1d9}
+.module-item.custom label{color:#d2a8ff}
+.module-item.custom input:checked+label{color:#e6c6ff}
+.module-item .remove-mod{font-size:10px;color:#f85149;cursor:pointer;padding:0 4px;opacity:0;transition:opacity .15s}
+.module-item:hover .remove-mod{opacity:1}
+
+.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn{padding:9px 14px;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1;min-width:80px}
+.btn-primary{background:#238636;color:#fff}
+.btn-primary:hover:not(:disabled){background:#2ea043}
+.btn-primary:disabled{background:#1c2128;color:#484f58;cursor:not-allowed}
+.btn-secondary{background:#21262d;color:#c9d1d9;border:1px solid #30363d}
+.btn-secondary:hover:not(:disabled){background:#30363d}
+.btn-secondary:disabled{opacity:.4;cursor:not-allowed}
+.btn-run{background:#1f6feb;color:#fff}
+.btn-run:hover:not(:disabled){background:#388bfd}
+.btn-run:disabled{background:#1c2128;color:#484f58;cursor:not-allowed}
+.btn-sm{padding:6px 10px;font-size:11px;flex:none}
+
+.log-area{background:#0d1117;border:1px solid #2d333b;border-radius:8px;padding:10px;height:220px;overflow-y:auto;font-family:'Consolas','Fira Code',monospace;font-size:11.5px;line-height:1.55;margin-top:10px}
+.log-area::-webkit-scrollbar{width:6px}
+.log-area::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+.log-line{color:#8b949e}
+.log-line.ok{color:#3fb950}
+.log-line.err{color:#f85149}
+.log-line.info{color:#58a6ff}
+.log-line.warn{color:#d29922}
+.log-line.run{color:#79c0ff}
+
+.status-bar{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:#8b949e}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#484f58;flex-shrink:0}
+.status-dot.ready{background:#3fb950}
+.status-dot.working{background:#d29922;animation:pulse 1s infinite}
+.status-dot.error{background:#f85149}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.size-compare{display:flex;gap:16px;margin-top:10px;padding:10px;background:#0d1117;border-radius:8px;border:1px solid #2d333b;align-items:center}
+.size-item{flex:1;text-align:center}
+.size-item .label{font-size:10px;color:#8b949e;margin-bottom:2px}
+.size-item .value{font-size:16px;font-weight:600;color:#c9d1d9;font-family:monospace}
+.size-item .value.out{color:#3fb950}
+.size-arrow{color:#484f58;font-size:16px}
+
+/* Run output */
+.run-output{background:#0d1117;border:1px solid #2d333b;border-radius:8px;padding:10px;margin-top:10px;display:none}
+.run-output .run-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.run-output .run-header span{font-size:12px;font-weight:500;color:#c9d1d9}
+.run-output pre{font-family:'Consolas','Fira Code',monospace;font-size:12px;line-height:1.5;color:#79c0ff;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;margin:0}
+.run-output pre::-webkit-scrollbar{width:6px}
+.run-output pre::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+
+/* Custom module upload */
+.custom-upload{border:1px dashed #30363d;border-radius:8px;padding:12px;text-align:center;margin-top:10px;background:#0d1117}
+.custom-upload p{font-size:11px;color:#8b949e;margin-bottom:6px}
+.custom-upload .btn{flex:none}
+.custom-list{margin-top:8px}
+.custom-item{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:#1c2128;border-radius:5px;margin-bottom:4px;font-size:11px}
+.custom-item .name{color:#d2a8ff;font-weight:500}
+.custom-item .desc{color:#8b949e;margin-left:8px;font-size:10px}
+.custom-item .remove{color:#f85149;cursor:pointer;font-size:10px}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#161b22;border:1px solid #2d333b;border-radius:12px;padding:24px;max-width:640px;width:90%;max-height:80vh;overflow-y:auto}
+.modal h3{font-size:16px;margin-bottom:16px;color:#c9d1d9}
+.modal pre{background:#0d1117;border:1px solid #2d333b;border-radius:8px;padding:14px;font-family:'Consolas',monospace;font-size:12px;line-height:1.6;color:#79c0ff;overflow-x:auto;white-space:pre}
+.modal .close-btn{margin-top:16px;width:100%}
+.modal p{font-size:13px;color:#8b949e;margin-bottom:10px;line-height:1.6}
+.modal code{background:#0d1117;padding:2px 6px;border-radius:4px;font-size:12px;color:#d2a8ff}
+.help-tab.active{background:#1f6feb;color:#fff;border-color:#1f6feb}
+.help-tab:not(.active):hover{background:#30363d}
+.inspect-src.active{background:#1f6feb;color:#fff;border-color:#1f6feb}
+.insp-section{margin-bottom:14px;border:1px solid #2d333b;border-radius:8px;overflow:hidden}
+.insp-section-header{background:#0d1117;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.insp-section-header span{font-size:12px;font-weight:600;color:#c9d1d9}
+.insp-section-header .badge{font-size:11px;color:#8b949e;background:#161b22;padding:2px 8px;border-radius:10px}
+.insp-section-body{padding:10px 12px;display:block}
+.insp-section-body.collapsed{display:none}
+.insp-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.insp-stat{background:#0d1117;border-radius:6px;padding:8px 10px}
+.insp-stat .label{font-size:10px;color:#8b949e;margin-bottom:2px}
+.insp-stat .value{font-size:14px;font-weight:600;color:#58a6ff;font-family:monospace}
+.insp-table{width:100%;border-collapse:collapse;font-family:'Consolas',monospace;font-size:11px}
+.insp-table th{background:#0d1117;color:#8b949e;padding:5px 8px;text-align:left;border-bottom:1px solid #2d333b;position:sticky;top:0}
+.insp-table td{padding:4px 8px;border-bottom:1px solid #1c2128;color:#c9d1d9}
+.insp-table tr:hover td{background:#1c2128}
+.insp-table .pc{color:#8b949e;width:50px}
+.insp-table .op{color:#3fb950;font-weight:600;width:80px}
+.insp-table .opcode{color:#d29922;width:50px}
+.insp-table .args{color:#79c0ff}
+.insp-table .const-type{color:#d2a8ff;width:70px}
+.insp-table .const-val{color:#c9d1d9;word-break:break-all}
+.insp-table .const-idx{color:#8b949e;width:40px}
+.insp-scroll{max-height:300px;overflow-y:auto;border:1px solid #2d333b;border-radius:6px}
+.insp-subproto{margin-left:16px;margin-top:8px;border-left:2px solid #30363d;padding-left:12px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Luac <span>字节码混淆工具</span></h1>
+  <div class="right">
+    <button class="help-btn" id="btnHelp">API 文档</button>
+    <div class="badge" id="wasmStatus">WASM 加载中...</div>
+  </div>
+</div>
+<div class="container">
+  <!-- Left: Upload + Custom Modules -->
+  <div class="card">
+    <h2>1. 上传字节码</h2>
+    <div class="upload-zone" id="uploadZone">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <p>拖拽 .luac / .lua 字节码文件到此处，或点击选择</p>
+      <div class="filename" id="fileName"></div>
+    </div>
+    <input type="file" id="fileInput" accept=".luac,.lua,.bin" style="display:none">
+    <div class="file-info" id="fileInfo" style="display:none">
+      <span>原始大小: <b id="origSize">0</b></span>
+      <span>内置模块: <b id="modCount">0</b></span>
+      <span>自定义: <b id="customCount">0</b></span>
+    </div>
+
+    <h2 style="margin-top:20px">自定义模块</h2>
+    <div class="custom-upload">
+      <p>上传自定义模块（.lua 或 .js），模块需符合 API 规范</p>
+      <div style="display:flex;gap:6px;justify-content:center">
+        <button class="btn btn-secondary btn-sm" id="btnCustomUpload">导入 Lua 模块</button>
+        <button class="btn btn-secondary btn-sm" id="btnJsUpload">导入 JS 模块</button>
+      </div>
+      <input type="file" id="customInput" accept=".lua" style="display:none" multiple>
+      <input type="file" id="jsInput" accept=".js" style="display:none" multiple>
+    </div>
+    <div class="custom-list" id="customList"></div>
+  </div>
+
+  <!-- Right: Module Selection -->
+  <div class="card">
+    <h2>2. 选择模块 <span style="font-size:11px;color:#8b949e;font-weight:400;margin-left:auto">配置自动保存</span></h2>
+    <div class="module-scroll" id="moduleScroll"></div>
+    <div class="actions">
+      <button class="btn btn-secondary" id="btnAll">全选</button>
+      <button class="btn btn-secondary" id="btnNone">全不选</button>
+    </div>
+  </div>
+
+  <!-- Full width: Process + Run + Log -->
+  <div class="card" style="grid-column:1/-1">
+    <h2>3. 处理 / 运行 / 下载</h2>
+    <div class="actions">
+      <button class="btn btn-primary" id="btnProcess" disabled>开始混淆</button>
+      <button class="btn btn-run" id="btnRun" disabled>运行结果</button>
+      <button class="btn btn-secondary" id="btnInspect" disabled>查看字节码</button>
+      <button class="btn btn-secondary" id="btnEditor" disabled>编辑字节码</button>
+      <button class="btn btn-secondary" id="btnDownload" disabled>下载结果</button>
+      <button class="btn btn-secondary btn-sm" id="btnClearLog" style="flex:none">清空日志</button>
+    </div>
+    <div class="size-compare" id="sizeCompare" style="display:none">
+      <div class="size-item"><div class="label">原始</div><div class="value" id="sizeBefore">0</div></div>
+      <div class="size-arrow">&rarr;</div>
+      <div class="size-item"><div class="label">混淆后</div><div class="value out" id="sizeAfter">0</div></div>
+      <div class="size-arrow">&rarr;</div>
+      <div class="size-item"><div class="label">变化</div><div class="value" id="sizeDelta">0%</div></div>
+    </div>
+    <div class="status-bar" style="margin-top:12px">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">等待操作</span>
+    </div>
+    <div class="run-output" id="runOutput">
+      <div class="run-header">
+        <span>运行输出</span>
+        <button class="btn btn-secondary btn-sm" id="btnCloseRun" style="flex:none">关闭</button>
+      </div>
+      <pre id="runOutputText"></pre>
+    </div>
+    <div class="log-area" id="logArea"></div>
+  </div>
+</div>
+
+<!-- Bytecode Editor Modal -->
+<div class="modal-overlay" id="editorModal">
+  <div class="modal" style="max-width:1100px;max-height:90vh;display:flex;flex-direction:column">
+    <h3>字节码编辑器 <span id="editorTitle" style="font-size:12px;color:#8b949e;font-weight:400"></span></h3>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+      <button class="btn btn-secondary btn-sm editor-tab active" data-tab="code" style="flex:none" id="edTabCode">指令</button>
+      <button class="btn btn-secondary btn-sm editor-tab" data-tab="const" style="flex:none" id="edTabConst">常量池</button>
+      <span style="font-size:11px;color:#8b949e;margin-left:8px" id="editorStats"></span>
+      <span style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn btn-run btn-sm" style="flex:none" id="btnEditorRun">运行</button>
+        <button class="btn btn-primary btn-sm" style="flex:none" id="btnEditorSave">保存并导出</button>
+        <button class="btn btn-secondary btn-sm" style="flex:none" id="btnEditorClose">关闭</button>
+      </span>
+    </div>
+    <div id="editorCodePanel" style="flex:1;overflow-y:auto">
+      <table class="insp-table" id="editorCodeTable" style="width:100%">
+        <thead><tr><th style="width:50px">PC</th><th style="width:110px">操作码</th><th style="width:70px">A</th><th style="width:70px">B</th><th style="width:70px">C</th><th style="width:80px">Bx/sBx</th><th style="width:90px">操作</th></tr></thead>
+        <tbody id="editorCodeBody"></tbody>
+      </table>
+    </div>
+    <div id="editorConstPanel" style="flex:1;overflow-y:auto;display:none">
+      <div style="margin-bottom:8px">
+        <button class="btn btn-secondary btn-sm" style="flex:none" id="btnAddConstNum">+ 数字</button>
+        <button class="btn btn-secondary btn-sm" style="flex:none" id="btnAddConstStr">+ 字符串</button>
+        <button class="btn btn-secondary btn-sm" style="flex:none" id="btnAddConstBool">+ 布尔</button>
+        <button class="btn btn-secondary btn-sm" style="flex:none" id="btnAddConstNil">+ nil</button>
+      </div>
+      <table class="insp-table" style="width:100%">
+        <thead><tr><th style="width:50px">#</th><th style="width:90px">类型</th><th>值</th><th style="width:70px">操作</th></tr></thead>
+        <tbody id="editorConstBody"></tbody>
+      </table>
+    </div>
+    <div id="editorRunOutput" style="display:none;margin-top:10px">
+      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">运行输出</div>
+      <pre id="editorRunText" style="background:#0d1117;border:1px solid #2d333b;border-radius:6px;padding:8px;font-family:Consolas,monospace;font-size:12px;color:#79c0ff;max-height:120px;overflow-y:auto;white-space:pre-wrap;margin:0"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Bytecode Inspector Modal -->
+<div class="modal-overlay" id="inspectModal">
+  <div class="modal" style="max-width:900px">
+    <h3>字节码查看器 <span id="inspectTitle" style="font-size:12px;color:#8b949e;font-weight:400"></span></h3>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-secondary btn-sm inspect-src active" data-src="result" style="flex:none" id="inspectResult">查看结果</button>
+      <button class="btn btn-secondary btn-sm inspect-src" data-src="original" style="flex:none" id="inspectOriginal">查看原始</button>
+      <button class="btn btn-secondary btn-sm" style="flex:none;margin-left:auto" id="btnCloseInspect">关闭</button>
+    </div>
+    <div id="inspectContent" style="font-size:12px"></div>
+  </div>
+</div>
+
+<!-- API Help Modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal">
+    <h3>自定义模块 API 文档</h3>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-secondary btn-sm help-tab active" data-tab="lua" style="flex:none" id="tabLua">Lua 模块</button>
+      <button class="btn btn-secondary btn-sm help-tab" data-tab="js" style="flex:none" id="tabJs">JS 模块</button>
+    </div>
+    <div id="helpLua">
+      <p>Lua 模块在 WASM 内置 Lua 环境中运行，可访问全部 <code>luac.*</code> 函数。模块是一个 Lua chunk，执行后必须返回一个 <code>table</code>。</p>
+      <pre>return {
+    name        = "my_obfuscator",  -- 必填，唯一标识符
+    label       = "我的混淆器",       -- 可选，显示名称
+    description = "模块功能描述",     -- 可选
+
+    -- 必填，混淆入口函数
+    -- proto: luac.Proto userdata
+    apply = function(proto)
+        -- 可读写 proto 字段：
+        --   proto.code       table  指令数组 (1-based, 32-bit integer)
+        --   proto.k          table  常量表 (1-based)
+        --   proto.p          table  子 Proto 数组 (1-based)
+        --   proto.sizecode   number 指令数量 (可写)
+        --   proto.sizek      number 常量数量
+        --   proto.sizep      number 子 proto 数量
+        --   proto.numparams  number 参数数量 (可写)
+        --   proto.is_vararg  number 是否可变参数 (可写)
+        --   proto.linedefined number 起始行号 (可写)
+
+        -- 指令操作函数：
+        --   luac.GET_OPCODE(inst)  luac.SET_OPCODE(inst, op)
+        --   luac.GETARG_A(inst)    luac.SETARG_A(inst, a)
+        --   luac.GETARG_B(inst)    luac.SETARG_B(inst, b)
+        --   luac.GETARG_C(inst)    luac.SETARG_C(inst, c)
+        --   luac.GETARG_Bx(inst)   luac.SETARG_Bx(inst, bx)
+        --   luac.GETARG_sBx(inst)  luac.SETARG_sBx(inst, sbx)
+        --   luac.GETARG_Ax(inst)   luac.SETARG_Ax(inst, ax)
+        --   luac.CREATE_ABC(op,a,b,c)
+        --   luac.CREATE_ABx(op,a,bx)
+        --   luac.CREATE_AsBx(op,a,sbx)
+        --   luac.CREATE_Ax(op,ax)
+
+        -- 操作码常量：luac.OP_MOVE, luac.OP_LOADK, ... luac.OP_EXTRAARG(47)
+        -- 扩展操作码：luac.OP_FULLOPSIZE(48)
+        -- 操作码名称表：luac.OPCODE_NAMES[1..47]
+
+        -- 字节码导入导出：
+        --   luac.undump(str, force_encrypted) -> proto
+        --   luac.dump(proto) -> str
+
+        -- 可直接调用内置混淆模块：
+        --   luac.bool_obfuscate_c(proto)
+        --   luac.num_obfuscate_c(proto)
+        --   luac.str_encrypt_c(proto)
+        --   ... 等全部 19 个内置模块
+
+        -- 示例：在末尾插入 MOVE 0 0
+        local n = proto.sizecode
+        proto.code[n+1] = luac.CREATE_ABC(luac.OP_MOVE, 0, 0, 0)
+        proto.sizecode = n + 1
+
+        return true  -- 成功返回 true
+    end
+}</pre>
+      <p style="margin-top:12px">模块按注册顺序在内置模块之后执行。修改 <code>proto.code</code> 后必须同步更新 <code>proto.sizecode</code>。</p>
+    </div>
+    <div id="helpJs" style="display:none">
+      <p>JS 模块在浏览器页面环境中运行，可直接调用 WASM C API 和操作内存。模块是一个 JS 文件，通过 <code>module.exports</code> 导出对象。</p>
+      <pre>// 自定义 JS 模块示例
+module.exports = {
+    name: "my_js_obfuscator",   // 必填，唯一标识符
+    label: "我的JS混淆器",        // 可选，显示名称
+    description: "模块功能描述",  // 可选
+
+    // 必填，混淆入口函数
+    // api 对象包含：
+    //   api.handle    number  当前 proto 的注册表句柄
+    //   api.Module    object  emscripten Module 对象
+    //   api.call(name, retType, argTypes, args)  封装的 ccall
+    //   api.log(msg)  写日志到页面
+    //   api.fmtBytes(n)  格式化字节数
+    apply: function(api) {
+        // === 可用的 WASM C 函数 ===
+        // api.call('wasm_apply', 'number',
+        //   ['number','string'], [api.handle, 'num_obfuscate_c'])
+        // api.call('wasm_apply_custom', 'number',
+        //   ['number','string'], [api.handle, 'lua_mod_name'])
+        // api.call('wasm_dump', 'number',
+        //   ['number','number'], [api.handle, outLenPtr])
+        // api.call('wasm_load', 'number',
+        //   ['number','number'], [dataPtr, len])
+        // api.call('wasm_free', null, ['number'], [handle])
+        // api.call('wasm_last_error', 'string', [], [])
+
+        // === 直接操作 WASM 内存 ===
+        // var ptr = api.Module._malloc(100);
+        // api.Module.HEAPU8.set([0x1B,0x4C,0x75,0x61], ptr);
+        // var val = api.Module.getValue(ptr, 'i32');
+        // api.Module._free(ptr);
+
+        // === 示例：调用内置模块 + 自定义操作 ===
+        // api.call('wasm_apply', 'number',
+        //   ['number','string'], [api.handle, 'bool_obfuscate_c']);
+        // api.log('已完成布尔混淆');
+
+        // === 示例：dump 当前字节码并分析 ===
+        // var lenPtr = api.Module._malloc(4);
+        // var bcPtr = api.call('wasm_dump', 'number',
+        //   ['number','number'], [api.handle, lenPtr]);
+        // var bcLen = api.Module.getValue(lenPtr, 'i32');
+        // var bytes = api.Module.HEAPU8.subarray(bcPtr, bcPtr + bcLen);
+        // api.log('当前字节码: ' + api.fmtBytes(bcLen));
+        // api.call('wasm_free_dump', null, ['number'], [bcPtr]);
+        // api.Module._free(lenPtr);
+
+        return true;  // 成功返回 true，返回 false 视为失败
+    }
+};</pre>
+      <p style="margin-top:12px">JS 模块在内置模块和 Lua 自定义模块之后、按选择顺序执行。可自由组合调用内置模块，实现流水线编排。</p>
+    </div>
+    <button class="btn btn-secondary close-btn" id="btnCloseHelp">关闭</button>
+  </div>
+</div>
+
+<!-- === WASM RUNTIME (injected by merger) === -->
+<script>
+// __WASM_JS_INJECT__
+</script>
+
+<script>
+// __APP_JS__
+</script>
+</body>
+</html>

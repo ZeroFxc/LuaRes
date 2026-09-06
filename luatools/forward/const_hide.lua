@@ -107,7 +107,8 @@ function const_hide.process_function(proto)
     local ARG2_REG = base_reg + 2  -- offset (参数2)
     local ARG3_REG = base_reg + 3  -- endpos (参数3)
     local TMP_REG = base_reg + 4   -- GETTABUP/SETTABUP 临时 upvalue 寄存器
-    proto.maxstacksize = base_reg + 5
+    local KEY_REG = base_reg + 5   -- SETTABLE/SETTABUP 双隐藏时的键寄存器
+    proto.maxstacksize = base_reg + 6
 
     -- 生成截取序列 (5条指令), 结果在 SUB_REG
     local function make_sub_seq(str_idx0)
@@ -173,18 +174,41 @@ function const_hide.process_function(proto)
                 goto continue
             end
 
-        elseif op == 10 then  -- SETTABLE a, b, c: R(A)[R(B)] = R(C), B是键
-            if b >= 256 and offset_map[b - 256] then
-                local kidx = b - 256
-                local seq = make_sub_seq(kidx)
-                seq[#seq + 1] = luac.CREATE_ABC(10, a, SUB_REG, c)  -- SETTABLE a, key, value
-                proto.code[i] = seq[1]
-                for j = 2, #seq do
-                    table.insert(proto.code, i + j - 1, seq[j])
+        elseif op == 10 then  -- SETTABLE a, b, c: R(A)[R(B)] = R(C), B是键, C是值
+            local b_hid = (b >= 256 and offset_map[b - 256] ~= nil)
+            local c_hid = (c >= 256 and offset_map[c - 256] ~= nil)
+            if b_hid or c_hid then
+                local full_seq = {}
+                if b_hid and c_hid then
+                    -- 键和值都隐藏: 解密键→KEY_REG, 解密值→SUB_REG, SETTABLE a, KEY_REG, SUB_REG
+                    local kidx = b - 256
+                    local vidx = c - 256
+                    local kseq = make_sub_seq(kidx)
+                    for _, ins in ipairs(kseq) do full_seq[#full_seq + 1] = ins end
+                    full_seq[#full_seq + 1] = luac.CREATE_ABC(0, KEY_REG, SUB_REG, 0)  -- MOVE KEY_REG, SUB_REG
+                    local vseq = make_sub_seq(vidx)
+                    for _, ins in ipairs(vseq) do full_seq[#full_seq + 1] = ins end
+                    full_seq[#full_seq + 1] = luac.CREATE_ABC(10, a, KEY_REG, SUB_REG)
+                elseif b_hid then
+                    -- 只键隐藏: 解密键→SUB_REG, SETTABLE a, SUB_REG, c
+                    local kidx = b - 256
+                    local seq = make_sub_seq(kidx)
+                    for _, ins in ipairs(seq) do full_seq[#full_seq + 1] = ins end
+                    full_seq[#full_seq + 1] = luac.CREATE_ABC(10, a, SUB_REG, c)
+                else
+                    -- 只值隐藏: 解密值→SUB_REG, SETTABLE a, b, SUB_REG
+                    local vidx = c - 256
+                    local seq = make_sub_seq(vidx)
+                    for _, ins in ipairs(seq) do full_seq[#full_seq + 1] = ins end
+                    full_seq[#full_seq + 1] = luac.CREATE_ABC(10, a, b, SUB_REG)
                 end
-                adjust_jumps_insert(proto.code, i, #seq - 1)
+                proto.code[i] = full_seq[1]
+                for j = 2, #full_seq do
+                    table.insert(proto.code, i + j - 1, full_seq[j])
+                end
+                adjust_jumps_insert(proto.code, i, #full_seq - 1)
                 count = count + 1
-                i = i + #seq
+                i = i + #full_seq
                 goto continue
             end
 
@@ -212,19 +236,37 @@ function const_hide.process_function(proto)
                 goto continue
             end
 
-        elseif op == 8 then  -- SETTABUP a, b, c
-            if c >= 256 and offset_map[c - 256] then
-                local kidx = c - 256
-                local seq = make_sub_seq(kidx)
+        elseif op == 8 then  -- SETTABUP a, b, c: Upval(A)[R(B)] = R(C), B是键, C是值
+            local b_hid = (b >= 256 and offset_map[b - 256] ~= nil)
+            local c_hid = (c >= 256 and offset_map[c - 256] ~= nil)
+            if b_hid or c_hid then
                 local UPVAL_REG = TMP_REG
                 local full_seq = {
-                    luac.CREATE_ABC(5, UPVAL_REG, b, 0),  -- GETUPVAL UPVAL_REG, b
+                    luac.CREATE_ABC(5, UPVAL_REG, a, 0),  -- GETUPVAL UPVAL_REG, a
                 }
-                for _, ins in ipairs(seq) do
-                    full_seq[#full_seq + 1] = ins
+                if b_hid and c_hid then
+                    -- 键和值都隐藏: 解密键→KEY_REG, 解密值→SUB_REG, SETTABLE UPVAL, KEY_REG, SUB_REG
+                    local kidx = b - 256
+                    local vidx = c - 256
+                    local kseq = make_sub_seq(kidx)
+                    for _, ins in ipairs(kseq) do full_seq[#full_seq + 1] = ins end
+                    full_seq[#full_seq + 1] = luac.CREATE_ABC(0, KEY_REG, SUB_REG, 0)
+                    local vseq = make_sub_seq(vidx)
+                    for _, ins in ipairs(vseq) do full_seq[#full_seq + 1] = ins end
+                    full_seq[#full_seq + 1] = luac.CREATE_ABC(10, UPVAL_REG, KEY_REG, SUB_REG)
+                elseif b_hid then
+                    -- 只键隐藏: 解密键→SUB_REG, SETTABLE UPVAL, SUB_REG, c
+                    local kidx = b - 256
+                    local seq = make_sub_seq(kidx)
+                    for _, ins in ipairs(seq) do full_seq[#full_seq + 1] = ins end
+                    full_seq[#full_seq + 1] = luac.CREATE_ABC(10, UPVAL_REG, SUB_REG, c)
+                else
+                    -- 只值隐藏: 解密值→SUB_REG, SETTABLE UPVAL, b, SUB_REG
+                    local vidx = c - 256
+                    local seq = make_sub_seq(vidx)
+                    for _, ins in ipairs(seq) do full_seq[#full_seq + 1] = ins end
+                    full_seq[#full_seq + 1] = luac.CREATE_ABC(10, UPVAL_REG, b, SUB_REG)
                 end
-                -- SETTABLE UPVAL_REG, SUB_REG, R_a  (注意: SETTABLE a=table, b=key, c=value)
-                full_seq[#full_seq + 1] = luac.CREATE_ABC(10, UPVAL_REG, SUB_REG, a)
                 proto.code[i] = full_seq[1]
                 for j = 2, #full_seq do
                     table.insert(proto.code, i + j - 1, full_seq[j])
