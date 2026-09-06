@@ -89,7 +89,13 @@ end
 local function ask(prompt)
     io.write(prompt)
     io.flush()
-    return io.read('*l')
+    local ok, result = pcall(io.read, '*l')
+    if not ok then
+        -- Ctrl+C 或其他中断
+        print()
+        os.exit(0)
+    end
+    return result
 end
 
 local CONFIG_FILE = 'E:/LuaRes/luatools/menu_config.lua'
