@@ -201,8 +201,10 @@ local function file_menu(mode, default_input, default_output)
     local input = ask('输入文件 (默认 ' .. def_in .. '): ')
     if input == '' then input = def_in end
     input = input:gsub('^["\']', ''):gsub('["\']$', '')
-    local output = ask('输出文件 (默认 ' .. def_out .. '): ')
-    if output == '' then output = def_out end
+    local output = ask('输出文件 (回车自动生成): ')
+    if output == '' then
+        output = input .. '.luac'
+    end
     output = output:gsub('^["\']', ''):gsub('["\']$', '')
     return input, output
 end
