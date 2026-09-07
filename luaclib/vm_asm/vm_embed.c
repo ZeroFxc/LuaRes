@@ -108,7 +108,7 @@ static void buf_escape_string(Buf *b, const char *s, size_t len) {
         else if (c == '\r') buf_str(b, "\\r");
         else if (c == '\t') buf_str(b, "\\t");
         else if (c < 0x20 || c >= 0x7F) {
-            char tmp[8]; snprintf(tmp, sizeof(tmp), "\\%d", c); buf_str(b, tmp);
+            char tmp[8]; snprintf(tmp, sizeof(tmp), "\\%03d", c); buf_str(b, tmp);
         } else buf_char(b, (char)c);
     }
     buf_char(b, '"');
@@ -169,7 +169,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth) {
                 buf_escape_string(b, sv, sl);
                 free(sv); break;
             }
-            default: fprintf(stderr, "unknown constant type %d\n", t); exit(1);
+            default: buf_str(b, "nil"); break; /* poison/unknown const */
         }
     }
     buf_str(b, "},\n");
@@ -252,7 +252,7 @@ char *vm_embed_generate(const unsigned char *bc, size_t bc_len, size_t *out_len)
 }
 
 /* ---------- 可执行入口 ---------- */
-#ifndef EMSCRIPTEN
+#if !defined(EMSCRIPTEN) && !defined(VM_EMBED_NO_MAIN)
 int main(int argc, char **argv) {
     if (argc < 2) {
         fprintf(stderr, "usage: %s <input.luac> [output.lua]\n", argv[0]);

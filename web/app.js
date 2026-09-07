@@ -50,6 +50,24 @@ const MODULE_GROUPS = [
 ];
 
 const BUILTIN_IDS = new Set(MODULE_GROUPS.flatMap(g => g.modules.map(m => m.id)));
+
+// Execution order (matches menu.lua FORWARD_ORDER)
+const EXEC_ORDER = [
+  'const_hide_c','const_shuffle_c','str_encrypt_c','instruction_mutate_c',
+  'num_obfuscate_c','str_split_c','bool_obfuscate_c','table_obfuscate_c',
+  'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
+  'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
+  'flatten_enhance_c','debug_strip_c','antidec_c','proto_shuffle_c',
+  'live_range_split_c','op48_junk_c','vm_embed_c'
+];
+const EXEC_ORDER_MAP = new Map(EXEC_ORDER.map((id,i) => [id, i]));
+function sortModulesForExecution(mods){
+  return [...mods].sort((a,b) => {
+    const ia = EXEC_ORDER_MAP.has(a) ? EXEC_ORDER_MAP.get(a) : 999;
+    const ib = EXEC_ORDER_MAP.has(b) ? EXEC_ORDER_MAP.get(b) : 999;
+    return ia - ib;
+  });
+}
 const STORAGE_KEY = 'luac_obf_config_v2';
 const CUSTOM_STORAGE_KEY = 'luac_obf_custom_modules_v2';
 const JS_CUSTOM_STORAGE_KEY = 'luac_obf_js_modules_v2';
@@ -70,7 +88,7 @@ const uploadZone = $('uploadZone'), fileInput = $('fileInput');
 const fileNameEl = $('fileName'), fileInfo = $('fileInfo');
 const origSizeEl = $('origSize'), modCountEl = $('modCount'), customCountEl = $('customCount');
 const moduleScroll = $('moduleScroll');
-const btnProcess = $('btnProcess'), btnDownload = $('btnDownload'), btnRun = $('btnRun');
+const btnProcess = $('btnProcess'), btnProcessRun = $('btnProcessRun'), btnDownload = $('btnDownload'), btnRun = $('btnRun');
 const btnAll = $('btnAll'), btnNone = $('btnNone'), btnClearLog = $('btnClearLog');
 const logArea = $('logArea'), statusDot = $('statusDot'), statusText = $('statusText');
 const sizeCompare = $('sizeCompare'), sizeBefore = $('sizeBefore'), sizeAfter = $('sizeAfter'), sizeDelta = $('sizeDelta');
@@ -351,6 +369,7 @@ function handleFile(file){
     origSizeEl.textContent = fmtBytes(fileBytes.length);
     fileInfo.style.display = 'flex';
     btnProcess.disabled = !wasmReady;
+    btnProcessRun.disabled = !wasmReady;
     btnInspect.disabled = !wasmReady;
     btnEditor.disabled = !wasmReady;
     let fmt = '未知';
@@ -367,9 +386,22 @@ function handleFile(file){
 }
 
 // ---- Process ----
-btnProcess.addEventListener('click', async () => {
+async function runObfuscation(){
+  if(!fileBytes || !wasmReady) return false;
+  const mods = sortModulesForExecution(getSelectedModules());
+  if(mods.length === 0){ log('请至少选择一个模块', 'warn'); return false; }
+
+  btnProcess.disabled = true;
+  btnProcessRun.disabled = true;
+  btnDownload.disabled = true;
+  btnRun.disabled = true;
+  runOutput.style.display = 'none';
+  setStatus('正在处理...', 'working');
+  log('=== 开始混淆 (' + mods.length + ' 个模块) ===', 'info');
+
+  try {
   if(!fileBytes || !wasmReady) return;
-  const mods = getSelectedModules();
+  const mods = sortModulesForExecution(getSelectedModules());
   if(mods.length === 0){ log('请至少选择一个模块', 'warn'); return; }
 
   btnProcess.disabled = true;
@@ -403,6 +435,7 @@ btnProcess.addEventListener('click', async () => {
 
     for(let i = 0; i < mods.length; i++){
       const mod = mods[i];
+      if(mod === 'vm_embed_c') continue;
       const isJs = jsModules.some(m => m.name === mod);
       const isLuaCustom = !isJs && !BUILTIN_IDS.has(mod);
       const label = isJs
@@ -500,8 +533,68 @@ btnProcess.addEventListener('click', async () => {
     setStatus('处理失败: ' + e.message, 'error');
   } finally {
     btnProcess.disabled = !wasmReady || !fileBytes;
+    btnProcessRun.disabled = !wasmReady || !fileBytes;
     btnInspect.disabled = !wasmReady || (!fileBytes && !resultBytes);
     btnEditor.disabled = !wasmReady || (!fileBytes && !resultBytes);
+  }
+  return true;
+}
+
+btnProcess.addEventListener('click', () => { runObfuscation(); });
+
+btnProcessRun.addEventListener('click', async () => {
+  const ok = await runObfuscation();
+  if(ok && resultBytes){
+    // auto-run after obfuscation
+    try {
+      setStatus('正在运行结果...', 'working');
+      log('--- 运行' + (resultIsLua ? 'Lua源码' : '字节码') + ' ---', 'run');
+      let bcPtr, bcLen;
+      if(resultIsLua){
+        const src = new TextDecoder().decode(resultBytes);
+        const compiled = Module.ccall('wasm_load', 'number', ['number','number'], [0,0]);
+        // compile lua source to bytecode via wasm_load (it handles source)
+        const srcBytes = new TextEncoder().encode(src);
+        bcPtr = Module._malloc(srcBytes.length);
+        Module.HEAPU8.set(srcBytes, bcPtr);
+        const h2 = Module.ccall('wasm_load', 'number', ['number','number'], [bcPtr, srcBytes.length]);
+        Module._free(bcPtr);
+        if(h2 < 0){ throw new Error('VM源码编译失败'); }
+        const lenPtr = Module._malloc(4);
+        const dPtr = Module.ccall('wasm_dump', 'number', ['number','number'], [h2, lenPtr]);
+        bcLen = Module.getValue(lenPtr, 'i32');
+        Module._free(lenPtr);
+        bcPtr = Module._malloc(bcLen);
+        Module.HEAPU8.set(Module.HEAPU8.subarray(dPtr, dPtr + bcLen), bcPtr);
+        Module.ccall('wasm_free_dump', null, ['number'], [dPtr]);
+        Module.ccall('wasm_free', null, ['number'], [h2]);
+      } else {
+        bcPtr = Module._malloc(resultBytes.length);
+        Module.HEAPU8.set(resultBytes, bcPtr);
+        bcLen = resultBytes.length;
+      }
+      const runLenPtr = Module._malloc(4);
+      const runPtr = Module.ccall('wasm_run_bytecode', 'number', ['number','number','number'], [bcPtr, bcLen, runLenPtr]);
+      const runLen = Module.getValue(runLenPtr, 'i32');
+      Module._free(bcPtr);
+      Module._free(runLenPtr);
+      if(runPtr && runLen > 0){
+        const output = new TextDecoder().decode(Module.HEAPU8.subarray(runPtr, runPtr + runLen));
+        Module.ccall('wasm_free_output', null, ['number'], [runPtr]);
+        runOutputText.textContent = output;
+        log('运行完成 (' + runLen + ' 字节输出)', 'ok');
+      } else {
+        runOutputText.textContent = '(无输出)';
+        log('运行完成 (无输出)', 'info');
+      }
+      runOutput.style.display = 'block';
+      setStatus('运行完成', 'ready');
+    } catch(e){
+      log('运行错误: ' + e.message, 'err');
+      runOutputText.textContent = '运行错误: ' + e.message;
+      runOutput.style.display = 'block';
+      setStatus('运行失败', 'error');
+    }
   }
 });
 
@@ -1099,6 +1192,7 @@ async function initWasm(){
     }
     setStatus('WASM 就绪，请上传文件', 'ready');
     btnProcess.disabled = !fileBytes;
+    btnProcessRun.disabled = !fileBytes;
   } catch(e){
     log('WASM 加载失败: ' + e.message, 'err');
     setStatus('WASM 加载失败', 'error');

@@ -97,8 +97,7 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
         "    local nret = (c == 0) and res.n or (c - 1)\n"
         "    if c == 0 then %s = a + nret end\n"
         "    for i = 1, nret do %s[a + i - 1] = res[i] end\n"
-        "    for i = nret + 1, %s - a do %s[a + i - 1] = nil end\n"
-        "  end\n", R, TOP, R, TOP, R, TOP, R);
+        "  end\n", R, TOP, R, TOP, R);
 
     vmbuf_printf(&b,
         "  local function dotailcall(a, b)\n"

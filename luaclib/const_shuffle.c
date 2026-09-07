@@ -82,6 +82,16 @@ static void shuffle_function(luac_Proto *p) {
     free(old_tag); free(old_str); free(old_str_len); free(old_num); free(old_int); free(old_bool);
     free(remap_inv); free(orig_non_nil); free(non_nil);
 
+#if defined(CONST_SHUFFLE_DEBUG)
+    {
+        for (int dbg = 0; dbg < n; dbg++) {
+            if (old_tag[dbg] == LUA_TSHRSTR || old_tag[dbg] == LUA_TLNGSTR) {
+                fprintf(stderr, "  cs: old k[%d]=%s -> remap=%d newtag=%d newstr=%s\n", dbg, old_str[dbg] ? old_str[dbg] : "(null)", remap[dbg], p->k_tag[remap[dbg]], p->k_str[remap[dbg]] ? p->k_str[remap[dbg]] : "(null)");
+            }
+        }
+    }
+#endif
+
     /* fix instruction references */
     for (int i = 0; i < p->sizecode; i++) {
         unsigned int ins = p->code[i];

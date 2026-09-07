@@ -811,6 +811,7 @@ btnProcess.addEventListener('click', async () => {
 
     for(let i = 0; i < mods.length; i++){
       const mod = mods[i];
+      if(mod === 'vm_embed_c') continue;
       const isJs = jsModules.some(m => m.name === mod);
       const isLuaCustom = !isJs && !BUILTIN_IDS.has(mod);
       const label = isJs

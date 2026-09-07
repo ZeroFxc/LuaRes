@@ -5,7 +5,7 @@
 ** then decrypts with pure opcodes (LOADK/BXOR/GETTABLE/MOVE/CONCAT).
 ** Table is rebuilt per-site because CALL frames can clobber any register >= base.
 ** No global state, no Lua function calls, no external dependencies.
-** Handles: LOADK, GETTABUP, GETTABLE, SELF, SETTABUP, SETTABLE
+** Handles: LOADK, GETTABUP, GETTABLE, SELF, SETTABUP, SETTABLE, EQ, LT, LE
 */
 #include <time.h>
 #include <string.h>
@@ -105,6 +105,11 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
         } else if ((op == LUAC_OP_GETTABUP || op == LUAC_OP_GETTABLE || op == LUAC_OP_SELF) && c >= 256) {
             for (int j = 0; j < str_count; j++) if (str_idx[j] == c - 256) { site_count++; break; }
         } else if (op == LUAC_OP_SETTABUP || op == LUAC_OP_SETTABLE) {
+            int hit = 0;
+            if (b >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == b - 256) { hit = 1; break; }
+            if (!hit && c >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == c - 256) { hit = 1; break; }
+            if (hit) site_count++;
+        } else if (op == LUAC_OP_EQ || op == LUAC_OP_LT || op == LUAC_OP_LE) {
             int hit = 0;
             if (b >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == b - 256) { hit = 1; break; }
             if (!hit && c >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == c - 256) { hit = 1; break; }
@@ -254,6 +259,26 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
                     new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, res2_reg, b, 0);
                 }
                 new_code[ni++] = LUAC_ABC(LUAC_OP_SETTABLE, a, res2_reg, res1_reg);
+                count++;
+            } else {
+                new_code[ni++] = ins;
+            }
+        } else if (op == LUAC_OP_EQ || op == LUAC_OP_LT || op == LUAC_OP_LE) {
+            int b_enc = is_enc_rk(b, str_idx, str_count);
+            int c_enc = is_enc_rk(c, str_idx, str_count);
+            if (b_enc || c_enc) {
+                int new_b = b, new_c = c;
+                if (c_enc) {
+                    ei_arg = &enc[c - 256];
+                    DECRYPT(res1_reg);
+                    new_c = res1_reg;
+                }
+                if (b_enc) {
+                    ei_arg = &enc[b - 256];
+                    DECRYPT(res2_reg);
+                    new_b = res2_reg;
+                }
+                new_code[ni++] = LUAC_ABC(op, a, new_b, new_c);
                 count++;
             } else {
                 new_code[ni++] = ins;

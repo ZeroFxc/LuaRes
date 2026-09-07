@@ -6,7 +6,7 @@
 
 #define CONDITION_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET||(op)==LUAC_OP_LOADKX||(op)==LUAC_OP_TFORCALL||(op)==LUAC_OP_CLOSURE)
 
-static void inject_function(luac_Proto *p, int count) {
+static void inject_function(luac_Proto *p, int count, int depth) {
     if (!p->code || p->sizecode < 2 || count <= 0) return;
     int old_maxstack = p->maxstacksize;
     int extra = count < 20 ? count : 20;
@@ -39,7 +39,7 @@ static void inject_function(luac_Proto *p, int count) {
     }
     if (p->lineinfo) { free(p->lineinfo); p->lineinfo = NULL; }
     p->sizelineinfo = 0;
-    /* recursion disabled for debugging */
+    if (depth > 0) { for (int i = 0; i < p->sizep; i++) inject_function(p->p[i], count, depth-1); }
 }
 
 int junk_loadk_process(lua_State *L) {
@@ -52,7 +52,9 @@ int junk_loadk_process(lua_State *L) {
         if (lua_isnumber(L, -1)) count = (int)lua_tointeger(L, -1);
         lua_pop(L, 1);
     }
-    inject_function(p, count);
+    int depth = 99;
+    if (lua_gettop(L) >= 2 && lua_istable(L, 2)) { lua_getfield(L, 2, "depth"); if (lua_isnumber(L, -1)) depth = (int)lua_tointeger(L, -1); lua_pop(L, 1); }
+    inject_function(p, count, depth);
     lua_pushinteger(L, 1);
     return 1;
 }

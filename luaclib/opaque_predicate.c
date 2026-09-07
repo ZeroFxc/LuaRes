@@ -17,25 +17,23 @@
 #include <time.h>
 #include "obf_util.h"
 
-#define CONDITION_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET||(op)==LUAC_OP_LOADKX||(op)==LUAC_OP_TFORCALL)
+#define CONDITION_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET||(op)==LUAC_OP_LOADKX||(op)==LUAC_OP_TFORCALL||(op)==LUAC_OP_CLOSURE)
 
 static unsigned int random_dead_insn(luac_Proto *p, int r1, int r2) {
-    /* 生成看起来有意义的死指令，使用 scratch 寄存器和已有常量 */
-    int r = obf_rand() % 12;
-    int kc = (p->sizek > 0) ? (int)(obf_rand() % p->sizek) : 0;
+    /* 生成安全的死指令：只使用 MOVE/LOADBOOL/LOADK(数字)，不做算术位运算，
+       避免对 nil/function/string 等非数字值操作导致运行时错误 */
+    int r = obf_rand() % 5;
+    int kc = 0;
+    for (int tries = 0; tries < p->sizek; tries++) {
+        int candidate = (int)(obf_rand() % p->sizek);
+        if (p->k_tag[candidate] == LUA_TNUMFLT || p->k_tag[candidate] == LUA_TNUMINT) { kc = candidate; break; }
+    }
     switch (r) {
         case 0: return LUAC_ABC(LUAC_OP_MOVE, r1, r2, 0);
-        case 1: return LUAC_ABC(LUAC_OP_LOADBOOL, r1, obf_rand() % 2, 0);
-        case 2: return LUAC_ABC(LUAC_OP_NEWTABLE, r1, 0, 0);
-        case 3: return LUAC_ABC(LUAC_OP_LEN, r1, r2, 0);
-        case 4: return LUAC_ABx(LUAC_OP_LOADK, r1, kc);
-        case 5: return LUAC_ABC(LUAC_OP_ADD, r1, r2, r2);
-        case 6: return LUAC_ABC(LUAC_OP_SUB, r1, r2, r2);
-        case 7: return LUAC_ABC(LUAC_OP_MUL, r1, r2, r2);
-        case 8: return LUAC_ABC(LUAC_OP_BXOR, r1, r2, r2);
-        case 9: return LUAC_ABC(LUAC_OP_BAND, r1, r2, r2);
-        case 10: return LUAC_ABC(LUAC_OP_BOR, r1, r2, r2);
-        default: return LUAC_ABC(LUAC_OP_UNM, r1, r2, 0);
+        case 1: return LUAC_ABC(LUAC_OP_MOVE, r2, r1, 0);
+        case 2: return LUAC_ABC(LUAC_OP_LOADBOOL, r1, obf_rand() % 2, 0);
+        case 3: return LUAC_ABC(LUAC_OP_LOADBOOL, r2, obf_rand() % 2, 0);
+        default: return LUAC_ABx(LUAC_OP_LOADK, r1, kc);
     }
 }
 
@@ -68,7 +66,7 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
         case 0: /* LOADK 0 + LOADK 0 + LT(0<0) + JMP */
             prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, zero_idx);
             prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r2, zero_idx);
-            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LT, 0, r1, r2);
+            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LT, 1, r1, r2);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
         case 1: /* LOADK N + MUL(r,r) + LT(r<0) + JMP */
@@ -121,7 +119,9 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
     memmove(&p->code[pos + insert_len], &p->code[pos],
             sizeof(unsigned int) * (p->sizecode - pos));
     memcpy(&p->code[pos], prefix_buf, sizeof(unsigned int) * prefix);
-    for (int i = 0; i < dead_len; i++)
+    p->code[pos + prefix] = LUAC_ABx(LUAC_OP_LOADK, r1, zero_idx);
+    p->code[pos + prefix + 1] = LUAC_ABx(LUAC_OP_LOADK, r2, zero_idx);
+    for (int i = 2; i < dead_len; i++)
         p->code[pos + prefix + i] = random_dead_insn(p, r1, r2);
     p->sizecode += insert_len;
 
@@ -133,10 +133,11 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
 
 static int is_safe_pos(luac_Proto *p, int pos) {
     if (pos <= 0 || pos >= p->sizecode) return 0;
-    /* 不能在条件指令后插入（下一条必须是 JMP） */
+    /* 不能在条件/CLOSURE 指令后插入（下一条必须是 JMP/MOV） */
     if (CONDITION_OPS(p->code[pos - 1] & 0x3F)) return 0;
-    /* 不能在 JMP 目标位置插入（会破坏跳转） */
-    /* 不能在 RETURN 后插入 */
+    /* SETLIST C==0 后必须跟 EXTRAARG */
+    if ((p->code[pos - 1] & 0x3F) == LUAC_OP_SETLIST && ((p->code[pos - 1] >> 14) & 0x1FF) == 0) return 0;
+    /* 不能在 RETURN/EXTRAARG 位置插入 */
     if ((p->code[pos] & 0x3F) == LUAC_OP_RETURN) return 0;
     if ((p->code[pos] & 0x3F) == LUAC_OP_EXTRAARG) return 0;
     return 1;
@@ -167,7 +168,6 @@ static void inject_function(luac_Proto *p, int count) {
 int opaque_predicate_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
-    obf_srand((unsigned int)time(NULL));
 
     int count = 8;
     if (lua_gettop(L) >= 2 && lua_istable(L, 2)) {

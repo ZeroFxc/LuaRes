@@ -122,6 +122,8 @@ static void obfuscate_function(luac_Proto *p) {
     free(loadk_pos);
 
     /* === Phase 2: XOR-obfuscate dispatch EQ comparisons === */
+    /* DISABLED: has bug where JMP skips restore BXOR, state stays encrypted */
+#if 0
     /* Find EQ 1, state_reg, K(N) followed by JMP — these are dispatch entries */
     int *eq_pos = luac_alloc(sizeof(int) * p->sizecode);
     int neq = 0;
@@ -169,6 +171,7 @@ static void obfuscate_function(luac_Proto *p) {
         obf_adjust_jumps_insert(p->code, p->sizecode, pos + 1, extra_n);
     }
     free(eq_pos);
+#endif
 
     if (p->lineinfo) { free(p->lineinfo); p->lineinfo = NULL; }
     p->sizelineinfo = 0;
