@@ -168,7 +168,6 @@ static int obfuscate_proto(luac_Proto *p) {
 int table_obfuscate_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
-    obf_srand((unsigned int)time(NULL));
     int total = obfuscate_proto(p);
     if (p->p) for (int i = 0; i < p->sizep; i++) total += obfuscate_proto(p->p[i]);
     lua_pushinteger(L, total);

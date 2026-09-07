@@ -232,7 +232,6 @@ static int obf_function(luac_Proto *p) {
 int bool_obfuscate_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
-    obf_srand((unsigned int)time(NULL));
     int count = obf_function(p);
     lua_pushinteger(L, count);
     return 1;

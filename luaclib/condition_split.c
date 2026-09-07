@@ -200,7 +200,6 @@ int condition_split_process(lua_State *L) {
         if (lua_isnumber(L, -1)) count = (int)lua_tointeger(L, -1);
         lua_pop(L, 1);
     }
-    obf_srand((unsigned int)time(NULL));
     int total = split_function(p, count);
     int sub_count = count > 1 ? count / 2 : 1;
     for (int i = 0; i < p->sizep; i++) {

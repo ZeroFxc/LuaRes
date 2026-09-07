@@ -85,7 +85,6 @@ static void inject_junk_constants(luac_Proto *p, int is_main) {
 
 int antidec_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
-    obf_srand((unsigned int)time(NULL));
     int do_header = 1, do_strip = 1, do_source = 1, do_upvalues = 1, do_constants = 0;
     if (lua_gettop(L) >= 2 && lua_istable(L, 2)) {
         lua_getfield(L, 2, "poison_header"); if (lua_isboolean(L, -1)) do_header = lua_toboolean(L, -1); lua_pop(L, 1);

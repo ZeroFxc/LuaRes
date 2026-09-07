@@ -46,8 +46,41 @@ static int get_num_const(luac_Proto *p, double val) {
 
 /* 在指定位置插入不透明谓词块，返回插入长度 */
 static int insert_predicate_at(luac_Proto *p, int pos) {
-    int r1 = p->maxstacksize;
-    int r2 = p->maxstacksize + 1;
+    /* scan actual highest register used in code (maxstacksize may be inaccurate) */
+    int actual_max = (int)p->maxstacksize - 1;
+    if (actual_max < 0) actual_max = 0;
+    for (int _si = 0; _si < p->sizecode; _si++) {
+        unsigned int _ins = p->code[_si];
+        int _op = _ins & 0x3F;
+        int _a = (_ins >> 6) & 0xFF;
+        int _b = (_ins >> 23) & 0x1FF;
+        int _c = (_ins >> 14) & 0x1FF;
+        if (_a > actual_max) actual_max = _a;
+        switch (_op) {
+            case 0: case 3: case 4: case 5: case 9: case 25: case 26: case 27: case 28: case 34: case 35:
+                if (_b < 256 && _b > actual_max) actual_max = _b; break;
+            case 6: case 7: case 8: case 10: case 11: case 13: case 14: case 15: case 16: case 17:
+            case 18: case 19: case 20: case 21: case 22: case 23: case 24: case 31: case 32: case 33:
+                if (_b < 256 && _b > actual_max) actual_max = _b;
+                if (_c < 256 && _c > actual_max) actual_max = _c; break;
+            case 12: if (_a + 1 > actual_max) actual_max = _a + 1;
+                if (_b < 256 && _b > actual_max) actual_max = _b;
+                if (_c < 256 && _c > actual_max) actual_max = _c; break;
+            case 29: if (_b < 256 && _b > actual_max) actual_max = _b;
+                if (_c < 256 && _c > actual_max) actual_max = _c; break;
+            case 36: case 37:
+                if (_b > 0 && _b < 256 && _a + _b - 1 > actual_max) actual_max = _a + _b - 1; break;
+            case 38: if (_b > 0 && _b < 256 && _a + _b - 2 > actual_max) actual_max = _a + _b - 2; break;
+            case 39: case 40: case 41: if (_a + 3 > actual_max) actual_max = _a + 3; break;
+            case 42: if (_a + 2 > actual_max) actual_max = _a + 2; break;
+            case 43: if (_b > 0 && _b < 256 && _a + _b > actual_max) actual_max = _a + _b; break;
+            case 45: if (_b > 0 && _b < 256 && _a + _b - 2 > actual_max) actual_max = _a + _b - 2; break;
+            default: break;
+        }
+    }
+    int r1 = actual_max + 1;
+    int r2 = actual_max + 2;
+    if (r2 + 1 > 255) return 0;  /* register overflow */
     obf_ensure_stack(p, r2 + 1);
 
     int pattern = obf_rand() % 8;
@@ -58,6 +91,20 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
     if (seed_val == 0) seed_val = 42;
     int seed_idx = get_num_const(p, (double)seed_val);
 
+#ifdef OPAQUE_DEBUG
+    fprintf(stderr, "[OP] pos=%d pat=%d r1=%d r2=%d zero=%d one=%d seed=%d(%d) sizek=%d maxstack=%d\n",
+        pos, pattern, r1, r2, zero_idx, one_idx, seed_idx, seed_val, p->sizek, p->maxstacksize);
+    for (int _di = 0; _di < p->sizek && _di < 5; _di++) {
+        const char *_tn = "?";
+        switch (p->k_tag[_di]) { case 0: _tn="nil"; break; case 1: _tn="bool"; break; case 3: _tn="flt"; break; case 19: _tn="int"; break; case 4: case 20: _tn="str"; break; }
+        fprintf(stderr, "  k[%d] tag=%d(%s)", _di, p->k_tag[_di], _tn);
+        if (p->k_tag[_di] == 19) fprintf(stderr, " val=%lld", (long long)p->k_num[_di]);
+        else if (p->k_tag[_di] == 3) fprintf(stderr, " val=%g", p->k_num[_di]);
+        else if (p->k_tag[_di] == 4 || p->k_tag[_di] == 20) fprintf(stderr, " val=%s", p->k_str[_di] ? p->k_str[_di] : "(null)");
+        fprintf(stderr, "\n");
+    }
+#endif
+
     int dead_len = 4 + (int)(obf_rand() % 10); /* 4-13 条死指令 */
     int prefix = 0;
     unsigned int prefix_buf[8];
@@ -66,7 +113,7 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
         case 0: /* LOADK 0 + LOADK 0 + LT(0<0) + JMP */
             prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, zero_idx);
             prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r2, zero_idx);
-            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LT, 1, r1, r2);
+            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LT, 0, r1, r2);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
         case 1: /* LOADK N + MUL(r,r) + LT(r<0) + JMP */
@@ -115,6 +162,21 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
     }
 
     int insert_len = prefix + dead_len;
+#ifdef OPAQUE_DEBUG
+    {
+        static const char *opn4[] = {"MOVE","LOADK","LOADKX","LOADBOOL","LOADNIL","GETUPVAL","GETTABUP","GETTABLE","SETTABUP","SETUPVAL","SETTABLE","NEWTABLE","SELF","ADD","SUB","MUL","MOD","POW","DIV","IDIV","BAND","BOR","BXOR","SHL","SHR","UNM","BNOT","NOT","LEN","CONCAT","JMP","EQ","LT","LE","TEST","TESTSET","CALL","TAILCALL","RETURN","FORLOOP","FORPREP","TFORCALL","TFORLOOP","SETLIST","CLOSURE","VARARG","EXTRAARG"};
+        fprintf(stderr, "[OP-INS] before pos=%d insert_len=%d\n", pos, insert_len);
+        for (int _di = pos - 3; _di <= pos + 3 && _di < p->sizecode; _di++) {
+            if (_di < 0) continue;
+            unsigned int _ins = p->code[_di];
+            int _op = _ins & 0x3F;
+            fprintf(stderr, "  [%d] %s A=%d B=%d C=%d%s\n", _di,
+                _op < 47 ? opn4[_op] : "?",
+                (_ins >> 6) & 0xFF, (_ins >> 23) & 0x1FF, (_ins >> 14) & 0x1FF,
+                _di == pos ? " <-- INSERT HERE" : "");
+        }
+    }
+#endif
     p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + insert_len));
     memmove(&p->code[pos + insert_len], &p->code[pos],
             sizeof(unsigned int) * (p->sizecode - pos));
@@ -127,6 +189,27 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
 
     /* 调整跳转：插入位置 pos (0-based) = pos+1 (1-based) */
     obf_adjust_jumps_insert(p->code, p->sizecode, pos + 1, insert_len);
+
+#ifdef OPAQUE_DEBUG
+    /* validate all jumps */
+    for (int _vi = 0; _vi < p->sizecode; _vi++) {
+        int _op = p->code[_vi] & 0x3F;
+        if (_op == LUAC_OP_JMP || _op == LUAC_OP_FORLOOP || _op == LUAC_OP_FORPREP || _op == LUAC_OP_TFORLOOP) {
+            int _sbx = (int)((p->code[_vi] >> 14) & 0x3FFFF) - 131071;
+            int _tgt = _vi + _sbx + 1;
+            if (_tgt < 0 || _tgt >= p->sizecode) {
+                fprintf(stderr, "[OP-BADJUMP] idx=%d op=%d sbx=%d target=%d (range 0-%d)\n",
+                    _vi, _op, _sbx, _tgt, p->sizecode - 1);
+            }
+            /* check if target lands inside this predicate block */
+            if (_tgt >= pos && _tgt < pos + insert_len && _vi < pos) {
+                static const char *opn5[] = {"MOVE","LOADK","LOADKX","LOADBOOL","LOADNIL","GETUPVAL","GETTABUP","GETTABLE","SETTABUP","SETUPVAL","SETTABLE","NEWTABLE","SELF","ADD","SUB","MUL","MOD","POW","DIV","IDIV","BAND","BOR","BXOR","SHL","SHR","UNM","BNOT","NOT","LEN","CONCAT","JMP","EQ","LT","LE","TEST","TESTSET","CALL","TAILCALL","RETURN","FORLOOP","FORPREP","TFORCALL","TFORLOOP","SETLIST","CLOSURE","VARARG","EXTRAARG"};
+                fprintf(stderr, "[OP-TGTINBLOCK] jump idx=%d (%s) sbx=%d target=%d lands in predicate block [%d,%d]\n",
+                    _vi, _op < 47 ? opn5[_op] : "?", _sbx, _tgt, pos, pos + insert_len - 1);
+            }
+        }
+    }
+#endif
 
     return insert_len;
 }
@@ -152,8 +235,7 @@ static void inject_function(luac_Proto *p, int count) {
         attempts++;
         int pos = 1 + (int)(obf_rand() % (p->sizecode - 2));
         if (!is_safe_pos(p, pos)) continue;
-        insert_predicate_at(p, pos);
-        injected++;
+        if (insert_predicate_at(p, pos) > 0) injected++;
     }
 
     /* 函数头也插一个 */

@@ -158,7 +158,6 @@ int loop_restructure_process(lua_State *L) {
         if (lua_isnumber(L, -1)) max_wraps = (int)lua_tointeger(L, -1);
         lua_pop(L, 1);
     }
-    obf_srand((unsigned int)time(NULL));
     int total = wrap_plain_segments(p, max_wraps);
     int sub_max = max_wraps > 1 ? max_wraps / 2 : 1;
     for (int i = 0; i < p->sizep; i++) {

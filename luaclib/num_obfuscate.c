@@ -192,7 +192,6 @@ static int obf_function(luac_Proto *p) {
 int num_obfuscate_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
-    obf_srand((unsigned int)time(NULL));
 
     luac_Proto *list[8192];
     int list_count = 0;

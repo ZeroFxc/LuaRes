@@ -180,7 +180,6 @@ static void obfuscate_function(luac_Proto *p) {
 int flatten_enhance_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
-    obf_srand((unsigned int)time(NULL));
 
     obfuscate_function(p);
     if (p->p) for (int i = 0; i < p->sizep; i++)

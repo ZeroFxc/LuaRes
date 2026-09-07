@@ -30,7 +30,6 @@ static void poison_function(luac_Proto *p, int count, int min_tag, int max_tag) 
 
 int const_poison_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
-    obf_srand((unsigned int)time(NULL));
     int count = 5, min_tag = 0x80, max_tag = 0xFF;
     if (lua_gettop(L) >= 2 && lua_istable(L, 2)) {
         lua_getfield(L, 2, "count");

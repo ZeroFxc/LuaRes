@@ -45,7 +45,6 @@ static void inject_function(luac_Proto *p, int count, int depth) {
 int junk_loadk_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
-    obf_srand((unsigned int)time(NULL));
     int count = 50;
     if (lua_gettop(L) >= 2 && lua_istable(L, 2)) {
         lua_getfield(L, 2, "count");

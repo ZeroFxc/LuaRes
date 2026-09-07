@@ -202,7 +202,6 @@ static void inject_function(lua_State *L, luac_Proto *p) {
 int integrity_check_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
-    obf_srand((unsigned int)time(NULL));
 
     /* apply to main chunk only (sub-functions need parent upvalues) */
     inject_function(L, p);

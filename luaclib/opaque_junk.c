@@ -92,7 +92,6 @@ static int inject_function(luac_Proto *p, int count) {
 int opaque_junk_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
-    obf_srand((unsigned int)time(NULL));
 
     int count = 12;
     if (lua_gettop(L) >= 2 && lua_istable(L, 2)) {

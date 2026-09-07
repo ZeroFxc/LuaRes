@@ -836,6 +836,30 @@ void luaV_execute (lua_State *L) {
     Instruction i;
     StkId ra;
     vmfetch();
+#if LUA_VM_DEBUG
+    {
+        int _dbgpc = (int)((ci->u.l.savedpc - 1) - cl->p->code);
+        if (_dbgpc >= 805 && _dbgpc <= 815 && cl->p->sizek >= 220 && cl->p->sizek <= 240) {
+            static const char *opn6[] = {"MOVE","LOADK","LOADKX","LOADBOOL","LOADNIL","GETUPVAL","GETTABUP","GETTABLE","SETTABUP","SETUPVAL","SETTABLE","NEWTABLE","SELF","ADD","SUB","MUL","MOD","POW","DIV","IDIV","BAND","BOR","BXOR","SHL","SHR","UNM","BNOT","NOT","LEN","CONCAT","JMP","EQ","LT","LE","TEST","TESTSET","CALL","TAILCALL","RETURN","FORLOOP","FORPREP","TFORCALL","TFORLOOP","SETLIST","CLOSURE","VARARG","EXTRAARG"};
+            int _op = i & 0x3F;
+            fprintf(stderr, "[DUMP] pc=%d %s A=%d B=%d C=%d | R16_tt=%d R17_tt=%d R18_tt=%d R18_v=%g R19=%s R20=%s R245_v=%g R246_v=%g\n",
+                _dbgpc, _op < 47 ? opn6[_op] : "?",
+                GETARG_A(i), GETARG_B(i), GETARG_C(i),
+                (base+16)->tt_, (base+17)->tt_, (base+18)->tt_,
+                ttisnumber(base+18) ? (ttisfloat(base+18) ? nvalue(base+18) : (double)ivalue(base+18)) : -99999.0,
+                ttisstring(base+19) ? getstr(tsvalue(base+19)) : "(non-str)",
+                ttisstring(base+20) ? getstr(tsvalue(base+20)) : "(non-str)",
+                ttisnumber(base+245) ? (ttisfloat(base+245) ? nvalue(base+245) : (double)ivalue(base+245)) : -99999.0,
+                ttisnumber(base+246) ? (ttisfloat(base+246) ? nvalue(base+246) : (double)ivalue(base+246)) : -99999.0);
+        }
+    }
+    if (GETARG_A(i) == 8 && cl->p->sizek >= 220 && cl->p->sizek <= 240) {
+      static const char *opn3[] = {"MOVE","LOADK","LOADKX","LOADBOOL","LOADNIL","GETUPVAL","GETTABUP","GETTABLE","SETTABUP","SETUPVAL","SETTABLE","NEWTABLE","SELF","ADD","SUB","MUL","MOD","POW","DIV","IDIV","BAND","BOR","BXOR","SHL","SHR","UNM","BNOT","NOT","LEN","CONCAT","JMP","EQ","LT","LE","TEST","TESTSET","CALL","TAILCALL","RETURN","FORLOOP","FORPREP","TFORCALL","TFORLOOP","SETLIST","CLOSURE","VARARG","EXTRAARG"};
+      int _pc = (int)((ci->u.l.savedpc - 1) - cl->p->code);
+      int _op = i & 0x3F;
+      fprintf(stderr, "[R8] pc=%d %s A=%d B=%d C=%d\n", _pc, _op < 47 ? opn3[_op] : "?", GETARG_A(i), GETARG_B(i), GETARG_C(i));
+    }
+#endif
     vmdispatch (GET_OPCODE(i)) {
       vmcase(OP_MOVE) {
         setobjs2s(L, ra, RB(i));
@@ -890,6 +914,39 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_GETTABLE) {
         StkId rb = RB(i);
         TValue *rc = RKC(i);
+#if LUA_VM_DEBUG
+        if (!ttistable(rb)) {
+          Proto *p = cl->p;
+          int pc = (int)((ci->u.l.savedpc - 1) - p->code);
+          fprintf(stderr, "[VM] GETTABLE pc=%d A=%d B=%d C=%d rb_tt=%d rc_tt=%d rc_str=%s numk=%d maxstack=%d\n",
+              pc, GETARG_A(i), GETARG_B(i), GETARG_C(i),
+              rb->tt_, rc->tt_,
+              (rc->tt_ == 4 || rc->tt_ == 20 || rc->tt_ == 68) ? getstr(tsvalue(rc)) : "(non-str)",
+              p->sizek, p->maxstacksize);
+          static const char *opn[] = {"MOVE","LOADK","LOADKX","LOADBOOL","LOADNIL","GETUPVAL","GETTABUP","GETTABLE","SETTABUP","SETUPVAL","SETTABLE","NEWTABLE","SELF","ADD","SUB","MUL","MOD","POW","DIV","IDIV","BAND","BOR","BXOR","SHL","SHR","UNM","BNOT","NOT","LEN","CONCAT","JMP","EQ","LT","LE","TEST","TESTSET","CALL","TAILCALL","RETURN","FORLOOP","FORPREP","TFORCALL","TFORLOOP","SETLIST","CLOSURE","VARARG","EXTRAARG"};
+          for (int _d = pc - 60; _d <= pc + 2; _d++) {
+            if (_d >= 0 && _d < p->sizecode) {
+              unsigned int _ins = p->code[_d];
+              int _op = _ins & 0x3F;
+              fprintf(stderr, "  [%d] %s A=%d B=%d C=%d%s\n", _d,
+                  _op < 47 ? opn[_op] : "?",
+                  (_ins >> 6) & 0xFF, (_ins >> 23) & 0x1FF, (_ins >> 14) & 0x1FF,
+                  _d == pc ? " <-- ERROR" : "");
+            }
+          }
+        }
+#endif
+#if LUA_VM_DEBUG
+        if (GETARG_B(i) == 7 && cl->p->sizek >= 220 && cl->p->sizek <= 240) {
+            int _pc = (int)((ci->u.l.savedpc - 1) - cl->p->code);
+            TValue *_r7 = base + 7;
+            TValue *_r21 = base + 21;
+            fprintf(stderr, "[GT-B7] pc=%d R7_tt=%d R21_tt=%d R21_str=%s R7_sizearray=%d\n",
+                _pc, _r7->tt_, _r21->tt_,
+                (_r21->tt_ == 4 || _r21->tt_ == 20 || _r21->tt_ == 68) ? getstr(tsvalue(_r21)) : "(non-str)",
+                ttistable(_r7) ? (int)hvalue(_r7)->sizearray : -1);
+        }
+#endif
         gettableProtected(L, rb, rc, ra);
         vmbreak;
       }
@@ -1185,6 +1242,14 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_EQ) {
         TValue *rb = RKB(i);
         TValue *rc = RKC(i);
+#if LUA_VM_DEBUG
+        if (ttisnil(rb) || ttisnil(rc)) {
+          Proto *p = cl->p;
+          int pc = (int)((ci->u.l.savedpc - 1) - p->code);
+          fprintf(stderr, "[VM] EQ pc=%d A=%d B=%d C=%d rb_tt=%d rc_tt=%d\n",
+              pc, GETARG_A(i), GETARG_B(i), GETARG_C(i), rb->tt_, rc->tt_);
+        }
+#endif
         Protect(
           if (luaV_equalobj(L, rb, rc) != GETARG_A(i))
             ci->u.l.savedpc++;
@@ -1194,6 +1259,27 @@ void luaV_execute (lua_State *L) {
         vmbreak;
       }
       vmcase(OP_LT) {
+#if LUA_VM_DEBUG
+        { TValue *rb = RKB(i); TValue *rc = RKC(i);
+          if (ttisnil(rb) || ttisnil(rc)) {
+            Proto *p = cl->p;
+            int pc = (int)((ci->u.l.savedpc - 1) - p->code);
+            fprintf(stderr, "[VM] LT pc=%d A=%d B=%d C=%d rb_tt=%d rc_tt=%d numk=%d\n",
+                pc, GETARG_A(i), GETARG_B(i), GETARG_C(i), rb->tt_, rc->tt_, p->sizek);
+            for (int _di = 0; _di < p->sizek && _di < 8; _di++) {
+              TValue *_kv = &p->k[_di];
+              const char *_tn = "(?)";
+              switch (_kv->tt_) { case 0: _tn="nil"; break; case 1: _tn="bool"; break; case 3: _tn="flt"; break; case 19: _tn="int"; break; case 4: case 20: _tn="str"; break; }
+              fprintf(stderr, "  k[%d] tt=%d(%s) val=", _di, _kv->tt_, _tn);
+              if (_kv->tt_ == 19) fprintf(stderr, "%lld", (long long)_kv->value_.i);
+              else if (_kv->tt_ == 3) fprintf(stderr, "%g", _kv->value_.n);
+              else if (_kv->tt_ == 4 || _kv->tt_ == 20 || _kv->tt_ == 68) fprintf(stderr, "%s", getstr(tsvalue(_kv)));
+              else if (_kv->tt_ == 1) fprintf(stderr, "%d", _kv->value_.b);
+              fprintf(stderr, "\n");
+            }
+          }
+        }
+#endif
         Protect(
           if (luaV_lessthan(L, RKB(i), RKC(i)) != GETARG_A(i))
             ci->u.l.savedpc++;
@@ -1203,6 +1289,16 @@ void luaV_execute (lua_State *L) {
         vmbreak;
       }
       vmcase(OP_LE) {
+#if LUA_VM_DEBUG
+        { TValue *rb = RKB(i); TValue *rc = RKC(i);
+          if (ttisnil(rb) || ttisnil(rc)) {
+            Proto *p = cl->p;
+            int pc = (int)((ci->u.l.savedpc - 1) - p->code);
+            fprintf(stderr, "[VM] LE pc=%d A=%d B=%d C=%d rb_tt=%d rc_tt=%d\n",
+                pc, GETARG_A(i), GETARG_B(i), GETARG_C(i), rb->tt_, rc->tt_);
+          }
+        }
+#endif
         Protect(
           if (luaV_lessequal(L, RKB(i), RKC(i)) != GETARG_A(i))
             ci->u.l.savedpc++;
