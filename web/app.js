@@ -400,18 +400,6 @@ async function runObfuscation(){
   log('=== 开始混淆 (' + mods.length + ' 个模块) ===', 'info');
 
   try {
-  if(!fileBytes || !wasmReady) return;
-  const mods = sortModulesForExecution(getSelectedModules());
-  if(mods.length === 0){ log('请至少选择一个模块', 'warn'); return; }
-
-  btnProcess.disabled = true;
-  btnDownload.disabled = true;
-  btnRun.disabled = true;
-  runOutput.style.display = 'none';
-  setStatus('正在处理...', 'working');
-  log('=== 开始混淆 (' + mods.length + ' 个模块) ===', 'info');
-
-  try {
     Module.ccall('wasm_init', 'number', [], []);
 
     // re-register custom modules (fresh state)
