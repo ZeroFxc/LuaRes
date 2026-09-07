@@ -90,7 +90,7 @@ int vm_assemble(VmAsmOpts *opts) {
     /* 3. execute function */
     vmbuf_printf(&out,
         "local execute\n"
-        "local _G = _G\n"
+        "local _G = _G or (getfenv and getfenv(0)) or {}"
         "execute = function(closure, ...)\n"
         "  local _cl = closure_map[closure]\n"
         "  if not _cl and type(closure) == 'table' and closure.proto then _cl = closure end\n"
@@ -115,11 +115,11 @@ int vm_assemble(VmAsmOpts *opts) {
 
     /* 4. runtime helpers */
     p = vm_gen_runtime(vR, vK, vUV, vPC, vTOP, vPROTO,
-                       opts->include_coroutine, &l);
+                       opts->include_coroutine, opts->luajit_compat, &l);
     vmbuf_puts(&out, p); free(p);
 
     /* 5. main loop */
-    p = vm_gen_mainloop(ops, nops, remap, vR, vK, vUV, vPC, &l);
+    p = vm_gen_mainloop(ops, nops, remap, vR, vK, vUV, vPC, opts->luajit_compat, &l);
     vmbuf_puts(&out, p); free(p);
 
     /* 6. end execute */
@@ -174,7 +174,7 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
     /* 3. execute function */
     vmbuf_printf(&out,
         "local execute\n"
-        "local _G = _G\n"
+        "local _G = _G or (getfenv and getfenv(0)) or {}"
         "execute = function(closure, ...)\n"
         "  local _cl = closure_map[closure]\n"
         "  if not _cl and type(closure) == 'table' and closure.proto then _cl = closure end\n"
@@ -199,11 +199,11 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
 
     /* 4. runtime helpers */
     p = vm_gen_runtime(vR, vK, vUV, vPC, vTOP, vPROTO,
-                       opts->include_coroutine, &l);
+                       opts->include_coroutine, opts->luajit_compat, &l);
     vmbuf_puts(&out, p); free(p);
 
     /* 5. main loop */
-    p = vm_gen_mainloop(ops, nops, remap, vR, vK, vUV, vPC, &l);
+    p = vm_gen_mainloop(ops, nops, remap, vR, vK, vUV, vPC, opts->luajit_compat, &l);
     vmbuf_puts(&out, p); free(p);
 
     /* 6. end execute */

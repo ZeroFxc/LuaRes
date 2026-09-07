@@ -1,6 +1,0 @@
-local f = loadfile('prod_min.lua')
-local bc = string.dec(string.dump(f, true))
-local fp = io.open('prod_min.luac', 'wb')
-fp:write(bc)
-fp:close()
-print('wrote prod_min.luac', #bc)

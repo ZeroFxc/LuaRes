@@ -1,6 +1,0 @@
-local f = loadfile('prod_dbg.lua')
-local bc = string.dec(string.dump(f, true))
-local fp = io.open('prod_dbg.luac', 'wb')
-fp:write(bc)
-fp:close()
-print('wrote', #bc)

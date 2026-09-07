@@ -81,6 +81,7 @@ let resultBytes = null;
 let resultIsLua = false;
 let customModules = []; // [{name, label, description, source}] (Lua)
 let jsModules = [];     // [{name, label, description, source, moduleObj}] (JS)
+let vmLuajitCompat = false; // LuaJIT compat mode for vm_embed
 
 // ---- DOM ----
 const $ = id => document.getElementById(id);
@@ -467,7 +468,7 @@ async function runObfuscation(){
     if(useVmEmbed){
       setStatus('组装自包含VM...', 'working');
       const outLenPtr = Module._malloc(4);
-      const outPtr = Module.ccall('wasm_vm_embed', 'number', ['number','number'], [handle, outLenPtr]);
+      const outPtr = Module.ccall('wasm_vm_embed', 'number', ['number','number','number'], [handle, vmLuajitCompat?1:0, outLenPtr]);
       const outLen = Module.getValue(outLenPtr, 'i32');
       Module._free(outLenPtr);
       if(!outPtr || outLen === 0){

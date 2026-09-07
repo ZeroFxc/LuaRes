@@ -292,7 +292,7 @@ void wasm_free_dump(unsigned char *ptr) { if (ptr) free(ptr); }
 
 /* vm_embed: convert proto to self-contained Lua source (成品式 VM) */
 EMSCRIPTEN_KEEPALIVE
-char *wasm_vm_embed(int handle, int *out_len) {
+char *wasm_vm_embed(int handle, int luajit_compat, int *out_len) {
     if (!g_L || !out_len || handle < 0) {
         set_error("wasm_vm_embed: invalid args");
         *out_len = 0;
@@ -321,7 +321,7 @@ char *wasm_vm_embed(int handle, int *out_len) {
     lua_pop(g_L, 1);
 
     size_t src_len = 0;
-    char *src = vm_embed_generate(bc, bc_len, &src_len);
+    char *src = vm_embed_generate(bc, bc_len, luajit_compat, &src_len);
     free(bc);
     if (!src) {
         set_error("vm_embed: generation failed");

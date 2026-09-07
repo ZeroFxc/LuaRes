@@ -9,14 +9,28 @@
 
 char *vm_gen_runtime(const char *R, const char *K, const char *UV,
                      const char *PC, const char *TOP, const char *PROTO,
-                     int include_coroutine, size_t *len) {
+                     int include_coroutine, int luajit_compat, size_t *len) {
     VmBuf b; vmbuf_init(&b);
 
     vmbuf_puts(&b, "-- Runtime helpers (generated)\n");
     vmbuf_puts(&b,
         "  local function _pack(...)\n"
         "    return {n = select('#', ...), ...}\n"
-        "  end\n");
+        "  end\n"
+        "  local _unpack = table.unpack or unpack\n");
+
+    /* ---- LuaJIT compat: bitwise ops via bit library ---- */
+    if (luajit_compat) {
+        vmbuf_puts(&b,
+            "  local _bit = bit or bit32 or (function() local ok,m=pcall(require,'bit'); return ok and m end)()\n"
+            "  local function _band(a,b) return _bit.band(a,b) end\n"
+            "  local function _bor(a,b) return _bit.bor(a,b) end\n"
+            "  local function _bxor(a,b) return _bit.bxor(a,b) end\n"
+            "  local function _shl(a,b) return _bit.lshift(a,b) end\n"
+            "  local function _shr(a,b) return _bit.rshift(a,b) end\n"
+            "  local function _bnot(a) return _bit.bnot(a) end\n"
+            "  local function _idiv(a,b) return math.floor(a/b) end\n");
+    }
 
     /* ---- upvalue cells ---- */
     vmbuf_printf(&b,
@@ -86,13 +100,13 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
         "    local vcl = closure_map[func]\n"
         "    if not vcl and type(func) == 'table' and func.proto then vcl = func end\n"
         "    if vcl then\n"
-        "      res = _pack(execute(vcl, table.unpack(args, 1, nargs)))\n"
+        "      res = _pack(execute(vcl, _unpack(args, 1, nargs)))\n"
         "    elseif type(func) == 'thread' then\n"
-        "      res = _pack(coroutine.resume(func, table.unpack(args, 1, nargs)))\n"
+        "      res = _pack(coroutine.resume(func, _unpack(args, 1, nargs)))\n"
         "      if not res[1] then error(res[2], 0) end\n"
         "      table.remove(res, 1)\n"
         "    else\n"
-        "      res = _pack(func(table.unpack(args, 1, nargs)))\n"
+        "      res = _pack(func(_unpack(args, 1, nargs)))\n"
         "    end\n"
         "    local nret = (c == 0) and res.n or (c - 1)\n"
         "    if c == 0 then %s = a + nret end\n"
@@ -109,9 +123,9 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
         "    local vcl = closure_map[func]\n"
         "    if not vcl and type(func) == 'table' and func.proto then vcl = func end\n"
         "    if vcl then\n"
-        "      return execute(vcl, table.unpack(args, 1, nargs))\n"
+        "      return execute(vcl, _unpack(args, 1, nargs))\n"
         "    else\n"
-        "      return func(table.unpack(args, 1, nargs))\n"
+        "      return func(_unpack(args, 1, nargs))\n"
         "    end\n"
         "  end\n", R, TOP, R);
 
@@ -121,7 +135,7 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
         "    closeuv(0)\n"
         "    local r = {}\n"
         "    for i = 1, nret do r[i] = %s[a + i - 1] end\n"
-        "    return table.unpack(r, 1, nret)\n"
+        "    return _unpack(r, 1, nret)\n"
         "  end\n", TOP, R);
 
     /* ---- vararg ---- */
@@ -174,7 +188,7 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
             "      end)\n"
             "      if not ok then\n"
             "        if err == '__VM_YIELD__' then\n"
-            "          return true, table.unpack(co.frame.retvals, 1, co.frame.retvals.n)\n"
+            "          return true, _unpack(co.frame.retvals, 1, co.frame.retvals.n)\n"
             "        end\n"
             "        return false, err\n"
             "      end\n"

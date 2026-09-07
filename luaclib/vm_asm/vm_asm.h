@@ -25,7 +25,8 @@ typedef struct {
     const char *name;
     int op;
     int fmt;
-    const char *body;  /* handler template; NULL = no-op */
+    const char *body;        /* handler template; NULL = no-op */
+    const char *body_compat; /* LuaJIT-compat template; NULL = use body */
 } VmOp;
 
 /* Assembly options */
@@ -34,6 +35,7 @@ typedef struct {
     int obfuscate_names;  /* randomize local variable names */
     int include_coroutine;/* include coroutine support */
     int include_debug;    /* include debug library */
+    int luajit_compat;    /* generate LuaJIT (5.1) compatible code */
     unsigned int seed;
     /* output */
     char *out;
@@ -71,10 +73,10 @@ char *vm_gen_header(size_t *len);
 char *vm_gen_opcodes(const int *remap, size_t *len);
 char *vm_gen_runtime(const char *R, const char *K, const char *UV,
                      const char *PC, const char *TOP, const char *PROTO,
-                     int include_coroutine, size_t *len);
+                     int include_coroutine, int luajit_compat, size_t *len);
 char *vm_gen_mainloop(const VmOp *ops, int nops, const int *remap,
                       const char *R, const char *K, const char *UV,
-                      const char *PC, size_t *len);
+                      const char *PC, int luajit_compat, size_t *len);
 char *vm_gen_loader(size_t *len);
 char *vm_gen_stdlib(int include_debug, size_t *len);
 char *vm_gen_api(size_t *len);
@@ -85,7 +87,7 @@ const VmOp *vm_op_table(int *count);
 /* Main entry */
 int vm_assemble(VmAsmOpts *opts);
 int vm_assemble_runtime(VmAsmOpts *opts);
-char *vm_embed_generate(const unsigned char *bc, size_t bc_len, size_t *out_len);
+char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compat, size_t *out_len);
 void vm_assemble_free(VmAsmOpts *opts);
 
 #endif /* vm_asm_h */

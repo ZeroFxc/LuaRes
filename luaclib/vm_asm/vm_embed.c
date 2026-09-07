@@ -214,7 +214,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth) {
 }
 
 /* ---------- 库函数：字节码 -> 自包含 lua 源码 ---------- */
-char *vm_embed_generate(const unsigned char *bc, size_t bc_len, size_t *out_len) {
+char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compat, size_t *out_len) {
     *out_len = 0;
     if (!bc || bc_len < 34 || (bc[0] != 0x1B && bc[0] != 0x1A)) {
         fprintf(stderr, "vm_embed: invalid bytecode (magic 0x%02X)\n", bc[0]);
@@ -230,6 +230,7 @@ char *vm_embed_generate(const unsigned char *bc, size_t bc_len, size_t *out_len)
     VmAsmOpts opts = {0};
     opts.include_coroutine = 1;
     opts.include_debug = 0;
+    opts.luajit_compat = luajit_compat;
     if (vm_assemble_runtime(&opts) != 0) {
         free(chunk.data);
         return NULL;
@@ -268,8 +269,12 @@ int main(int argc, char **argv) {
     fread(fbuf, 1, fsize, fp);
     fclose(fp);
 
+    int lj = 0;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--luajit") == 0) { lj = 1; argv[i] = NULL; }
+    }
     size_t out_len = 0;
-    char *result = vm_embed_generate(fbuf, (size_t)fsize, &out_len);
+    char *result = vm_embed_generate(fbuf, (size_t)fsize, lj, &out_len);
     free(fbuf);
     if (!result) { fprintf(stderr, "vm_embed_generate failed\n"); return 1; }
 

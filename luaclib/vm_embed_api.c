@@ -13,11 +13,19 @@
 #include "luac.h"
 #include "vm_asm.h"
 
-char *vm_embed_generate(const unsigned char *bc, size_t bc_len, size_t *out_len);
+char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compat, size_t *out_len);
 
 int vm_embed_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
+
+    /* optional options table */
+    int luajit_compat = 0;
+    if (lua_istable(L, 2)) {
+        lua_getfield(L, 2, "luajit_compat");
+        if (lua_toboolean(L, -1)) luajit_compat = 1;
+        lua_pop(L, 1);
+    }
 
     /* dump proto to bytecode */
     lua_getglobal(L, "luac");
@@ -39,7 +47,7 @@ int vm_embed_process(lua_State *L) {
 
     /* generate self-contained VM source */
     size_t src_len = 0;
-    char *src = vm_embed_generate(bc, bc_len, &src_len);
+    char *src = vm_embed_generate(bc, bc_len, luajit_compat, &src_len);
     free(bc);
     if (!src) {
         return luaL_error(L, "vm_embed: generation failed");

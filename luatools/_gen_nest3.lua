@@ -1,6 +1,0 @@
-local f = loadfile('prod_complex2.lua')
-local bc = string.dec(string.dump(f, true))
-local fp = io.open('prod_complex2.luac', 'wb')
-fp:write(bc)
-fp:close()
-print('wrote prod_complex2.luac', #bc, 'bytes')
