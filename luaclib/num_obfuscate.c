@@ -58,6 +58,7 @@ static int obf_function(luac_Proto *p) {
     int max_reg = calc_max_reg(p);
     int tmp1 = max_reg + 2; if (tmp1 > 245) tmp1 = 245;
     int tmp2 = tmp1 + 1; if (tmp2 > 246) tmp2 = 246;
+    obf_ensure_stack(p, tmp2 + 1);
 
     unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (p->sizecode * 4 + 16));
     int *new_pos = luac_alloc(sizeof(int) * (p->sizecode + 1));

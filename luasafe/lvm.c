@@ -838,26 +838,31 @@ void luaV_execute (lua_State *L) {
     vmfetch();
 #if LUA_VM_DEBUG
     {
-        int _dbgpc = (int)((ci->u.l.savedpc - 1) - cl->p->code);
-        if (_dbgpc >= 805 && _dbgpc <= 815 && cl->p->sizek >= 220 && cl->p->sizek <= 240) {
-            static const char *opn6[] = {"MOVE","LOADK","LOADKX","LOADBOOL","LOADNIL","GETUPVAL","GETTABUP","GETTABLE","SETTABUP","SETUPVAL","SETTABLE","NEWTABLE","SELF","ADD","SUB","MUL","MOD","POW","DIV","IDIV","BAND","BOR","BXOR","SHL","SHR","UNM","BNOT","NOT","LEN","CONCAT","JMP","EQ","LT","LE","TEST","TESTSET","CALL","TAILCALL","RETURN","FORLOOP","FORPREP","TFORCALL","TFORLOOP","SETLIST","CLOSURE","VARARG","EXTRAARG"};
-            int _op = i & 0x3F;
-            fprintf(stderr, "[DUMP] pc=%d %s A=%d B=%d C=%d | R16_tt=%d R17_tt=%d R18_tt=%d R18_v=%g R19=%s R20=%s R245_v=%g R246_v=%g\n",
-                _dbgpc, _op < 47 ? opn6[_op] : "?",
-                GETARG_A(i), GETARG_B(i), GETARG_C(i),
-                (base+16)->tt_, (base+17)->tt_, (base+18)->tt_,
-                ttisnumber(base+18) ? (ttisfloat(base+18) ? nvalue(base+18) : (double)ivalue(base+18)) : -99999.0,
-                ttisstring(base+19) ? getstr(tsvalue(base+19)) : "(non-str)",
-                ttisstring(base+20) ? getstr(tsvalue(base+20)) : "(non-str)",
-                ttisnumber(base+245) ? (ttisfloat(base+245) ? nvalue(base+245) : (double)ivalue(base+245)) : -99999.0,
-                ttisnumber(base+246) ? (ttisfloat(base+246) ? nvalue(base+246) : (double)ivalue(base+246)) : -99999.0);
+        static long long _vm_insn_count = 0;
+        static int _vm_last_pc[32] = {0};
+        static int _vm_last_op[32] = {0};
+        static int _vm_last_idx = 0;
+        static const char *_opnames[] = {"MOVE","LOADK","LOADKX","LOADBOOL","LOADNIL","GETUPVAL","GETTABUP","GETTABLE","SETTABUP","SETUPVAL","SETTABLE","NEWTABLE","SELF","ADD","SUB","MUL","MOD","POW","DIV","IDIV","BAND","BOR","BXOR","SHL","SHR","UNM","BNOT","NOT","LEN","CONCAT","JMP","EQ","LT","LE","TEST","TESTSET","CALL","TAILCALL","RETURN","FORLOOP","FORPREP","TFORCALL","TFORLOOP","SETLIST","CLOSURE","VARARG","EXTRAARG"};
+        int _pc = (int)((ci->u.l.savedpc - 1) - cl->p->code);
+        int _op = i & 0x3F;
+        _vm_insn_count++;
+        _vm_last_pc[_vm_last_idx] = _pc;
+        _vm_last_op[_vm_last_idx] = _op;
+        _vm_last_idx = (_vm_last_idx + 1) % 32;
+        if (_vm_insn_count % 2000000 == 0) {
+            fprintf(stderr, "[VM] %lld insns, last pc=%d %s proto=%p sizecode=%d sizek=%d\n",
+                _vm_insn_count, _pc, _op < 47 ? _opnames[_op] : "?", (void*)cl->p, cl->p->sizecode, cl->p->sizek);
         }
-    }
-    if (GETARG_A(i) == 8 && cl->p->sizek >= 220 && cl->p->sizek <= 240) {
-      static const char *opn3[] = {"MOVE","LOADK","LOADKX","LOADBOOL","LOADNIL","GETUPVAL","GETTABUP","GETTABLE","SETTABUP","SETUPVAL","SETTABLE","NEWTABLE","SELF","ADD","SUB","MUL","MOD","POW","DIV","IDIV","BAND","BOR","BXOR","SHL","SHR","UNM","BNOT","NOT","LEN","CONCAT","JMP","EQ","LT","LE","TEST","TESTSET","CALL","TAILCALL","RETURN","FORLOOP","FORPREP","TFORCALL","TFORLOOP","SETLIST","CLOSURE","VARARG","EXTRAARG"};
-      int _pc = (int)((ci->u.l.savedpc - 1) - cl->p->code);
-      int _op = i & 0x3F;
-      fprintf(stderr, "[R8] pc=%d %s A=%d B=%d C=%d\n", _pc, _op < 47 ? opn3[_op] : "?", GETARG_A(i), GETARG_B(i), GETARG_C(i));
+        if (_vm_insn_count > 30000000) {
+            fprintf(stderr, "[VM] INFINITE LOOP DETECTED at %lld insns! Last 32 instructions:\n", _vm_insn_count);
+            for (int _j = 0; _j < 32; _j++) {
+                int _idx = (_vm_last_idx + _j) % 32;
+                fprintf(stderr, "  pc=%d %s\n", _vm_last_pc[_idx], _vm_last_op[_idx] < 47 ? _opnames[_vm_last_op[_idx]] : "?");
+            }
+            fprintf(stderr, "[VM] Current: pc=%d %s A=%d B=%d C=%d proto=%p sizecode=%d\n",
+                _pc, _op < 47 ? _opnames[_op] : "?", GETARG_A(i), GETARG_B(i), GETARG_C(i), (void*)cl->p, cl->p->sizecode);
+            abort();
+        }
     }
 #endif
     vmdispatch (GET_OPCODE(i)) {

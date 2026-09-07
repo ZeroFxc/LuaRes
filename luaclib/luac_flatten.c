@@ -7,6 +7,17 @@
 #include <stdlib.h>
 #include "obf_util.h"
 
+/* FLATTEN_DEBUG=1: print block structure, conditional handling, state machine */
+#ifndef FLATTEN_DEBUG
+#define FLATTEN_DEBUG 0
+#endif
+#if FLATTEN_DEBUG
+#include <stdio.h>
+#define FDBG(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define FDBG(...)
+#endif
+
 #define UNCOND_END(op) ((op)==LUAC_OP_JMP||(op)==LUAC_OP_RETURN||(op)==LUAC_OP_TAILCALL)
 #define COND_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET)
 #define LOOP_OPS(op) ((op)==LUAC_OP_FORLOOP||op==LUAC_OP_FORPREP||op==LUAC_OP_TFORLOOP||op==LUAC_OP_TFORCALL)
@@ -74,6 +85,19 @@ static void flatten_function(luac_Proto *p) {
 
     /* classify blocks */
     int has_loop = 0;
+#if FLATTEN_DEBUG
+    FDBG("[flatten] nblocks=%d, code size=%d\n", nblocks, n);
+    for (int _db = 0; _db < nblocks; _db++) {
+        FDBG("  block %d: [%d..%d]", blocks[_db].id, blocks[_db].start, blocks[_db].stop);
+        for (int _di = blocks[_db].start; _di <= blocks[_db].stop; _di++) {
+            int _op = p->code[_di] & 0x3F;
+            const char *_names[] = {"MOVE","LOADK","LOADKX","LOADBOOL","LOADNIL","GETUPVAL","GETTABUP","GETTABLE","SETTABUP","SETUPVAL","SETTABLE","NEWTABLE","SELF","ADD","SUB","MUL","MOD","POW","DIV","IDIV","BAND","BOR","BXOR","SHL","SHR","UNM","BNOT","NOT","LEN","CONCAT","JMP","EQ","LT","LE","TEST","TESTSET","CALL","TAILCALL","RETURN","FORLOOP","FORPREP","TFORCALL","TFORLOOP","SETLIST","CLOSURE","VARARG","EXTRAARG"};
+            if (_di == blocks[_db].start) FDBG(" ops=");
+            FDBG("%s ", _names[_op]);
+        }
+        FDBG("\n");
+    }
+#endif
     for (int b = 0; b < nblocks; b++) {
         blocks[b].kind = 0;
         for (int i = blocks[b].start; i <= blocks[b].stop; i++) {
@@ -134,6 +158,9 @@ static void flatten_function(luac_Proto *p) {
                 int sbx = (int)(ins >> 14) - 131071;
                 int target_pos = i + sbx + 1;
                 int target_id = block_id_at(blocks, nblocks, target_pos);
+#if FLATTEN_DEBUG
+                FDBG("[flatten] JMP at block %d pos %d: sbx=%d target_pos=%d target_id=%d\n", b, i, sbx, target_pos, target_id);
+#endif
                 if (target_id >= 0) {
                     int kid = get_int_const(p, target_id);
                     new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, state_reg, kid);
@@ -192,6 +219,9 @@ static void flatten_function(luac_Proto *p) {
         /* fall-through block: add state load for next block + JMP to dispatcher */
         int last_op = p->code[blocks[b].stop] & 0x3F;
         int block_empty = (ni == block_offsets[b]);
+#if FLATTEN_DEBUG
+        if (block_empty) FDBG("[flatten] block %d EMPTY - adding fallthrough\n", b);
+#endif
         if (block_empty || (!UNCOND_END(last_op) && !COND_OPS(last_op))) {
             int next_id = block_id_at(blocks, nblocks, blocks[b].stop + 1);
             if (next_id >= 0) {
