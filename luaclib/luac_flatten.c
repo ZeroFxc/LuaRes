@@ -115,15 +115,27 @@ static void flatten_function(luac_Proto *p) {
     free(is_start);
 
     if (nblocks <= 2 || has_loop) {
+#if FLATTEN_DEBUG
+        FDBG("[flatten] SKIP: nblocks=%d has_loop=%d code_size=%d\n", nblocks, has_loop, n);
+        for (int _di = 0; _di < n; _di++) {
+            int _op = p->code[_di] & 0x3F;
+            if (_op == 30 /* JMP */) {
+                int _sbx = (int)(p->code[_di] >> 14) - 131071;
+                FDBG("[flatten]   JMP at %d sbx=%d %s\n", _di, _sbx, _sbx < 0 ? "BACKWARD" : "forward");
+            }
+            if (_op >= 39 && _op <= 42) FDBG("[flatten]   LOOP_OP %d at %d\n", _op, _di);
+        }
+#endif
         free(blocks);
         return;
     }
 
 
     int state_reg = p->maxstacksize;
+    int cmp_reg = state_reg + 1; /* temp register for large-constant comparison */
 
     /* build new code */
-    int max_new = n * 8 + nblocks * 4 + 64;
+    int max_new = n * 8 + nblocks * 6 + 64;
     unsigned int *new_code = (unsigned int *)malloc(sizeof(unsigned int) * max_new);
     int ni = 0;
 
@@ -140,10 +152,23 @@ static void flatten_function(luac_Proto *p) {
     /* dispatch table */
     for (int b = 0; b < nblocks; b++) {
         int kid = get_int_const(p, blocks[b].id);
-        new_code[ni++] = LUAC_ABC(LUAC_OP_EQ, 1, state_reg, kid + 0x100);
+#if FLATTEN_DEBUG
+        FDBG("[flatten] dispatch block %d id=%d kid=%d %s\n", b, blocks[b].id, kid, kid > 255 ? "(LOADKX path)" : "(direct C)");
+#endif
+        if (kid <= 255) {
+            new_code[ni++] = LUAC_ABC(LUAC_OP_EQ, 1, state_reg, kid + 0x100);
+        } else {
+            /* constant index > 255: load into temp register first, then compare registers */
+            new_code[ni++] = LUAC_ABx(LUAC_OP_LOADKX, cmp_reg, 0);
+            new_code[ni++] = LUAC_Ax(LUAC_OP_EXTRAARG, kid);
+            new_code[ni++] = LUAC_ABC(LUAC_OP_EQ, 1, state_reg, cmp_reg);
+        }
         dispatch_jmp_pos[b] = ni;
         new_code[ni++] = 0; /* placeholder JMP */
     }
+#if FLATTEN_DEBUG
+    FDBG("[flatten] sizek=%d state_reg=%d\n", p->sizek, state_reg);
+#endif
 
     /* emit blocks */
     for (int b = 0; b < nblocks; b++) {
@@ -185,6 +210,18 @@ static void flatten_function(luac_Proto *p) {
                     int else_pos = jmp_idx + jmp_sbx + 1;
                     int else_id = block_id_at(blocks, nblocks, else_pos);
                     int then_id = block_id_at(blocks, nblocks, jmp_idx + 1);
+#if FLATTEN_DEBUG
+                    FDBG("[flatten] COND block=%d pos=%d jmp_idx=%d jmp_sbx=%d else_pos=%d else_id=%d then_id=%d\n",
+                         b, i, jmp_idx, jmp_sbx, else_pos, else_id, then_id);
+#endif
+                    if (then_id < 0 || else_id < 0) {
+#if FLATTEN_DEBUG
+                        FDBG("[flatten] ABORT: invalid then_id/else_id at block=%d pos=%d\n", b, i);
+#endif
+                        free(new_code); free(block_offsets); free(dispatch_jmp_pos); free(consumed);
+                        free(blocks);
+                        return;
+                    }
 
                     new_code[ni++] = ins;
 
@@ -251,7 +288,7 @@ static void flatten_function(luac_Proto *p) {
     free(p->code);
     p->code = new_code;
     p->sizecode = ni;
-    obf_ensure_stack(p, state_reg + 1);
+    obf_ensure_stack(p, cmp_reg + 1);
 
     free(blocks);
     free(block_offsets);
