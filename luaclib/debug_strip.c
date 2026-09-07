@@ -30,6 +30,7 @@ static void strip_function(luac_Proto *p) {
 
 int debug_strip_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
+    obf_invalidate_all_caches(L, p);
     strip_function(p);
     lua_pushinteger(L, 1);
     return 1;

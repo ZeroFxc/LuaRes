@@ -4,12 +4,15 @@
 #include <time.h>
 #include "obf_util.h"
 
-#define CONDITION_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET)
+#define CONDITION_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET||(op)==LUAC_OP_LOADKX||(op)==LUAC_OP_TFORCALL||(op)==LUAC_OP_CLOSURE)
 
 static int is_safe_pos(luac_Proto *p, int pos) {
     if (pos <= 0 || pos >= p->sizecode) return 0;
     /* cannot inject after condition ops (next must be JMP) */
-    if (CONDITION_OPS(p->code[pos-1] & 0x3F)) return 0;
+    int prev_op = p->code[pos-1] & 0x3F;
+    if (CONDITION_OPS(prev_op)) return 0;
+    /* SETLIST C==0 requires EXTRAARG next */
+    if (prev_op == 43 && ((p->code[pos-1] >> 14) & 0x1FF) == 0) return 0;
     /* cannot inject at JMP */
     if ((p->code[pos] & 0x3F) == LUAC_OP_JMP) return 0;
     return 1;

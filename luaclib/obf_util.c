@@ -7,9 +7,18 @@
 ** Random (xorshift32)
 **=========================================================================*/
 static unsigned int g_rand_state = 2463534242u;
+static int g_rand_seeded = 0;
 
 void obf_srand(unsigned int seed) {
+    if (!g_rand_seeded) {
+        g_rand_state = seed ? seed : 2463534242u;
+        g_rand_seeded = 1;
+    }
+}
+
+void obf_srand_force(unsigned int seed) {
     g_rand_state = seed ? seed : 2463534242u;
+    g_rand_seeded = 1;
 }
 
 unsigned int obf_rand(void) {
@@ -91,6 +100,25 @@ void obf_adjust_jumps_remove(unsigned int *code, int code_len, int pos, int n) {
             if (delta) code[i] = (code[i] & 0x3FFF) | ((unsigned int)(sbx + delta + 131071) << 14);
         }
     }
+}
+
+/* Insert n instructions at pos (1-based) into p->code, adjust jumps */
+void obf_code_insert(luac_Proto *p, int pos, const unsigned int *ins, int n) {
+    int pos0 = pos - 1;
+    p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + n));
+    memmove(&p->code[pos0 + n], &p->code[pos0], sizeof(unsigned int) * (p->sizecode - pos0));
+    memcpy(&p->code[pos0], ins, sizeof(unsigned int) * n);
+    p->sizecode += n;
+    obf_adjust_jumps_insert(p->code, p->sizecode, pos, n);
+}
+
+/* Remove n instructions at pos (1-based) from p->code, adjust jumps */
+void obf_code_remove(luac_Proto *p, int pos, int n) {
+    int pos0 = pos - 1;
+    memmove(&p->code[pos0], &p->code[pos0 + n], sizeof(unsigned int) * (p->sizecode - pos0 - n));
+    p->sizecode -= n;
+    p->code = realloc(p->code, sizeof(unsigned int) * p->sizecode);
+    obf_adjust_jumps_remove(p->code, p->sizecode, pos, n);
 }
 
 /*===========================================================================
@@ -201,6 +229,7 @@ static void grow_k(luac_Proto *p) {
     p->k_str = realloc(p->k_str, sizeof(char *) * (p->sizek + 1));
     p->k_str_len = realloc(p->k_str_len, sizeof(int) * (p->sizek + 1));
     p->k_num = realloc(p->k_num, sizeof(double) * (p->sizek + 1));
+    p->k_int = realloc(p->k_int, sizeof(int64_t) * (p->sizek + 1));
     p->k_bool = realloc(p->k_bool, sizeof(int) * (p->sizek + 1));
 }
 
@@ -220,7 +249,7 @@ int obf_add_k_number(luac_Proto *p, double num) {
     grow_k(p);
     p->k_tag[idx] = LUA_TNUMFLT;
     p->k_str[idx] = NULL; p->k_str_len[idx] = 0;
-    p->k_num[idx] = num; p->k_bool[idx] = 0;
+    p->k_num[idx] = num; p->k_int[idx] = 0; p->k_bool[idx] = 0;
     p->sizek++;
     return idx;
 }
@@ -230,7 +259,7 @@ int obf_add_k_integer(luac_Proto *p, long long num) {
     grow_k(p);
     p->k_tag[idx] = LUA_TNUMINT;
     p->k_str[idx] = NULL; p->k_str_len[idx] = 0;
-    p->k_num[idx] = (double)num; p->k_bool[idx] = 0;
+    p->k_num[idx] = (double)num; p->k_int[idx] = num; p->k_bool[idx] = 0;
     p->sizek++;
     return idx;
 }

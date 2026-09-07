@@ -239,6 +239,7 @@ static void LoadConstants(UndumpState *S, luac_Proto *f) {
         f->k_str = luac_alloc(sizeof(char *) * f->sizek);
         f->k_str_len = luac_alloc(sizeof(int) * f->sizek);
         f->k_num = luac_alloc(sizeof(double) * f->sizek);
+        f->k_int = luac_alloc(sizeof(int64_t) * f->sizek);
         f->k_bool = luac_alloc(sizeof(int) * f->sizek);
         for (int i = 0; i < f->sizek; i++) {
             int t = LoadByte(S);
@@ -246,6 +247,7 @@ static void LoadConstants(UndumpState *S, luac_Proto *f) {
             f->k_str[i] = NULL;
             f->k_str_len[i] = 0;
             f->k_num[i] = 0;
+            f->k_int[i] = 0;
             f->k_bool[i] = 0;
             switch (t) {
                 case LUA_TNIL:
@@ -265,12 +267,15 @@ static void LoadConstants(UndumpState *S, luac_Proto *f) {
                     fprintf(stderr, "[luac]   k[%d]=numflt(%f)\n", i, f->k_num[i]);
 #endif
                     break;
-                case LUA_TNUMINT:
-                    f->k_num[i] = (double)LoadInteger(S);
+                case LUA_TNUMINT: {
+                    int64_t iv = LoadInteger(S);
+                    f->k_int[i] = iv;
+                    f->k_num[i] = (double)iv;
 #if LUACLIB_DEBUG
-                    fprintf(stderr, "[luac]   k[%d]=numint(%lld)\n", i, (long long)f->k_num[i]);
+                    fprintf(stderr, "[luac]   k[%d]=numint(%lld)\n", i, (long long)iv);
 #endif
                     break;
+                }
                 case LUA_TSHRSTR:
                 case LUA_TLNGSTR: {
                     size_t slen = 0;
@@ -533,15 +538,15 @@ static void DumpConstants(DumpState *D, luac_Proto *f) {
 #endif
                 break;
             case LUA_TNUMINT:
-                DumpInteger(D, (long long)f->k_num[i]);
+                DumpInteger(D, f->k_int[i]);
 #if LUACLIB_DEBUG
-                fprintf(stderr, "[luac]   k[%d]=numint(%lld)\n", i, (long long)f->k_num[i]);
+                fprintf(stderr, "[luac]   k[%d]=numint(%lld)\n", i, (long long)f->k_int[i]);
 #endif
                 break;
             case LUA_TSHRSTR:
             case LUA_TLNGSTR: {
                 const char *s = f->k_str[i];
-                DumpString(D, s, f->k_str_len ? (size_t)f->k_str_len[i] : (s ? strlen(s) : 0));
+                DumpString(D, s, f->k_str_len ? (size_t)(f->k_str_len[i] < 0 ? -f->k_str_len[i] : f->k_str_len[i]) : (s ? strlen(s) : 0));
                 break;
             }
             default:
@@ -639,10 +644,10 @@ static void push_constant(lua_State *L, luac_Proto *f, int idx) {
         case LUA_TNIL: lua_pushnil(L); break;
         case LUA_TBOOLEAN: lua_pushboolean(L, f->k_bool[idx]); break;
         case LUA_TNUMFLT: lua_pushnumber(L, f->k_num[idx]); break;
-        case LUA_TNUMINT: lua_pushinteger(L, (long long)f->k_num[idx]); break;
+        case LUA_TNUMINT: lua_pushinteger(L, f->k_int[idx]); break;
         case LUA_TSHRSTR:
         case LUA_TLNGSTR:
-            if (f->k_str[idx]) lua_pushlstring(L, f->k_str[idx], f->k_str_len ? (size_t)f->k_str_len[idx] : strlen(f->k_str[idx]));
+            if (f->k_str[idx]) lua_pushlstring(L, f->k_str[idx], f->k_str_len ? (size_t)(f->k_str_len[idx] < 0 ? -f->k_str_len[idx] : f->k_str_len[idx]) : strlen(f->k_str[idx]));
             else lua_pushstring(L, "");
             break;
         default: lua_pushnil(L); break;
@@ -765,6 +770,7 @@ static void sync_k_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
         f->k_str = luac_alloc(sizeof(char *) * n);
         f->k_str_len = luac_alloc(sizeof(int) * n);
         f->k_num = luac_alloc(sizeof(double) * n);
+        f->k_int = luac_alloc(sizeof(int64_t) * n);
         f->k_bool = luac_alloc(sizeof(int) * n);
         for (int i = 0; i < n; i++) {
             lua_rawgeti(L, -1, i + 1);
@@ -772,6 +778,7 @@ static void sync_k_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
             f->k_str[i] = NULL;
             f->k_str_len[i] = 0;
             f->k_num[i] = 0;
+            f->k_int[i] = 0;
             f->k_bool[i] = 0;
             if (t == LUA_TNIL) {
                 f->k_tag[i] = LUA_TNIL;
@@ -781,6 +788,7 @@ static void sync_k_from_table(lua_State *L, luac_Proto *f, int tbl_idx) {
             } else if (t == LUA_TNUMBER) {
                 if (lua_isinteger(L, -1)) {
                     f->k_tag[i] = LUA_TNUMINT;
+                    f->k_int[i] = lua_tointeger(L, -1);
                 } else {
                     f->k_tag[i] = LUA_TNUMFLT;
                 }

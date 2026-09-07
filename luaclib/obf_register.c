@@ -25,6 +25,22 @@ int str_split_process(lua_State *L);
 int opaque_junk_process(lua_State *L);
 int luac_obfuscate_process(lua_State *L);
 int luac_flatten_process(lua_State *L);
+int condition_split_process(lua_State *L);
+int loop_restructure_process(lua_State *L);
+int junk_process(lua_State *L);
+int jmp_obfuscate_process(lua_State *L);
+int indirect_call_process(lua_State *L);
+int flatten_enhance_process(lua_State *L);
+int reg_shuffle_process(lua_State *L);
+int integrity_check_process(lua_State *L);
+int proto_shuffle_process(lua_State *L);
+int live_range_split_process(lua_State *L);
+
+static int obf_srand_lua(lua_State *L) {
+    unsigned int seed = (unsigned int)luaL_checkinteger(L, 1);
+    obf_srand_force(seed);
+    return 0;
+}
 
 static const luaL_Reg obf_funcs[] = {
     {"str_encrypt_c", str_encrypt_process},
@@ -49,6 +65,17 @@ static const luaL_Reg obf_funcs[] = {
     {"opaque_junk_c", opaque_junk_process},
     {"luac_obfuscate_c", luac_obfuscate_process},
     {"luac_flatten_c", luac_flatten_process},
+    {"condition_split_c", condition_split_process},
+    {"loop_restructure_c", loop_restructure_process},
+    {"junk_c", junk_process},
+    {"jmp_obfuscate_c", jmp_obfuscate_process},
+    {"indirect_call_c", indirect_call_process},
+    {"flatten_enhance_c", flatten_enhance_process},
+    {"reg_shuffle_c", reg_shuffle_process},
+    {"integrity_check_c", integrity_check_process},
+    {"proto_shuffle_c", proto_shuffle_process},
+    {"live_range_split_c", live_range_split_process},
+    {"srand", obf_srand_lua},
     {NULL, NULL}
 };
 

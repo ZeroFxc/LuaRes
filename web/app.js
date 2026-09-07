@@ -17,9 +17,13 @@ const MODULE_GROUPS = [
     { id: 'table_obfuscate_c', label: '表混淆', desc: 'NEWTABLE/SETTABLE 常量隐藏' },
     { id: 'opaque_predicate_c', label: '不透明谓词', desc: '插入恒真/恒假条件分支' },
     { id: 'const_poison_c', label: '常量投毒', desc: '插入无效常量干扰反编译' },
+    { id: 'reg_shuffle_c', label: '寄存器洗牌', desc: '插入冗余 MOVE 链，高寄存器中转' },
+    { id: 'proto_shuffle_c', label: 'Proto重排', desc: '打乱子函数Proto顺序+修正CLOSURE索引' },
+    { id: 'live_range_split_c', label: '活跃范围分裂', desc: '寄存器值存高寄存器+ dummy覆盖+恢复' },
   ]},
   { name: '垃圾指令', modules: [
     { id: 'opaque_junk_c', label: '不透明垃圾', desc: 'TEST+JMP 跳过的垃圾指令' },
+    { id: 'junk_c', label: '纯花指令', desc: '独立花指令注入(MOVE/LOADBOOL/NEWTABLE 等)' },
     { id: 'junk_jmp_c', label: '跳转垃圾', desc: '插入无意义 JMP 指令' },
     { id: 'junk_loadk_c', label: 'LOADK 垃圾', desc: '插入无效 LOADK 加载到废弃寄存器' },
     { id: 'junk_move_c', label: 'MOVE 垃圾', desc: '插入无效 MOVE 指令' },
@@ -28,10 +32,20 @@ const MODULE_GROUPS = [
   { name: '字节码混淆', modules: [
     { id: 'luac_obfuscate_c', label: '字节码加密', desc: '整体字节码 XOR 加密+运行时解密' },
     { id: 'luac_flatten_c', label: '控制流平坦化', desc: '将顺序执行转为分发器循环' },
+    { id: 'flatten_enhance_c', label: '分发增强', desc: '平坦化后状态值算术化+分发比较XOR混淆，需在平坦化后运行' },
+  ]},
+  { name: '控制流', modules: [
+    { id: 'condition_split_c', label: '条件拆分', desc: '单个判断拆为多重不透明谓词(4种模式)，与扁平化联动增强分发复杂度' },
+    { id: 'loop_restructure_c', label: '循环重构', desc: '插入执行一次的循环模板混入正常代码' },
+    { id: 'jmp_obfuscate_c', label: 'JMP偏移混淆', desc: '插入 no-op JMP 链混淆跳转偏移' },
+    { id: 'indirect_call_c', label: '间接调用', desc: 'CALL 前经临时表存取值，函数调用间接化' },
   ]},
   { name: '其他', modules: [
     { id: 'debug_strip_c', label: '调试信息剥离', desc: '移除 lineinfo/locvars/upvalue 名' },
     { id: 'antidec_c', label: '反编译对抗', desc: '插入干扰 unluac/luadec 的结构' },
+  ]},
+  { name: '虚拟机组装', modules: [
+    { id: 'vm_embed_c', label: '自包含VM打包', desc: '成品式：把字节码转为纯Lua自包含解释器，零外部依赖，最后执行' },
   ]},
 ];
 
@@ -46,6 +60,7 @@ let wasmReady = false;
 let fileBytes = null;
 let fileName = '';
 let resultBytes = null;
+let resultIsLua = false;
 let customModules = []; // [{name, label, description, source}] (Lua)
 let jsModules = [];     // [{name, label, description, source, moduleObj}] (JS)
 
@@ -338,8 +353,15 @@ function handleFile(file){
     btnProcess.disabled = !wasmReady;
     btnInspect.disabled = !wasmReady;
     btnEditor.disabled = !wasmReady;
-    log('已加载文件: ' + file.name + ' (' + fmtBytes(fileBytes.length) + ')', 'info');
-    setStatus('文件已加载，选择模块后开始处理', 'ready');
+    let fmt = '未知';
+    const first = fileBytes[0];
+    if(first === 0x1B) fmt = '标准字节码 (0x1B)';
+    else if(first === 0x1A) fmt = 'andlua 字节码 (0x1A)';
+    else if(first === 0x1C) fmt = 'andlua 加密字节码 (0x1C)';
+    else if(first === 0x3D) fmt = 'andlua base64 壳 (=)';
+    else if(first >= 0x20 && first < 0x7F) fmt = 'Lua 明文源码';
+    log('已加载文件: ' + file.name + ' (' + fmtBytes(fileBytes.length) + ', ' + fmt + ')', 'info');
+    setStatus('文件已加载 (' + fmt + ')，选择模块后开始处理', 'ready');
   };
   reader.readAsArrayBuffer(file);
 }
@@ -420,22 +442,43 @@ btnProcess.addEventListener('click', async () => {
       await new Promise(r => setTimeout(r, 0));
     }
 
-    setStatus('导出字节码...', 'working');
-    const outLenPtr = Module._malloc(4);
-    const outPtr = Module.ccall('wasm_dump', 'number', ['number','number'], [handle, outLenPtr]);
-    const outLen = Module.getValue(outLenPtr, 'i32');
-    Module._free(outLenPtr);
-
-    if(!outPtr || outLen === 0){
-      const err = Module.ccall('wasm_last_error', 'string', [], []);
+    const useVmEmbed = mods.includes('vm_embed_c');
+    if(useVmEmbed){
+      setStatus('组装自包含VM...', 'working');
+      const outLenPtr = Module._malloc(4);
+      const outPtr = Module.ccall('wasm_vm_embed', 'number', ['number','number'], [handle, outLenPtr]);
+      const outLen = Module.getValue(outLenPtr, 'i32');
+      Module._free(outLenPtr);
+      if(!outPtr || outLen === 0){
+        const err = Module.ccall('wasm_last_error', 'string', [], []);
+        Module.ccall('wasm_free', null, ['number'], [handle]);
+        throw new Error('VM组装失败: ' + (err || 'unknown'));
+      }
+      resultBytes = new Uint8Array(outLen);
+      resultBytes.set(Module.HEAPU8.subarray(outPtr, outPtr + outLen));
+      Module.ccall('wasm_free_output', null, ['number'], [outPtr]);
       Module.ccall('wasm_free', null, ['number'], [handle]);
-      throw new Error('导出失败: ' + (err || 'unknown'));
-    }
+      resultIsLua = true;
+      log('自包含VM组装完成 (' + fmtBytes(outLen) + ' Lua源码)', 'ok');
+    } else {
+      setStatus('导出字节码...', 'working');
+      const outLenPtr = Module._malloc(4);
+      const outPtr = Module.ccall('wasm_dump', 'number', ['number','number'], [handle, outLenPtr]);
+      const outLen = Module.getValue(outLenPtr, 'i32');
+      Module._free(outLenPtr);
 
-    resultBytes = new Uint8Array(outLen);
-    resultBytes.set(Module.HEAPU8.subarray(outPtr, outPtr + outLen));
-    Module.ccall('wasm_free_dump', null, ['number'], [outPtr]);
-    Module.ccall('wasm_free', null, ['number'], [handle]);
+      if(!outPtr || outLen === 0){
+        const err = Module.ccall('wasm_last_error', 'string', [], []);
+        Module.ccall('wasm_free', null, ['number'], [handle]);
+        throw new Error('导出失败: ' + (err || 'unknown'));
+      }
+
+      resultBytes = new Uint8Array(outLen);
+      resultBytes.set(Module.HEAPU8.subarray(outPtr, outPtr + outLen));
+      Module.ccall('wasm_free_dump', null, ['number'], [outPtr]);
+      Module.ccall('wasm_free', null, ['number'], [handle]);
+      resultIsLua = false;
+    }
 
     sizeBefore.textContent = fmtBytes(fileBytes.length);
     sizeAfter.textContent = fmtBytes(resultBytes.length);
@@ -466,7 +509,7 @@ btnProcess.addEventListener('click', async () => {
 btnRun.addEventListener('click', () => {
   if(!resultBytes || !wasmReady) return;
   setStatus('正在运行结果...', 'working');
-  log('--- 运行混淆结果 ---', 'run');
+  log('--- 运行' + (resultIsLua ? 'Lua源码' : '字节码') + ' ---', 'run');
 
   try {
     const bcPtr = Module._malloc(resultBytes.length);
@@ -954,12 +997,13 @@ btnEditorSave.addEventListener('click', () => {
 // ---- Download ----
 btnDownload.addEventListener('click', () => {
   if(!resultBytes) return;
-  const blob = new Blob([resultBytes], {type: 'application/octet-stream'});
+  const isLua = resultIsLua;
+  const blob = new Blob([resultBytes], {type: isLua ? 'text/plain;charset=utf-8' : 'application/octet-stream'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const baseName = fileName.replace(/\.[^.]+$/, '');
   a.href = url;
-  a.download = baseName + '_obf.luac';
+  a.download = baseName + (isLua ? '_vm.lua' : '_obf.luac');
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

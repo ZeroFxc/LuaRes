@@ -57,12 +57,14 @@ static void shuffle_function(luac_Proto *p) {
     char **old_str = (char **)malloc(sizeof(char *) * n);
     int *old_str_len = (int *)malloc(sizeof(int) * n);
     double *old_num = (double *)malloc(sizeof(double) * n);
+    int64_t *old_int = (int64_t *)malloc(sizeof(int64_t) * n);
     int *old_bool = (int *)malloc(sizeof(int) * n);
     for (int i = 0; i < n; i++) {
         old_tag[i] = p->k_tag[i];
         old_str[i] = p->k_str[i];
         old_str_len[i] = p->k_str_len[i];
         old_num[i] = p->k_num[i];
+        old_int[i] = p->k_int[i];
         old_bool[i] = p->k_bool[i];
     }
 
@@ -73,10 +75,11 @@ static void shuffle_function(luac_Proto *p) {
         p->k_str[i] = old_str[old_i];
         p->k_str_len[i] = old_str_len[old_i];
         p->k_num[i] = old_num[old_i];
+        p->k_int[i] = old_int[old_i];
         p->k_bool[i] = old_bool[old_i];
     }
 
-    free(old_tag); free(old_str); free(old_str_len); free(old_num); free(old_bool);
+    free(old_tag); free(old_str); free(old_str_len); free(old_num); free(old_int); free(old_bool);
     free(remap_inv); free(orig_non_nil); free(non_nil);
 
     /* fix instruction references */

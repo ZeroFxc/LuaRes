@@ -23,9 +23,13 @@ static int calc_max_reg(luac_Proto *p) {
 /* Technique 1: LOADBOOL true->not false, false->not true */
 static int obf_loadbool(luac_Proto *p) {
     int count = 0;
-    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (p->sizecode * 2 + 8));
+    int orig_code = p->sizecode;
+    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (orig_code * 2 + 8));
+    int *insert_pos = (int *)calloc(orig_code + 1, sizeof(int));
     int ni = 0;
-    for (int i = 0; i < p->sizecode; i++) {
+    int inserted = 0;
+    for (int i = 0; i < orig_code; i++) {
+        insert_pos[i] = inserted;
         int op = p->code[i] & 0x3F;
         if (op == LUAC_OP_LOADBOOL) {
             int a = (p->code[i] >> 6) & 0xFF;
@@ -39,31 +43,57 @@ static int obf_loadbool(luac_Proto *p) {
             if (c == 0 && !is_cmp_pattern && (obf_rand() % 100) < 50) {
                 new_code[ni++] = LUAC_ABC(LUAC_OP_LOADBOOL, a, 1 - b, 0);
                 new_code[ni++] = LUAC_ABC(LUAC_OP_NOT, a, a, 0);
-                obf_adjust_jumps_insert(new_code, ni, i + count + 2, 1);
+                inserted++;
                 count++;
                 continue;
             }
         }
         new_code[ni++] = p->code[i];
     }
+    insert_pos[orig_code] = inserted;
     if (count > 0) {
+        /* single-pass jump adjustment */
+        for (int j = 0; j < ni; j++) {
+            int op = new_code[j] & 0x3F;
+            if (op == LUAC_OP_JMP || op == LUAC_OP_FORPREP || op == LUAC_OP_FORLOOP || op == LUAC_OP_TFORLOOP) {
+                int a = (new_code[j] >> 6) & 0xFF;
+                int sbx = (int)(new_code[j] >> 14) - 131071;
+                int orig_i = -1;
+                for (int k = 0; k < orig_code; k++) {
+                    if (k + insert_pos[k] == j) { orig_i = k; break; }
+                }
+                if (orig_i < 0) continue;
+                int orig_target = orig_i + sbx + 1;
+                int new_target;
+                if (orig_target >= orig_code) new_target = orig_code + inserted;
+                else if (orig_target < 0) continue;
+                else new_target = orig_target + insert_pos[orig_target];
+                int new_sbx = new_target - j - 1;
+                new_code[j] = ((unsigned int)op) | ((unsigned int)a << 6) | ((unsigned int)(new_sbx + 131071) << 14);
+            }
+        }
         free(p->code);
         p->code = new_code;
         p->sizecode = ni;
     } else {
         free(new_code);
     }
+    free(insert_pos);
     return count;
 }
 
 /* Technique 2: Comparison negation (LT/LE/EQ + JMP + false(skip) + true) */
 static int obf_comparison(luac_Proto *p) {
     int count = 0;
-    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (p->sizecode * 2 + 8));
+    int orig_code = p->sizecode;
+    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (orig_code * 2 + 8));
+    int *insert_pos = (int *)calloc(orig_code + 1, sizeof(int));
     int ni = 0;
+    int inserted = 0;
     int i = 0;
-    while (i < p->sizecode) {
-        if (i + 3 < p->sizecode) {
+    while (i < orig_code) {
+        insert_pos[i] = inserted;
+        if (i + 3 < orig_code) {
             int op1 = p->code[i] & 0x3F;
             if ((op1 == LUAC_OP_EQ || op1 == LUAC_OP_LT || op1 == LUAC_OP_LE) &&
                 (p->code[i+1] & 0x3F) == LUAC_OP_JMP) {
@@ -82,14 +112,16 @@ static int obf_comparison(luac_Proto *p) {
                         int a1 = (p->code[i] >> 6) & 0xFF;
                         int b1 = (p->code[i] >> 23) & 0x1FF;
                         int c1 = (p->code[i] >> 14) & 0x1FF;
-                        /* negate A of comparison */
                         new_code[ni++] = LUAC_ABC(op1, 1 - a1, b1, c1);
-                        new_code[ni++] = p->code[i+1]; /* JMP */
-                        new_code[ni++] = p->code[i+2]; /* false skip */
-                        new_code[ni++] = p->code[i+3]; /* true */
+                        new_code[ni++] = p->code[i+1];
+                        new_code[ni++] = p->code[i+2];
+                        new_code[ni++] = p->code[i+3];
                         new_code[ni++] = LUAC_ABC(LUAC_OP_NOT, a3, a3, 0);
-                        obf_adjust_jumps_insert(new_code, ni, i + count + 5, 1);
+                        inserted++;
                         count++;
+                        insert_pos[i+1] = inserted;
+                        insert_pos[i+2] = inserted;
+                        insert_pos[i+3] = inserted;
                         i += 4;
                         continue;
                     }
@@ -99,39 +131,84 @@ static int obf_comparison(luac_Proto *p) {
         new_code[ni++] = p->code[i];
         i++;
     }
+    insert_pos[orig_code] = inserted;
     if (count > 0) {
+        for (int j = 0; j < ni; j++) {
+            int op = new_code[j] & 0x3F;
+            if (op == LUAC_OP_JMP || op == LUAC_OP_FORPREP || op == LUAC_OP_FORLOOP || op == LUAC_OP_TFORLOOP) {
+                int a = (new_code[j] >> 6) & 0xFF;
+                int sbx = (int)(new_code[j] >> 14) - 131071;
+                int orig_i = -1;
+                for (int k = 0; k < orig_code; k++) {
+                    if (k + insert_pos[k] == j) { orig_i = k; break; }
+                }
+                if (orig_i < 0) continue;
+                int orig_target = orig_i + sbx + 1;
+                int new_target;
+                if (orig_target >= orig_code) new_target = orig_code + inserted;
+                else if (orig_target < 0) continue;
+                else new_target = orig_target + insert_pos[orig_target];
+                int new_sbx = new_target - j - 1;
+                new_code[j] = ((unsigned int)op) | ((unsigned int)a << 6) | ((unsigned int)(new_sbx + 131071) << 14);
+            }
+        }
         free(p->code);
         p->code = new_code;
         p->sizecode = ni;
     } else {
         free(new_code);
     }
+    free(insert_pos);
     return count;
 }
 
 /* Technique 3: TEST double negation */
 static int obf_test(luac_Proto *p) {
     int count = 0;
+    int orig_code = p->sizecode;
     int high_reg = calc_max_reg(p) + 2;
     if (high_reg > 248) high_reg = 248;
-    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (p->sizecode * 2 + 8));
+    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (orig_code * 2 + 8));
+    int *insert_pos = (int *)calloc(orig_code + 1, sizeof(int));
     int ni = 0;
-    for (int i = 0; i < p->sizecode; i++) {
+    int inserted = 0;
+    for (int i = 0; i < orig_code; i++) {
+        insert_pos[i] = inserted;
         int op = p->code[i] & 0x3F;
-        if (op == LUAC_OP_TEST && i + 1 < p->sizecode &&
+        if (op == LUAC_OP_TEST && i + 1 < orig_code &&
             (p->code[i+1] & 0x3F) == LUAC_OP_JMP &&
             (obf_rand() % 100) < 30) {
             int a = (p->code[i] >> 6) & 0xFF;
             int c = (p->code[i] >> 14) & 0x1FF;
             new_code[ni++] = LUAC_ABC(LUAC_OP_NOT, high_reg, a, 0);
             new_code[ni++] = LUAC_ABC(LUAC_OP_TEST, high_reg, 0, 1 - c);
-            obf_adjust_jumps_insert(new_code, ni, i + count + 2, 1);
+            inserted++;
             count++;
             continue;
         }
         new_code[ni++] = p->code[i];
     }
+    insert_pos[orig_code] = inserted;
     if (count > 0) {
+        for (int j = 0; j < ni; j++) {
+            int op = new_code[j] & 0x3F;
+            if (op == LUAC_OP_JMP || op == LUAC_OP_FORPREP || op == LUAC_OP_FORLOOP || op == LUAC_OP_TFORLOOP) {
+                int a = (new_code[j] >> 6) & 0xFF;
+                int sbx = (int)(new_code[j] >> 14) - 131071;
+                int orig_i = -1;
+                for (int k = 0; k < orig_code; k++) {
+                    if (k + insert_pos[k] == j) { orig_i = k; break; }
+                }
+                if (orig_i < 0) continue;
+                int orig_target = orig_i + sbx + 1;
+                int new_target;
+                if (orig_target >= orig_code) new_target = orig_code + inserted;
+                else if (orig_target < 0) continue;
+                else new_target = orig_target + insert_pos[orig_target];
+                int new_sbx = new_target - j - 1;
+                new_code[j] = ((unsigned int)op) | ((unsigned int)a << 6) | ((unsigned int)(new_sbx + 131071) << 14);
+            }
+        }
         free(p->code);
         p->code = new_code;
         p->sizecode = ni;
@@ -139,6 +216,7 @@ static int obf_test(luac_Proto *p) {
     } else {
         free(new_code);
     }
+    free(insert_pos);
     return count;
 }
 

@@ -47,7 +47,9 @@ static int process_function(luac_Proto *p) {
             if (c >= BITRK && is_string_const(p, c - BITRK)) { str_set[c - BITRK] = 1; ref_count++; }
         } else if (op == LUAC_OP_SETTABUP || op == LUAC_OP_SETTABLE) {
             int b = (ins >> 23) & 0x1FF;
+            int c = (ins >> 14) & 0x1FF;
             if (b >= BITRK && is_string_const(p, b - BITRK)) { str_set[b - BITRK] = 1; ref_count++; }
+            if (c >= BITRK && is_string_const(p, c - BITRK)) { str_set[c - BITRK] = 1; ref_count++; }
         }
     }
     if (ref_count == 0) { free(str_set); return 0; }
@@ -188,33 +190,63 @@ static int process_function(luac_Proto *p) {
                 handled = 1;
             }
         } else if (op == LUAC_OP_SETTABUP) {
-            if (b >= BITRK && (b - BITRK) < orig_k && seg_map[b - BITRK].n > 0) {
-                SegInfo *sg = &seg_map[b - BITRK];
-                int kr = tmp_base, tr = tmp_base + sg->n, vr = tmp_base + sg->n + 1;
-                if (c >= BITRK)
+            int b_sp = (b >= BITRK && (b - BITRK) < orig_k && seg_map[b - BITRK].n > 0);
+            int c_sp = (c >= BITRK && (c - BITRK) < orig_k && seg_map[c - BITRK].n > 0);
+            if (b_sp || c_sp) {
+                int vr = tmp_base, kr = tmp_base + 8, tr = tmp_base + 16;
+                new_code[ni++] = LUAC_ABC(LUAC_OP_GETUPVAL, tr, a, 0);
+                /* rebuild value */
+                if (c_sp) {
+                    SegInfo *sgc = &seg_map[c - BITRK];
+                    for (int j = 0; j < sgc->n; j++)
+                        new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, vr + j, sgc->seg_idx[j]);
+                    if (sgc->n >= 2)
+                        new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, vr, vr, vr + sgc->n - 1);
+                } else if (c >= BITRK)
                     new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, vr, c - BITRK);
                 else
                     new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, vr, c, 0);
-                new_code[ni++] = LUAC_ABC(LUAC_OP_GETUPVAL, tr, a, 0);
-                for (int j = 0; j < sg->n; j++)
-                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, kr + j, sg->seg_idx[j]);
-                if (sg->n >= 2)
-                    new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, kr, kr, kr + sg->n - 1);
+                /* rebuild key */
+                if (b_sp) {
+                    SegInfo *sg = &seg_map[b - BITRK];
+                    for (int j = 0; j < sg->n; j++)
+                        new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, kr + j, sg->seg_idx[j]);
+                    if (sg->n >= 2)
+                        new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, kr, kr, kr + sg->n - 1);
+                } else if (b >= BITRK)
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, kr, b - BITRK);
+                else
+                    new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, kr, b, 0);
                 new_code[ni++] = LUAC_ABC(LUAC_OP_SETTABLE, tr, kr, vr);
                 handled = 1;
             }
         } else if (op == LUAC_OP_SETTABLE) {
-            if (b >= BITRK && (b - BITRK) < orig_k && seg_map[b - BITRK].n > 0) {
-                SegInfo *sg = &seg_map[b - BITRK];
-                int kr = tmp_base, vr = tmp_base + sg->n;
-                if (c >= BITRK)
+            int b_sp = (b >= BITRK && (b - BITRK) < orig_k && seg_map[b - BITRK].n > 0);
+            int c_sp = (c >= BITRK && (c - BITRK) < orig_k && seg_map[c - BITRK].n > 0);
+            if (b_sp || c_sp) {
+                int vr = tmp_base, kr = tmp_base + 8;
+                /* rebuild value */
+                if (c_sp) {
+                    SegInfo *sgc = &seg_map[c - BITRK];
+                    for (int j = 0; j < sgc->n; j++)
+                        new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, vr + j, sgc->seg_idx[j]);
+                    if (sgc->n >= 2)
+                        new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, vr, vr, vr + sgc->n - 1);
+                } else if (c >= BITRK)
                     new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, vr, c - BITRK);
                 else
                     new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, vr, c, 0);
-                for (int j = 0; j < sg->n; j++)
-                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, kr + j, sg->seg_idx[j]);
-                if (sg->n >= 2)
-                    new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, kr, kr, kr + sg->n - 1);
+                /* rebuild key */
+                if (b_sp) {
+                    SegInfo *sg = &seg_map[b - BITRK];
+                    for (int j = 0; j < sg->n; j++)
+                        new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, kr + j, sg->seg_idx[j]);
+                    if (sg->n >= 2)
+                        new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, kr, kr, kr + sg->n - 1);
+                } else if (b >= BITRK)
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, kr, b - BITRK);
+                else
+                    new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, kr, b, 0);
                 new_code[ni++] = LUAC_ABC(LUAC_OP_SETTABLE, a, kr, vr);
                 handled = 1;
             }
@@ -237,11 +269,32 @@ static int process_function(luac_Proto *p) {
         inserted_so_far += insert_len[i];
     }
 
-    /* adjust jumps */
-    for (int i = 0; i < orig_code; i++) {
-        if (insert_len[i] > 0) {
-            int pos0 = i + insert_pos[i] + 1;
-            obf_adjust_jumps_insert(new_code, ni, pos0, insert_len[i]);
+    /* adjust jumps - single pass correct algorithm */
+    int total_inserted = inserted_so_far;
+    for (int i = 0; i < ni; i++) {
+        int op = new_code[i] & 0x3F;
+        if (op == LUAC_OP_JMP || op == LUAC_OP_FORPREP || op == LUAC_OP_FORLOOP ||
+            op == LUAC_OP_TFORLOOP) {
+            int a = (new_code[i] >> 6) & 0xFF;
+            int sbx = (int)(new_code[i] >> 14) - 131071;
+            /* find original index of this jump instruction */
+            int orig_i = -1;
+            for (int k = 0; k < orig_code; k++) {
+                if (k + insert_pos[k] == i) { orig_i = k; break; }
+            }
+            if (orig_i < 0) continue;
+            int orig_target = orig_i + sbx + 1;
+            int new_target;
+            if (orig_target >= orig_code) {
+                new_target = orig_code + total_inserted;
+            } else if (orig_target < 0) {
+                continue;
+            } else {
+                new_target = orig_target + insert_pos[orig_target];
+            }
+            int new_sbx = new_target - i - 1;
+            new_code[i] = ((unsigned int)op) | ((unsigned int)a << 6) |
+                          ((unsigned int)(new_sbx + 131071) << 14);
         }
     }
 
@@ -261,7 +314,7 @@ static int process_function(luac_Proto *p) {
         p->sizelineinfo = ni;
     }
 
-    int needed = tmp_base + 6;
+    int needed = tmp_base + 24;
     if (needed > 250) needed = 250;
     obf_ensure_stack(p, needed);
 

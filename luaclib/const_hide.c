@@ -4,12 +4,13 @@
 */
 #include "obf_util.h"
 
-#define SUB_SRC "return function(s, i, j) return s:sub(i, j) end"
+#define SUB_SRC "return function(s, i, j) return string.sub(s, i, j) end"
 
 typedef struct { int offset; int endpos; int off_kidx; int endp_kidx; } HideInfo;
 
 static int process_function(lua_State *L, luac_Proto *p) {
     if (!p->k_str || p->sizek < 2) return 0;
+
 
     /* collect string constant indices */
     int *str_idx = luac_alloc(sizeof(int) * p->sizek);
@@ -40,9 +41,11 @@ static int process_function(lua_State *L, luac_Proto *p) {
     }
     blob[blob_len] = '\0';
 
+
     /* add blob constant */
     int blob_kidx = obf_add_k_string(p, blob, blob_len);
     free(blob);
+    p->k_str_len[blob_kidx] = -(int)blob_len;  /* mark as const_hide blob */
 
     /* add offset/endpos number constants */
     for (int i = 0; i < str_count; i++) {
@@ -75,6 +78,7 @@ static int process_function(lua_State *L, luac_Proto *p) {
     int frame_end = base_reg + sub_maxstack + 16;
     int TMP_REG = frame_end;
     int KEY_REG = frame_end + 1;
+    if (KEY_REG + 1 > 250) { free(str_idx); free(info); return 0; } /* avoid unsigned char overflow */
     obf_ensure_stack(p, KEY_REG + 1);
 
     /* First pass: build new code, track insertions */
@@ -83,7 +87,10 @@ static int process_function(lua_State *L, luac_Proto *p) {
     memset(insert_pos, 0, sizeof(int) * p->sizecode);
     memset(insert_len, 0, sizeof(int) * p->sizecode);
 
-    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (p->sizecode * 16 + 64));
+    /* each hidden string can expand to up to 15 instructions (SETTABUP with both key+val hidden).
+       allocate based on str_count to avoid buffer overflow when sizecode is small but many strings. */
+    int max_new = p->sizecode + str_count * 16 + 64;
+    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * max_new);
     int ni = 0;
     int count = 0;
     int inserted_so_far = 0;
@@ -225,11 +232,28 @@ static int process_function(lua_State *L, luac_Proto *p) {
         }
     }
 
-    /* Second pass: adjust jumps */
-    for (int i = 0; i < p->sizecode; i++) {
-        if (insert_len[i] > 0) {
-            int new_pos = i + insert_pos[i] + 1; /* 1-based, after original instruction */
-            obf_adjust_jumps_insert(new_code, ni, new_pos, insert_len[i]);
+    /* Second pass: adjust all jumps in one pass.
+       For each JMP at original position jmp_i with target tgt_i:
+       new_sBx = old_sBx + insert_pos[tgt_i] - insert_pos[jmp_i]
+       where insert_pos[x] = net instructions inserted before original instruction x. */
+    {
+        int total_inserted = inserted_so_far;
+        for (int i = 0; i < ni; i++) {
+            int op = new_code[i] & 0x3F;
+            if (op != LUAC_OP_JMP && op != LUAC_OP_FORLOOP && op != LUAC_OP_FORPREP && op != LUAC_OP_TFORLOOP) continue;
+            int sbx = (int)(new_code[i] >> 14) - 131071;
+            /* find original position of this JMP instruction */
+            int old_jmp = -1;
+            for (int j = 0; j < p->sizecode; j++) {
+                if (j + insert_pos[j] == i) { old_jmp = j; break; }
+            }
+            if (old_jmp < 0) continue; /* injected JMP, skip */
+            int old_tgt = old_jmp + sbx + 1;
+            int tgt_insert = (old_tgt >= 0 && old_tgt < p->sizecode) ? insert_pos[old_tgt] : total_inserted;
+            int delta = tgt_insert - insert_pos[old_jmp];
+            if (delta) {
+                new_code[i] = (new_code[i] & 0x3FFF) | ((unsigned int)(sbx + delta + 131071) << 14);
+            }
         }
     }
 

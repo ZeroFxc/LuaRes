@@ -11,6 +11,7 @@
 ** Random (xorshift32, seedable)
 **=========================================================================*/
 void obf_srand(unsigned int seed);
+void obf_srand_force(unsigned int seed);
 unsigned int obf_rand(void);
 int obf_rand_range(int lo, int hi);  /* [lo, hi] inclusive */
 

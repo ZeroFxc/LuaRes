@@ -61,11 +61,19 @@ static void emit_inline_decrypt(unsigned int *code, int *ni,
 
 static int encrypt_function(lua_State *L, luac_Proto *p) {
     if (!p->code || !p->k_str) return 0;
+    int _dbg_sc = 0;
+    for (int _i = 0; _i < p->sizek; _i++) if ((p->k_tag[_i] == 4 || p->k_tag[_i] == 20) && p->k_str[_i]) _dbg_sc++;
+
+    for (int _ci = 0; _ci < p->sizek; _ci++) {
+        if (p->k_tag[_ci] == 4 || p->k_tag[_ci] == 20) {
+                }
+    }
 
     int *str_idx = luac_alloc(sizeof(int) * p->sizek);
     int str_count = 0;
     for (int i = 0; i < p->sizek; i++) {
-        if ((p->k_tag[i] == LUA_TSHRSTR || p->k_tag[i] == LUA_TLNGSTR) && p->k_str[i])
+        if ((p->k_tag[i] == LUA_TSHRSTR || p->k_tag[i] == LUA_TLNGSTR) && p->k_str[i]
+            && p->k_str_len[i] > 0)
             str_idx[str_count++] = i;
     }
     if (str_count == 0) { free(str_idx); return 0; }
@@ -78,6 +86,34 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
     memset(seen, 0, sizeof(seen));
     int unique_bytes[256];
     int unique_count = 0;
+    /* compute actual required instruction count BEFORE encryption (k_str_len still valid).
+       each decrypt site: 1 NEWTABLE + unique_count SETTABLE + 2 LOADK + 5*nbytes + 1 MOVE.
+       Multiple instructions can reference the same string, so multiply by site count. */
+    int max_bytes = 0;
+    for (int i = 0; i < str_count; i++) {
+        int l = p->k_str_len[str_idx[i]];
+        if (l > max_bytes) max_bytes = l;
+    }
+    int site_count = 0;
+    for (int i = 0; i < p->sizecode; i++) {
+        int op = p->code[i] & 0x3F;
+        int b = (p->code[i] >> 23) & 0x1FF;
+        int c = (p->code[i] >> 14) & 0x1FF;
+        if (op == LUAC_OP_LOADK) {
+            int bx = (int)(p->code[i] >> 14);
+            for (int j = 0; j < str_count; j++) if (str_idx[j] == bx) { site_count++; break; }
+        } else if ((op == LUAC_OP_GETTABUP || op == LUAC_OP_GETTABLE || op == LUAC_OP_SELF) && c >= 256) {
+            for (int j = 0; j < str_count; j++) if (str_idx[j] == c - 256) { site_count++; break; }
+        } else if (op == LUAC_OP_SETTABUP || op == LUAC_OP_SETTABLE) {
+            int hit = 0;
+            if (b >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == b - 256) { hit = 1; break; }
+            if (!hit && c >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == c - 256) { hit = 1; break; }
+            if (hit) site_count++;
+        }
+    }
+    int per_site = 5 * max_bytes + 300;
+    int max_new = p->sizecode + site_count * per_site + 1024;
+
     unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)(size_t)p;
 
     for (int i = 0; i < str_count; i++) {
@@ -120,7 +156,6 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
     int table_reg = base + 7;
     obf_ensure_stack(p, base + 8);
 
-    int max_new = p->sizecode * 50 + 256;
     unsigned int *new_code = luac_alloc(sizeof(unsigned int) * max_new);
     int ni = 0;
 
@@ -231,10 +266,29 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
         inserted_so_far += insert_len[i];
     }
 
-    for (int i = 0; i < p->sizecode; i++) {
-        if (insert_len[i] > 0) {
-            int pos0 = i + insert_pos[i] + 1;
-            obf_adjust_jumps_insert(new_code, ni, pos0, insert_len[i]);
+    /* single-pass correct jump adjustment for JMP, FORPREP, FORLOOP:
+       delta = insert_pos[target] - insert_pos[jmp] */
+    for (int j = 0; j < ni; j++) {
+        int op = new_code[j] & 0x3F;
+        if (op == LUAC_OP_JMP || op == LUAC_OP_FORPREP || op == LUAC_OP_FORLOOP ||
+            op == LUAC_OP_TFORLOOP) {
+            int a = (new_code[j] >> 6) & 0xFF;
+            int bx = (new_code[j] >> 14) & 0x3FFFF;
+            int sbx = bx - 131071;
+            /* find original index of this instruction */
+            int jmp_orig = -1;
+            for (int k = 0; k < p->sizecode; k++) {
+                if (k + insert_pos[k] == j) { jmp_orig = k; break; }
+            }
+            if (jmp_orig < 0) continue;
+            int target_orig = jmp_orig + sbx + 1;
+            if (target_orig < 0 || target_orig >= p->sizecode) continue;
+            int delta = insert_pos[target_orig] - insert_pos[jmp_orig];
+            if (delta != 0) {
+                int new_sbx = sbx + delta;
+                int new_bx = new_sbx + 131071;
+                new_code[j] = LUAC_ABx(op, a, new_bx);
+            }
         }
     }
 
@@ -284,7 +338,7 @@ int str_encrypt_process(lua_State *L) {
 
     int count = 0;
     for (int i = 0; i < list_count; i++) {
-        count += encrypt_function(L, list[i]);
+            count += encrypt_function(L, list[i]);
     }
     lua_pushinteger(L, count);
     return 1;

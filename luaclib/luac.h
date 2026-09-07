@@ -24,6 +24,7 @@ typedef struct luac_Proto {
     char **k_str;
     int *k_str_len;
     double *k_num;
+    int64_t *k_int;  /* exact int64 for LUA_TNUMINT */
     int *k_bool;
     /* debug */
     int *lineinfo;

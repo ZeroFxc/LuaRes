@@ -1,0 +1,283 @@
+/*
+** vm_embed.c - 自包含 VM 生成器（成品式）
+** 调用 vm_assemble_runtime 生成精简执行器，把输入字节码解析为已解码的指令表嵌入，
+** 输出一个可直接 dofile 运行的自包含 lua 文件，不依赖 string.dec / luac 等库。
+**
+** 库函数: vm_embed_generate(bc, bc_len, out_len) -> malloc'd lua source
+** 可执行: vm_embed <input.luac> [output.lua]
+*/
+#include "vm_asm.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+
+/* ---------- 字节码读取 ---------- */
+typedef struct {
+    const unsigned char *buf;
+    size_t pos, len;
+    int encrypted;
+} Reader;
+
+static uint8_t  rd_byte(Reader *r) { return r->buf[r->pos++]; }
+static uint32_t rd_int(Reader *r) {
+    uint32_t v = *(uint32_t*)(r->buf + r->pos); r->pos += 4; return v;
+}
+static double rd_float(Reader *r) {
+    double v = *(double*)(r->buf + r->pos); r->pos += 8; return v;
+}
+static int64_t rd_integer(Reader *r) {
+    int64_t v = *(int64_t*)(r->buf + r->pos); r->pos += 8; return v;
+}
+
+static int is_valid_text(const unsigned char *p, size_t len) {
+    size_t i = 0;
+    if (len == 0) return 1;
+    while (i < len) {
+        unsigned char c = p[i];
+        int need;
+        if (c == 0x00) return 0;
+        if (c < 0x80) {
+            if (c < 0x20 && c != 0x09 && c != 0x0A && c != 0x0D) return 0;
+            if (c == 0x7F) return 0;
+            i++; continue;
+        }
+        if (c < 0xC0) return 0;
+        if (c < 0xE0) need = 1;
+        else if (c < 0xF0) need = 2;
+        else if (c < 0xF8) need = 3;
+        else return 0;
+        if (i + need >= len) return 0;
+        i++;
+        while (need-- > 0) { if ((p[i] & 0xC0) != 0x80) return 0; i++; }
+    }
+    return 1;
+}
+
+static void decrypt_string(unsigned char *buff, size_t len) {
+    size_t length = len;
+    unsigned char first = (unsigned char)(buff[0] ^ (length % 255));
+    size_t step = (size_t)first + len;
+    buff[0] = first;
+    for (size_t i = 1; i < len; i++) {
+        length += step;
+        buff[i] ^= (unsigned char)(length % 255);
+    }
+}
+
+static char *rd_string(Reader *r, size_t *outlen) {
+    size_t size = rd_byte(r);
+    if (size == 0xFF) { size = rd_int(r); }
+    if (size == 0) { *outlen = 0; return strdup(""); }
+    size_t len = size - 1;
+    unsigned char *raw = malloc(len ? len : 1);
+    if (len) memcpy(raw, r->buf + r->pos, len);
+    r->pos += len;
+    if (r->encrypted && len > 0) {
+        unsigned char *tmp = malloc(len);
+        memcpy(tmp, raw, len);
+        decrypt_string(tmp, len);
+        if (is_valid_text(tmp, len)) memcpy(raw, tmp, len);
+        free(tmp);
+    }
+    *outlen = len;
+    return (char*)raw;
+}
+
+/* ---------- lua table 序列化 ---------- */
+typedef struct { char *data; size_t len, cap; } Buf;
+static void buf_init(Buf *b) { b->data = NULL; b->len = 0; b->cap = 0; }
+static void buf_put(Buf *b, const char *s, size_t n) {
+    if (b->len + n + 1 > b->cap) {
+        b->cap = (b->len + n + 1) * 2;
+        b->data = realloc(b->data, b->cap);
+    }
+    memcpy(b->data + b->len, s, n);
+    b->len += n; b->data[b->len] = 0;
+}
+static void buf_str(Buf *b, const char *s) { buf_put(b, s, strlen(s)); }
+static void buf_char(Buf *b, char c) { buf_put(b, &c, 1); }
+
+static void buf_escape_string(Buf *b, const char *s, size_t len) {
+    buf_char(b, '"');
+    for (size_t i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)s[i];
+        if (c == '"') buf_str(b, "\\\"");
+        else if (c == '\\') buf_str(b, "\\\\");
+        else if (c == '\n') buf_str(b, "\\n");
+        else if (c == '\r') buf_str(b, "\\r");
+        else if (c == '\t') buf_str(b, "\\t");
+        else if (c < 0x20 || c >= 0x7F) {
+            char tmp[8]; snprintf(tmp, sizeof(tmp), "\\%d", c); buf_str(b, tmp);
+        } else buf_char(b, (char)c);
+    }
+    buf_char(b, '"');
+}
+
+/* ---------- proto 递归解析 + 序列化（已解码常量） ---------- */
+static void serialize_proto(Reader *r, Buf *b, int depth);
+
+static void serialize_proto(Reader *r, Buf *b, int depth) {
+    size_t slen;
+    char *src = rd_string(r, &slen); free(src);
+    rd_int(r); rd_int(r);
+    uint8_t numparams = rd_byte(r);
+    uint8_t is_vararg = rd_byte(r);
+    uint8_t maxstacksize = rd_byte(r);
+
+    buf_str(b, "{\n");
+    for (int i = 0; i < depth; i++) buf_str(b, "  ");
+
+    uint32_t ncode = rd_int(r);
+    buf_str(b, "code={");
+    for (uint32_t i = 0; i < ncode; i++) {
+        uint32_t ins = rd_int(r);
+        uint32_t op = ins & 0x3F;
+        uint32_t a = (ins >> 6) & 0xFF;
+        uint32_t c = (ins >> 14) & 0x1FF;
+        uint32_t bop = (ins >> 23) & 0x1FF;
+        uint32_t bx = ins >> 14;
+        int32_t sbx = (int32_t)bx - 131071;
+        char tmp[128];
+        snprintf(tmp, sizeof(tmp), "%s{%u,%u,%u,%u,%u,%d}",
+                 i ? "," : "", op, a, bop, c, bx, sbx);
+        buf_str(b, tmp);
+    }
+    buf_str(b, "},\n");
+    for (int i = 0; i < depth; i++) buf_str(b, "  ");
+
+    uint32_t nk = rd_int(r);
+    buf_str(b, "k={");
+    for (uint32_t i = 0; i < nk; i++) {
+        uint8_t t = rd_byte(r);
+        if (i) buf_char(b, ',');
+        switch (t) {
+            case 0: buf_str(b, "nil"); break;
+            case 1: buf_str(b, rd_byte(r) ? "true" : "false"); break;
+            case 3: {
+                double fv = rd_float(r);
+                char tmp[64]; snprintf(tmp, sizeof(tmp), "%.17g", fv);
+                buf_str(b, tmp); break;
+            }
+            case 19: {
+                int64_t iv = rd_integer(r);
+                char tmp[64]; snprintf(tmp, sizeof(tmp), "%lld", (long long)iv);
+                buf_str(b, tmp); break;
+            }
+            case 4: case 20: {
+                size_t sl; char *sv = rd_string(r, &sl);
+                buf_escape_string(b, sv, sl);
+                free(sv); break;
+            }
+            default: fprintf(stderr, "unknown constant type %d\n", t); exit(1);
+        }
+    }
+    buf_str(b, "},\n");
+    for (int i = 0; i < depth; i++) buf_str(b, "  ");
+
+    uint32_t nuv = rd_int(r);
+    buf_str(b, "upvalues={");
+    for (uint32_t i = 0; i < nuv; i++) {
+        uint8_t instack = rd_byte(r);
+        uint8_t idx = rd_byte(r);
+        char tmp[64];
+        snprintf(tmp, sizeof(tmp), "%s{instack=%d,idx=%d}", i ? "," : "", instack, idx);
+        buf_str(b, tmp);
+    }
+    buf_str(b, "},\n");
+    for (int i = 0; i < depth; i++) buf_str(b, "  ");
+
+    uint32_t np = rd_int(r);
+    buf_str(b, "p={");
+    for (uint32_t i = 0; i < np; i++) {
+        if (i) buf_str(b, ",");
+        serialize_proto(r, b, depth + 1);
+    }
+    buf_str(b, "},\n");
+    for (int i = 0; i < depth; i++) buf_str(b, "  ");
+
+    char tmp[128];
+    snprintf(tmp, sizeof(tmp), "num_params=%d,is_vararg=%d,maxstacksize=%d}\n",
+             numparams, is_vararg, maxstacksize);
+    buf_str(b, tmp);
+
+    uint32_t nline = rd_int(r); r->pos += nline * 4;
+    uint32_t nloc = rd_int(r);
+    for (uint32_t i = 0; i < nloc; i++) {
+        char *s = rd_string(r, &slen); free(s);
+        rd_int(r); rd_int(r);
+    }
+    uint32_t nupn = rd_int(r);
+    for (uint32_t i = 0; i < nupn; i++) {
+        char *s = rd_string(r, &slen); free(s);
+    }
+}
+
+/* ---------- 库函数：字节码 -> 自包含 lua 源码 ---------- */
+char *vm_embed_generate(const unsigned char *bc, size_t bc_len, size_t *out_len) {
+    *out_len = 0;
+    if (!bc || bc_len < 34 || (bc[0] != 0x1B && bc[0] != 0x1A)) {
+        fprintf(stderr, "vm_embed: invalid bytecode (magic 0x%02X)\n", bc[0]);
+        return NULL;
+    }
+
+    Reader r = { bc, 0, bc_len, (bc[0] == 0x1A) ? 1 : 0 };
+    r.pos = 34;
+
+    Buf chunk; buf_init(&chunk);
+    serialize_proto(&r, &chunk, 1);
+
+    VmAsmOpts opts = {0};
+    opts.include_coroutine = 1;
+    opts.include_debug = 0;
+    if (vm_assemble_runtime(&opts) != 0) {
+        free(chunk.data);
+        return NULL;
+    }
+
+    Buf out; buf_init(&out);
+    buf_put(&out, opts.out, opts.out_len);
+    vm_assemble_free(&opts);
+
+    buf_str(&out, "\n-- ===== embedded bytecode =====\n");
+    buf_str(&out, "local _chunk = \n");
+    buf_put(&out, chunk.data, chunk.len);
+    free(chunk.data);
+    buf_str(&out, "\nlocal _main = build_proto(_chunk)\n");
+    buf_str(&out, "local _cl = _main({[0] = {open = false, val = _G}})\n");
+    buf_str(&out, "execute(_cl)\n");
+
+    *out_len = out.len;
+    return out.data;
+}
+
+/* ---------- 可执行入口 ---------- */
+#ifndef EMSCRIPTEN
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        fprintf(stderr, "usage: %s <input.luac> [output.lua]\n", argv[0]);
+        return 1;
+    }
+
+    FILE *fp = fopen(argv[1], "rb");
+    if (!fp) { perror("open input"); return 1; }
+    fseek(fp, 0, SEEK_END);
+    long fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    unsigned char *fbuf = malloc(fsize);
+    fread(fbuf, 1, fsize, fp);
+    fclose(fp);
+
+    size_t out_len = 0;
+    char *result = vm_embed_generate(fbuf, (size_t)fsize, &out_len);
+    free(fbuf);
+    if (!result) { fprintf(stderr, "vm_embed_generate failed\n"); return 1; }
+
+    FILE *outf = (argc >= 3) ? fopen(argv[2], "wb") : stdout;
+    if (!outf) { perror("open output"); free(result); return 1; }
+    fwrite(result, 1, out_len, outf);
+    if (outf != stdout) fclose(outf);
+    free(result);
+    return 0;
+}
+#endif /* EMSCRIPTEN */

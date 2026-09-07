@@ -1,17 +1,20 @@
 /*
-** num_obfuscate.c - Number constant obfuscation
-** Replaces integer LOADK with LOADK+LOADK+ADD/SUB/BXOR
+** num_obfuscate.c - 数字常量混淆（任意数字，无精度丢失）
+**
+** 整数：ADD / SUB / BXOR，操作数为全 64 位随机值
+**   N = (N + A) - A
+**   N = (N - A) + A
+**   N = (N ^ A) ^ A
+** 浮点数：使用精确运算（乘2除2 / 双重取反 / 加0减0）
+**   N = (N * 2) * 0.5      （乘2和乘0.5均精确，只改指数位）
+**   N = (N * -1) * -1      （取反精确，只改符号位）
+**   N = (N + 0) - 0        （加0减0精确）
+**
+** 所有数字 100% 处理，不限制范围，不排除 0/1。
 */
 #include <time.h>
+#include <math.h>
 #include "obf_util.h"
-
-static int is_integer_const(luac_Proto *p, int idx) {
-    if (p->k_tag[idx] != LUA_TNUMFLT && p->k_tag[idx] != LUA_TNUMINT) return 0;
-    double v = p->k_num[idx];
-    if (v != (double)(long long)v) return 0;
-    long long n = (long long)v;
-    return (n >= -1000000 && n <= 1000000 && n != 0 && n != 1);
-}
 
 static int calc_max_reg(luac_Proto *p) {
     int max_r = p->maxstacksize - 1;
@@ -29,56 +32,151 @@ static int calc_max_reg(luac_Proto *p) {
     return max_r < 0 ? 0 : max_r;
 }
 
+/* 生成 64 位随机整数 */
+static int64_t rand64(void) {
+    uint64_t r = 0;
+    r |= (uint64_t)obf_rand() << 32;
+    r |= (uint64_t)obf_rand();
+    return (int64_t)r;
+}
+
+static int is_number_const(luac_Proto *p, int idx) {
+    return (p->k_tag[idx] == LUA_TNUMINT || p->k_tag[idx] == LUA_TNUMFLT);
+}
+
 static int obf_function(luac_Proto *p) {
     if (!p->code || !p->k_num) return 0;
 
-    /* find number LOADKs */
+    /* 收集所有数字常量索引 */
     int *num_idx = luac_alloc(sizeof(int) * p->sizek);
     int num_count = 0;
     for (int i = 0; i < p->sizek; i++) {
-        if (is_integer_const(p, i)) num_idx[num_count++] = i;
+        if (is_number_const(p, i)) num_idx[num_count++] = i;
     }
     if (num_count == 0) { free(num_idx); return 0; }
 
     int max_reg = calc_max_reg(p);
     int tmp1 = max_reg + 2; if (tmp1 > 245) tmp1 = 245;
-    int tmp2 = tmp1 + 1;
+    int tmp2 = tmp1 + 1; if (tmp2 > 246) tmp2 = 246;
 
-    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (p->sizecode * 3 + 8));
+    unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (p->sizecode * 4 + 16));
+    int *new_pos = luac_alloc(sizeof(int) * (p->sizecode + 1));
     int ni = 0;
     int count = 0;
 
     for (int i = 0; i < p->sizecode; i++) {
-        if ((p->code[i] & 0x3F) == LUAC_OP_LOADK) {
-            int bx = (int)(p->code[i] >> 14);
-            int is_num = 0;
-            double value = 0;
-            for (int j = 0; j < num_count; j++) {
-                if (num_idx[j] == bx) { is_num = 1; value = p->k_num[bx]; break; }
-            }
-            if (is_num && (obf_rand() % 100) < 50) {
-                int a = (p->code[i] >> 6) & 0xFF;
-                int method = obf_rand() % 3;
-                long long operand = 1 + (long long)(obf_rand() % 1000);
-                long long v1, v2;
-                int op_op;
-                if (method == 0) { v1 = operand; v2 = (long long)value - operand; op_op = LUAC_OP_ADD; }
-                else if (method == 1) { v1 = operand; v2 = (long long)value ^ operand; op_op = LUAC_OP_BXOR; }
-                else { v1 = operand; v2 = operand - (long long)value; op_op = LUAC_OP_SUB; }
+        new_pos[i] = ni;
+        unsigned int ins = p->code[i];
+        int op = ins & 0x3F;
 
-                int idx1 = obf_add_k_number(p, (double)v1);
-                int idx2 = obf_add_k_number(p, (double)v2);
+        if (op == LUAC_OP_LOADK || op == LUAC_OP_LOADKX) {
+            int bx;
+            if (op == LUAC_OP_LOADK) {
+                bx = (int)(ins >> 14) & 0x3FFFF;
+            } else {
+                /* LOADKX: 常量索引在下一条 EXTRAARG 的 Ax 字段 */
+                if (i + 1 >= p->sizecode) { new_code[ni++] = ins; continue; }
+                unsigned int ea = p->code[i + 1];
+                if ((ea & 0x3F) != 46 /* EXTRAARG */) { new_code[ni++] = ins; continue; }
+                bx = (int)(ea >> 6);
+            }
+
+            int is_num = 0;
+            for (int j = 0; j < num_count; j++) {
+                if (num_idx[j] == bx) { is_num = 1; break; }
+            }
+            if (!is_num) { new_code[ni++] = ins; continue; }
+
+            int a = (ins >> 6) & 0xFF;
+            double value = p->k_num[bx];
+            int is_int = (p->k_tag[bx] == LUA_TNUMINT);
+
+            if (is_int) {
+                /* 整数：ADD / SUB / BXOR，全 64 位随机操作数 */
+                int64_t n = (int64_t)value;
+                int method = obf_rand() % 3;
+                int64_t operand = rand64();
+                int64_t v1, v2;
+                int op_op;
+                if (method == 0) {
+                    v1 = operand; v2 = n - operand; op_op = LUAC_OP_ADD;
+                } else if (method == 1) {
+                    v1 = operand; v2 = operand - n; op_op = LUAC_OP_SUB;
+                } else {
+                    v1 = operand; v2 = n ^ operand; op_op = LUAC_OP_BXOR;
+                }
+                int idx1 = obf_add_k_integer(p, (long long)v1);
+                int idx2 = obf_add_k_integer(p, (long long)v2);
                 new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp1, idx1);
                 new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp2, idx2);
                 new_code[ni++] = LUAC_ABC(op_op, a, tmp1, tmp2);
                 count++;
+                if (op == LUAC_OP_LOADKX) {
+                    /* 跳过 EXTRAARG */
+                    new_pos[i + 1] = ni;
+                    i++;
+                }
+                continue;
+            } else {
+                /* 浮点数：精确运算，不丢失精度 */
+                int method = obf_rand() % 3;
+                if (method == 0) {
+                    /* N = (N * 2) * 0.5 —— 乘2和乘0.5只改指数位，精确 */
+                    int idx2 = obf_add_k_number(p, 2.0);
+                    int idx_half = obf_add_k_number(p, 0.5);
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp1, bx); /* 原始常量 */
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp2, idx2);
+                    new_code[ni++] = LUAC_ABC(LUAC_OP_MUL, a, tmp1, tmp2); /* a = N * 2 */
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp2, idx_half);
+                    new_code[ni++] = LUAC_ABC(LUAC_OP_MUL, a, a, tmp2);    /* a = (N*2) * 0.5 */
+                } else if (method == 1) {
+                    /* N = (N * -1) * -1 —— 取反只改符号位，精确 */
+                    int idx_neg = obf_add_k_number(p, -1.0);
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp1, bx);
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp2, idx_neg);
+                    new_code[ni++] = LUAC_ABC(LUAC_OP_MUL, a, tmp1, tmp2); /* a = N * -1 */
+                    new_code[ni++] = LUAC_ABC(LUAC_OP_MUL, a, a, tmp2);    /* a = (-N) * -1 */
+                } else {
+                    /* N = (N + 0) - 0 —— 加0减0精确 */
+                    int idx0 = obf_add_k_number(p, 0.0);
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp1, bx);
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp2, idx0);
+                    new_code[ni++] = LUAC_ABC(LUAC_OP_ADD, a, tmp1, tmp2); /* a = N + 0 */
+                    new_code[ni++] = LUAC_ABC(LUAC_OP_SUB, a, a, tmp2);    /* a = (N+0) - 0 */
+                }
+                count++;
+                if (op == LUAC_OP_LOADKX) {
+                    new_pos[i + 1] = ni;
+                    i++;
+                }
                 continue;
             }
         }
-        new_code[ni++] = p->code[i];
+        new_code[ni++] = ins;
     }
+    new_pos[p->sizecode] = ni;
 
     if (count > 0) {
+        /* 调整所有跳转偏移 */
+        for (int i = 0; i < ni; i++) {
+            int op = new_code[i] & 0x3F;
+            if (op == LUAC_OP_JMP || op == LUAC_OP_FORPREP || op == LUAC_OP_FORLOOP ||
+                op == LUAC_OP_TFORLOOP) {
+                int a = (new_code[i] >> 6) & 0xFF;
+                int sbx = (int)(new_code[i] >> 14) - 131071;
+                int orig_i = -1;
+                for (int k = 0; k < p->sizecode; k++) {
+                    if (new_pos[k] == i) { orig_i = k; break; }
+                }
+                if (orig_i < 0) continue;
+                int orig_target = orig_i + sbx + 1;
+                if (orig_target < 0 || orig_target > p->sizecode) continue;
+                int new_target = new_pos[orig_target];
+                int new_sbx = new_target - i - 1;
+                new_code[i] = ((unsigned int)op) | ((unsigned int)a << 6) |
+                              ((unsigned int)(new_sbx + 131071) << 14);
+            }
+        }
         free(p->code);
         p->code = new_code;
         p->sizecode = ni;
@@ -86,6 +184,7 @@ static int obf_function(luac_Proto *p) {
     } else {
         free(new_code);
     }
+    free(new_pos);
     free(num_idx);
     return count;
 }

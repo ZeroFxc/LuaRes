@@ -46,6 +46,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "luac.h"
+#include "vm_asm/vm_asm.h"
 
 static lua_State *g_L = NULL;
 static char g_errbuf[2048];
@@ -73,7 +74,9 @@ static const char *MODULE_LIST =
     "luac_obfuscate_c,"
     "luac_flatten_c,"
     "debug_strip_c,"
-    "antidec_c";
+    "antidec_c,"
+    "condition_split_c,"
+    "loop_restructure_c";
 
 /*===========================================================================
 ** Helpers
@@ -125,21 +128,96 @@ int wasm_init(void) {
 }
 
 EMSCRIPTEN_KEEPALIVE
+/* dump writer for normalizing input to raw bytecode */
+typedef struct { unsigned char *data; size_t len; size_t cap; } norm_buf;
+static int norm_writer(lua_State *L, const void *p, size_t sz, void *ud) {
+    norm_buf *buf = (norm_buf *)ud;
+    (void)L;
+    if (buf->len + sz > buf->cap) {
+        buf->cap = (buf->len + sz) * 2;
+        buf->data = realloc(buf->data, buf->cap);
+    }
+    memcpy(buf->data + buf->len, p, sz);
+    buf->len += sz;
+    return 0;
+}
+
+/* Normalize any input (raw bytecode / plain source / =andlua shell / 0x1C) to 0x1A bytecode.
+   Returns malloc'd buffer or NULL on error. *out_len set to size. */
+static unsigned char *normalize_to_bytecode(const unsigned char *data, int len, size_t *out_len) {
+    *out_len = 0;
+    unsigned char first = data[0];
+    /* Raw bytecode: use directly */
+    if (first == 0x1B || first == 0x1A) {
+        unsigned char *copy = malloc(len);
+        memcpy(copy, data, len);
+        *out_len = len;
+        return copy;
+    }
+    /* Everything else: load (compiles source, decrypts =shell/0x1C), then
+       string.dump -> andlua shell, string.dec -> 0x1A bytecode */
+    if (luaL_loadbufferx(g_L, (const char *)data, (size_t)len, "=input", NULL) != LUA_OK) {
+        const char *err = lua_tostring(g_L, -1);
+        set_error("load: %s", err ? err : "?");
+        lua_pop(g_L, 1);
+        return NULL;
+    }
+    /* stack: func */
+    lua_getglobal(g_L, "string");
+    lua_getfield(g_L, -1, "dump");
+    lua_remove(g_L, -2); /* remove string table, keep dump func */
+    lua_pushvalue(g_L, -2); /* copy func */
+    lua_pushboolean(g_L, 1); /* strip */
+    if (lua_pcall(g_L, 2, 1, 0) != LUA_OK) {
+        const char *err = lua_tostring(g_L, -1);
+        set_error("string.dump: %s", err ? err : "?");
+        lua_pop(g_L, 2); /* err + func */
+        return NULL;
+    }
+    lua_remove(g_L, -2); /* remove func, keep shell string */
+    /* stack: shell (=... base64) */
+    lua_getglobal(g_L, "string");
+    lua_getfield(g_L, -1, "dec");
+    lua_remove(g_L, -2);
+    lua_pushvalue(g_L, -2); /* copy shell */
+    if (lua_pcall(g_L, 1, 1, 0) != LUA_OK) {
+        const char *err = lua_tostring(g_L, -1);
+        set_error("string.dec: %s", err ? err : "?");
+        lua_pop(g_L, 2);
+        return NULL;
+    }
+    lua_remove(g_L, -2); /* remove shell */
+    /* stack: 0x1A bytecode string */
+    size_t raw_len = 0;
+    const char *raw_str = lua_tolstring(g_L, -1, &raw_len);
+    unsigned char *raw = malloc(raw_len);
+    memcpy(raw, raw_str, raw_len);
+    lua_pop(g_L, 1);
+    *out_len = raw_len;
+    return raw;
+}
+
 int wasm_load(const unsigned char *data, int len) {
     if (!g_L || !data || len <= 0) {
         set_error("wasm_load: invalid state or data");
         return LUA_NOREF;
     }
+    size_t raw_len = 0;
+    unsigned char *raw = normalize_to_bytecode(data, len, &raw_len);
+    if (!raw) return LUA_NOREF;
+
     lua_getglobal(g_L, "luac");
     if (!lua_istable(g_L, -1)) {
         lua_pop(g_L, 1);
+        free(raw);
         set_error("wasm_load: luac table not found");
         return LUA_NOREF;
     }
     lua_getfield(g_L, -1, "undump");
     lua_remove(g_L, -2);
-    lua_pushlstring(g_L, (const char *)data, (size_t)len);
+    lua_pushlstring(g_L, (const char *)raw, raw_len);
     lua_pushboolean(g_L, 0);
+    free(raw);
     if (lua_pcall(g_L, 2, 1, 0) != LUA_OK) {
         const char *err = lua_tostring(g_L, -1);
         set_error("undump: %s", err ? err : "?");
@@ -211,6 +289,48 @@ unsigned char *wasm_dump(int handle, int *out_len) {
 
 EMSCRIPTEN_KEEPALIVE
 void wasm_free_dump(unsigned char *ptr) { if (ptr) free(ptr); }
+
+/* vm_embed: convert proto to self-contained Lua source (成品式 VM) */
+EMSCRIPTEN_KEEPALIVE
+char *wasm_vm_embed(int handle, int *out_len) {
+    if (!g_L || !out_len || handle < 0) {
+        set_error("wasm_vm_embed: invalid args");
+        *out_len = 0;
+        return NULL;
+    }
+    *out_len = 0;
+    lua_getglobal(g_L, "luac");
+    lua_getfield(g_L, -1, "dump");
+    lua_remove(g_L, -2);
+    lua_rawgeti(g_L, LUA_REGISTRYINDEX, handle);
+    if (lua_pcall(g_L, 1, 1, 0) != LUA_OK) {
+        const char *err = lua_tostring(g_L, -1);
+        set_error("vm_embed dump: %s", err ? err : "?");
+        lua_pop(g_L, 1);
+        return NULL;
+    }
+    size_t bc_len = 0;
+    const char *bc_str = lua_tolstring(g_L, -1, &bc_len);
+    if (!bc_str || bc_len == 0) {
+        set_error("vm_embed: empty dump");
+        lua_pop(g_L, 1);
+        return NULL;
+    }
+    unsigned char *bc = (unsigned char *)malloc(bc_len);
+    memcpy(bc, bc_str, bc_len);
+    lua_pop(g_L, 1);
+
+    size_t src_len = 0;
+    char *src = vm_embed_generate(bc, bc_len, &src_len);
+    free(bc);
+    if (!src) {
+        set_error("vm_embed: generation failed");
+        return NULL;
+    }
+    *out_len = (int)src_len;
+    g_errbuf[0] = '\0';
+    return src;
+}
 
 EMSCRIPTEN_KEEPALIVE
 void wasm_free(int handle) {

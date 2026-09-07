@@ -4,7 +4,7 @@
 #include <time.h>
 #include "obf_util.h"
 
-#define CONDITION_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET)
+#define CONDITION_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET||(op)==LUAC_OP_LOADKX||(op)==LUAC_OP_TFORCALL||(op)==LUAC_OP_CLOSURE)
 
 static void inject_function(luac_Proto *p, int count) {
     if (!p->code || p->sizecode < 2 || count <= 0) return;
@@ -18,7 +18,9 @@ static void inject_function(luac_Proto *p, int count) {
     while (injected < count && attempts < count * 10) {
         attempts++;
         int pos = 1 + (int)(obf_rand() % (p->sizecode - 1));
-        if (CONDITION_OPS(p->code[pos-1] & 0x3F)) continue;
+        int prev_op = p->code[pos-1] & 0x3F;
+        if (CONDITION_OPS(prev_op)) continue;
+        if (prev_op == 43 && ((p->code[pos-1] >> 14) & 0x1FF) == 0) continue;
         int a = old_maxstack + (int)(obf_rand() % usable);
         int b = old_maxstack + (int)(obf_rand() % usable);
         p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + 1));
@@ -30,8 +32,7 @@ static void inject_function(luac_Proto *p, int count) {
     }
     if (p->lineinfo) { free(p->lineinfo); p->lineinfo = NULL; }
     p->sizelineinfo = 0;
-    if (p->p) for (int i = 0; i < p->sizep; i++)
-        inject_function(p->p[i], count > 10 ? count / 2 : 5);
+    /* recursion disabled - causes issues in sub-protos */
 }
 
 int junk_move_process(lua_State *L) {

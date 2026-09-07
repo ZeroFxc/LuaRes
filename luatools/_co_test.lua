@@ -1,0 +1,10 @@
+local luac = require("luac")
+local f = loadfile("_co.lua")
+local bc = string.dec(string.dump(f, true))
+local p = luac.undump(bc, false)
+local n = luac.str_encrypt_c(p)
+print("str_encrypt: " .. tostring(n))
+local d = luac.dump(p)
+print("dump ok: " .. tostring(#d))
+local r = load(d)
+if r then r() else print("LOAD_FAIL") end

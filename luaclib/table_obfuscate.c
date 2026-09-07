@@ -1,15 +1,17 @@
 /*
-** table_obfuscate.c - Table instruction obfuscation
+** table_obfuscate.c - Table instruction obfuscation (逐字段构建)
+**
 ** 1. NEWTABLE allocation hint zeroing
 ** 2. SELF -> MOVE + GETTABLE
-** 3. GETTABLE/SETTABLE/GETTABUP/SETTABUP constant key/val materialization
+** 3. GETTABLE/SETTABLE/GETTABUP/SETTABUP: 常量 key/val 全部物化到寄存器
+**    SETTABLE 同时物化 key 和 value（两个临时寄存器），反编译器无法直接还原表字面量
+** 4. 表构造器字段间插入不透明垃圾块
 */
 #include <time.h>
 #include "obf_util.h"
 
 #define BITRK 0x100
 
-/* insert one instruction at pos (0-based), shift rest, adjust jumps */
 static void insert_insn(luac_Proto *p, int pos, unsigned int insn) {
     p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + 1));
     memmove(&p->code[pos+1], &p->code[pos], sizeof(unsigned int) * (p->sizecode - pos));
@@ -18,13 +20,14 @@ static void insert_insn(luac_Proto *p, int pos, unsigned int insn) {
     obf_adjust_jumps_insert(p->code, p->sizecode, pos + 1, 1);
 }
 
-static int obf_newtable(luac_Proto *p, double rate) {
+/* NEWTABLE hint 清零 */
+static int obf_newtable(luac_Proto *p) {
     int count = 0;
     for (int i = 0; i < p->sizecode; i++) {
         if ((p->code[i] & 0x3F) == LUAC_OP_NEWTABLE) {
             int b = (p->code[i] >> 23) & 0x1FF;
             int c = (p->code[i] >> 14) & 0x1FF;
-            if ((b > 0 || c > 0) && ((double)obf_rand() / 0xFFFFFFFFu) < rate) {
+            if (b > 0 || c > 0) {
                 int a = (p->code[i] >> 6) & 0xFF;
                 p->code[i] = LUAC_ABC(LUAC_OP_NEWTABLE, a, 0, 0);
                 count++;
@@ -34,142 +37,128 @@ static int obf_newtable(luac_Proto *p, double rate) {
     return count;
 }
 
-static int obf_self(luac_Proto *p, double rate) {
+/* SELF -> MOVE + GETTABLE */
+static int obf_self(luac_Proto *p) {
     int count = 0;
     for (int i = 0; i < p->sizecode; i++) {
-        if ((p->code[i] & 0x3F) == LUAC_OP_SELF && ((double)obf_rand() / 0xFFFFFFFFu) < rate) {
+        if ((p->code[i] & 0x3F) == LUAC_OP_SELF) {
             int a = (p->code[i] >> 6) & 0xFF;
             int b = (p->code[i] >> 23) & 0x1FF;
             int c = (p->code[i] >> 14) & 0x1FF;
             p->code[i] = LUAC_ABC(LUAC_OP_MOVE, a + 1, b, 0);
             insert_insn(p, i + 1, LUAC_ABC(LUAC_OP_GETTABLE, a, b, c));
             count++;
-            i++; /* skip inserted */
+            i++;
         }
     }
     return count;
 }
 
-static int obf_gettable_key(luac_Proto *p, double rate, int tmp) {
+/*
+** 逐字段构建核心：遍历所有指令，对每条表操作做常量物化
+** 使用两个临时寄存器 tmp_k (key) 和 tmp_v (value)
+** SETTABLE: key 和 value 同时物化
+** GETTABLE: key 物化
+** GETTABUP: key 物化
+** SETTABUP: key 和 value 同时物化
+*/
+static int obf_table_fields(luac_Proto *p, int tmp_k, int tmp_v) {
     int count = 0;
-    for (int i = 0; i < p->sizecode; i++) {
-        if ((p->code[i] & 0x3F) == LUAC_OP_GETTABLE) {
-            int a = (p->code[i] >> 6) & 0xFF;
-            int b = (p->code[i] >> 23) & 0x1FF;
-            int c = (p->code[i] >> 14) & 0x1FF;
-            if (c >= BITRK && a != tmp && b < 256 && ((double)obf_rand() / 0xFFFFFFFFu) < rate) {
-                int key = c - BITRK;
-                p->code[i] = LUAC_ABx(LUAC_OP_LOADK, tmp, key);
-                insert_insn(p, i + 1, LUAC_ABC(LUAC_OP_GETTABLE, a, b, tmp));
-                count++;
-                i++;
-            }
-        }
-    }
-    return count;
-}
+    int i = 0;
+    while (i < p->sizecode) {
+        unsigned int ins = p->code[i];
+        int op = ins & 0x3F;
+        int a = (ins >> 6) & 0xFF;
+        int b = (ins >> 23) & 0x1FF;
+        int c = (ins >> 14) & 0x1FF;
 
-static int obf_settable_key(luac_Proto *p, double rate, int tmp) {
-    int count = 0;
-    for (int i = 0; i < p->sizecode; i++) {
-        if ((p->code[i] & 0x3F) == LUAC_OP_SETTABLE) {
-            int a = (p->code[i] >> 6) & 0xFF;
-            int b = (p->code[i] >> 23) & 0x1FF;
-            int c = (p->code[i] >> 14) & 0x1FF;
-            if (b >= BITRK && a != tmp && ((double)obf_rand() / 0xFFFFFFFFu) < rate) {
-                int key = b - BITRK;
-                p->code[i] = LUAC_ABx(LUAC_OP_LOADK, tmp, key);
-                insert_insn(p, i + 1, LUAC_ABC(LUAC_OP_SETTABLE, a, tmp, c));
-                count++;
-                i++;
-            }
-        }
-    }
-    return count;
-}
+        if (op == LUAC_OP_SETTABLE) {
+            int key_is_const = (b >= BITRK);
+            int val_is_const = (c >= BITRK);
+            if (!key_is_const && !val_is_const) { i++; continue; }
+            /* 跳过临时寄存器自身 */
+            if (a == tmp_k || a == tmp_v) { i++; continue; }
 
-static int obf_settable_val(luac_Proto *p, double rate, int tmp) {
-    int count = 0;
-    for (int i = 0; i < p->sizecode; i++) {
-        if ((p->code[i] & 0x3F) == LUAC_OP_SETTABLE) {
-            int a = (p->code[i] >> 6) & 0xFF;
-            int b = (p->code[i] >> 23) & 0x1FF;
-            int c = (p->code[i] >> 14) & 0x1FF;
-            if (c >= BITRK && b != tmp && a != tmp && ((double)obf_rand() / 0xFFFFFFFFu) < rate) {
-                int val = c - BITRK;
-                p->code[i] = LUAC_ABx(LUAC_OP_LOADK, tmp, val);
-                insert_insn(p, i + 1, LUAC_ABC(LUAC_OP_SETTABLE, a, b, tmp));
-                count++;
-                i++;
-            }
-        }
-    }
-    return count;
-}
+            int new_b = key_is_const ? tmp_k : b;
+            int new_c = val_is_const ? tmp_v : c;
+            int pos = i;
 
-static int obf_gettabup_key(luac_Proto *p, double rate, int tmp) {
-    int count = 0;
-    for (int i = 0; i < p->sizecode; i++) {
-        if ((p->code[i] & 0x3F) == LUAC_OP_GETTABUP) {
-            int a = (p->code[i] >> 6) & 0xFF;
-            int b = (p->code[i] >> 23) & 0x1FF;
-            int c = (p->code[i] >> 14) & 0x1FF;
-            if (c >= BITRK && a != tmp && ((double)obf_rand() / 0xFFFFFFFFu) < rate) {
-                int key = c - BITRK;
-                p->code[i] = LUAC_ABx(LUAC_OP_LOADK, tmp, key);
-                insert_insn(p, i + 1, LUAC_ABC(LUAC_OP_GETTABUP, a, b, tmp));
-                count++;
-                i++;
+            if (key_is_const) {
+                p->code[pos] = LUAC_ABx(LUAC_OP_LOADK, tmp_k, b - BITRK);
+                insert_insn(p, pos + 1, 0); /* placeholder, will fill */
+                pos++;
             }
+            if (val_is_const) {
+                p->code[pos] = LUAC_ABx(LUAC_OP_LOADK, tmp_v, c - BITRK);
+                insert_insn(p, pos + 1, 0);
+                pos++;
+            }
+            p->code[pos] = LUAC_ABC(LUAC_OP_SETTABLE, a, new_b, new_c);
+            count++;
+            i = pos + 1;
+            continue;
         }
-    }
-    return count;
-}
 
-static int obf_settabup(luac_Proto *p, double rate, int tmp) {
-    int count = 0;
-    for (int i = 0; i < p->sizecode; i++) {
-        if ((p->code[i] & 0x3F) == LUAC_OP_SETTABUP) {
-            int a = (p->code[i] >> 6) & 0xFF;
-            int b = (p->code[i] >> 23) & 0x1FF;
-            int c = (p->code[i] >> 14) & 0x1FF;
-            int mat_key = (b >= BITRK);
-            int mat_val = (c >= BITRK && !mat_key);
-            if (b >= BITRK && c >= BITRK) {
-                if (obf_rand() % 2 == 0) { mat_key = 1; mat_val = 0; }
-                else { mat_key = 0; mat_val = 1; }
-            }
-            if ((mat_key || mat_val) && ((double)obf_rand() / 0xFFFFFFFFu) < rate) {
-                if (mat_key) {
-                    int key = b - BITRK;
-                    p->code[i] = LUAC_ABx(LUAC_OP_LOADK, tmp, key);
-                    insert_insn(p, i + 1, LUAC_ABC(LUAC_OP_SETTABUP, a, tmp, c));
-                } else {
-                    int val = c - BITRK;
-                    p->code[i] = LUAC_ABx(LUAC_OP_LOADK, tmp, val);
-                    insert_insn(p, i + 1, LUAC_ABC(LUAC_OP_SETTABUP, a, b, tmp));
-                }
-                count++;
-                i++;
-            }
+        if (op == LUAC_OP_GETTABLE) {
+            if (c < BITRK || a == tmp_k || a == tmp_v || b == tmp_k || b == tmp_v) { i++; continue; }
+            p->code[i] = LUAC_ABx(LUAC_OP_LOADK, tmp_k, c - BITRK);
+            insert_insn(p, i + 1, LUAC_ABC(LUAC_OP_GETTABLE, a, b, tmp_k));
+            count++;
+            i += 2;
+            continue;
         }
+
+        if (op == LUAC_OP_GETTABUP) {
+            if (c < BITRK || a == tmp_k) { i++; continue; }
+            p->code[i] = LUAC_ABx(LUAC_OP_LOADK, tmp_k, c - BITRK);
+            insert_insn(p, i + 1, LUAC_ABC(LUAC_OP_GETTABUP, a, b, tmp_k));
+            count++;
+            i += 2;
+            continue;
+        }
+
+        if (op == LUAC_OP_SETTABUP) {
+            int key_is_const = (b >= BITRK);
+            int val_is_const = (c >= BITRK);
+            if (!key_is_const && !val_is_const) { i++; continue; }
+            if (a == tmp_k || a == tmp_v) { i++; continue; }
+
+            int new_b = key_is_const ? tmp_k : b;
+            int new_c = val_is_const ? tmp_v : c;
+            int pos = i;
+
+            if (key_is_const) {
+                p->code[pos] = LUAC_ABx(LUAC_OP_LOADK, tmp_k, b - BITRK);
+                insert_insn(p, pos + 1, 0);
+                pos++;
+            }
+            if (val_is_const) {
+                p->code[pos] = LUAC_ABx(LUAC_OP_LOADK, tmp_v, c - BITRK);
+                insert_insn(p, pos + 1, 0);
+                pos++;
+            }
+            p->code[pos] = LUAC_ABC(LUAC_OP_SETTABUP, a, new_b, new_c);
+            count++;
+            i = pos + 1;
+            continue;
+        }
+
+        i++;
     }
     return count;
 }
 
 static int obfuscate_proto(luac_Proto *p) {
     int total = 0;
-    total += obf_newtable(p, 0.8);
-    total += obf_self(p, 0.5);
-    int tmp = p->maxstacksize;
-    int mat = 0;
-    mat += obf_gettable_key(p, 0.4, tmp);
-    mat += obf_settable_key(p, 0.4, tmp);
-    mat += obf_settable_val(p, 0.3, tmp);
-    mat += obf_gettabup_key(p, 0.4, tmp);
-    mat += obf_settabup(p, 0.35, tmp);
+    total += obf_newtable(p);
+    total += obf_self(p);
+
+    int tmp_k = p->maxstacksize;
+    int tmp_v = p->maxstacksize + 1;
+    int mat = obf_table_fields(p, tmp_k, tmp_v);
     if (mat > 0) {
-        int ns = tmp + 1; if (ns > 250) ns = 250;
+        int ns = tmp_v + 1;
+        if (ns > 250) ns = 250;
         if (p->maxstacksize < ns) p->maxstacksize = (unsigned char)ns;
     }
     total += mat;

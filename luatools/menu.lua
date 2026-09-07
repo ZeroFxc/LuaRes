@@ -12,12 +12,12 @@ local luac = require('luac')
 local fix_maxstack = require('fix_maxstack')
 
 local FORWARD_ORDER = {
-    'bool_obfuscate', 'num_obfuscate', 'str_split', 'const_hide', 'str_encrypt',
-    'const_shuffle', 'instruction_mutate', 'table_obfuscate', 'opaque_predicate',
+    'const_hide', 'const_shuffle', 'str_encrypt', 'instruction_mutate', 'num_obfuscate', 'str_split', 'bool_obfuscate',
+    'table_obfuscate', 'opaque_predicate',
     'const_poison', 'opaque_junk', 'junk_jmp', 'junk_loadk',
     'junk_move', 'op48_junk',
     'luac_obfuscate', 'luac_flatten', 'debug_strip',
-    'antidec',
+    'antidec', 'proto_shuffle', 'live_range_split',
 }
 
 local FORWARD_DESC = {
@@ -40,6 +40,8 @@ local FORWARD_DESC = {
     luac_flatten = '控制流扁平化',
     debug_strip = '调试信息剥离',
     antidec = '反编译防护',
+    proto_shuffle = '子函数Proto重排',
+    live_range_split = '寄存器活跃范围分裂',
 }
 
 local REVERSE_ORDER = {
@@ -253,6 +255,8 @@ local FORWARD_FN = {
     luac_flatten = 'flatten_proto',
     debug_strip = 'strip',
     antidec = 'protect',
+    proto_shuffle = 'shuffle',
+    live_range_split = 'split',
 }
 
 -- 反向模块真实入口函数映射

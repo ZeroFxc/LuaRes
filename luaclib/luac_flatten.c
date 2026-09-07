@@ -80,6 +80,11 @@ static void flatten_function(luac_Proto *p) {
             int op = p->code[i] & 0x3F;
             if (LOOP_OPS(op)) { blocks[b].kind = 1; has_loop = 1; break; }
             if (op == LUAC_OP_RETURN || op == LUAC_OP_TAILCALL) blocks[b].kind = 2;
+            /* backward JMP indicates while/repeat loop */
+            if (op == LUAC_OP_JMP) {
+                int sbx = (int)(p->code[i] >> 14) - 131071;
+                if (sbx < 0) { has_loop = 1; break; }
+            }
         }
     }
 
@@ -90,6 +95,7 @@ static void flatten_function(luac_Proto *p) {
         return;
     }
 
+
     int state_reg = p->maxstacksize;
 
     /* build new code */
@@ -99,6 +105,7 @@ static void flatten_function(luac_Proto *p) {
 
     int *block_offsets = (int *)malloc(sizeof(int) * nblocks);
     int *dispatch_jmp_pos = (int *)malloc(sizeof(int) * nblocks);
+    int *consumed = (int *)calloc(n + 1, sizeof(int)); /* 跨块消费的指令 */
 
     /* initial state load */
     int first_k = get_int_const(p, blocks[0].id);
@@ -119,6 +126,7 @@ static void flatten_function(luac_Proto *p) {
         block_offsets[b] = ni;
 
         for (int i = blocks[b].start; i <= blocks[b].stop; i++) {
+            if (consumed[i]) continue;
             unsigned int ins = p->code[i];
             int op = ins & 0x3F;
 
@@ -134,12 +142,22 @@ static void flatten_function(luac_Proto *p) {
                 }
                 new_code[ni++] = 0xDEAD; /* JMP to dispatcher placeholder */
             } else if (COND_OPS(op)) {
+                int jmp_idx = -1;
                 if (i + 1 <= blocks[b].stop && (p->code[i + 1] & 0x3F) == LUAC_OP_JMP) {
-                    unsigned int jmp_ins = p->code[i + 1];
+                    jmp_idx = i + 1; /* JMP 在同一块内 */
+                } else if (i == blocks[b].stop && b + 1 < nblocks &&
+                           blocks[b + 1].start == i + 1 &&
+                           (p->code[i + 1] & 0x3F) == LUAC_OP_JMP) {
+                    jmp_idx = i + 1; /* JMP 在下一块开头 */
+                    consumed[jmp_idx] = 1;
+                }
+
+                if (jmp_idx >= 0) {
+                    unsigned int jmp_ins = p->code[jmp_idx];
                     int jmp_sbx = (int)(jmp_ins >> 14) - 131071;
-                    int else_pos = i + 1 + jmp_sbx + 1;
+                    int else_pos = jmp_idx + jmp_sbx + 1;
                     int else_id = block_id_at(blocks, nblocks, else_pos);
-                    int then_id = block_id_at(blocks, nblocks, i + 2);
+                    int then_id = block_id_at(blocks, nblocks, jmp_idx + 1);
 
                     new_code[ni++] = ins;
 
@@ -162,7 +180,7 @@ static void flatten_function(luac_Proto *p) {
                     int sbx = else_state_pos - jmp_to_else_pos - 1;
                     new_code[jmp_to_else_pos] = LUAC_AsBx(LUAC_OP_JMP, 0, sbx);
 
-                    i++; /* skip original JMP */
+                    i = jmp_idx; /* skip original JMP (for loop i++ moves past it) */
                 } else {
                     new_code[ni++] = ins;
                 }
@@ -207,6 +225,7 @@ static void flatten_function(luac_Proto *p) {
     free(blocks);
     free(block_offsets);
     free(dispatch_jmp_pos);
+    free(consumed);
 }
 
 int luac_flatten_process(lua_State *L) {
