@@ -44,7 +44,7 @@ static void flatten_function(luac_Proto *p) {
 
     for (int i = 0; i < n; i++) {
         int op = p->code[i] & 0x3F;
-        if (UNCOND_END(op) || LOOP_OPS(op)) {
+        if (UNCOND_END(op) || LOOP_OPS(op) || COND_OPS(op)) {
             if (i + 1 < n) is_start[i + 1] = 1;
             if (IS_JUMP_TARGET(op)) {
                 int sbx = (int)(p->code[i] >> 14) - 131071;
@@ -191,7 +191,8 @@ static void flatten_function(luac_Proto *p) {
 
         /* fall-through block: add state load for next block + JMP to dispatcher */
         int last_op = p->code[blocks[b].stop] & 0x3F;
-        if (!UNCOND_END(last_op) && !COND_OPS(last_op)) {
+        int block_empty = (ni == block_offsets[b]);
+        if (block_empty || (!UNCOND_END(last_op) && !COND_OPS(last_op))) {
             int next_id = block_id_at(blocks, nblocks, blocks[b].stop + 1);
             if (next_id >= 0) {
                 int kid = get_int_const(p, next_id);
