@@ -37,6 +37,7 @@ int live_range_split_process(lua_State *L);
 int vm_embed_process(lua_State *L);
 int operator_substitute_process(lua_State *L);
 int debug_mutate_process(lua_State *L);
+int call_rewrite_process(lua_State *L);
 
 static int obf_srand_lua(lua_State *L) {
     unsigned int seed = (unsigned int)luaL_checkinteger(L, 1);
@@ -79,6 +80,7 @@ static const luaL_Reg obf_funcs[] = {
     {"vm_embed_c", vm_embed_process},
     {"operator_substitute_c", operator_substitute_process},
     {"debug_mutate_c", debug_mutate_process},
+    {"call_rewrite_c", call_rewrite_process},
     {"srand", obf_srand_lua},
     {NULL, NULL}
 };

@@ -40,6 +40,7 @@ const MODULE_GROUPS = [
     { id: 'loop_restructure_c', label: '循环重构', desc: '插入执行一次的循环模板混入正常代码' },
     { id: 'jmp_obfuscate_c', label: 'JMP偏移混淆', desc: '插入 no-op JMP 链混淆跳转偏移' },
     { id: 'indirect_call_c', label: '间接调用', desc: 'CALL 前经临时表存取值，函数调用间接化' },
+    { id: 'call_rewrite_c', label: '参数/返回值混淆', desc: 'f(a,b)→f({a,b})内部解包，多返回值先打包再解包' },
   ]},
   { name: '其他', modules: [
     { id: 'debug_strip_c', label: '调试信息剥离', desc: '移除 lineinfo/locvars/upvalue 名' },
@@ -55,7 +56,7 @@ const BUILTIN_IDS = new Set(MODULE_GROUPS.flatMap(g => g.modules.map(m => m.id))
 
 // Execution order (matches menu.lua FORWARD_ORDER)
 const EXEC_ORDER = [
-  'const_hide_c','const_shuffle_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c',
+  'const_hide_c','const_shuffle_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c','call_rewrite_c',
   'num_obfuscate_c','str_split_c','bool_obfuscate_c','table_obfuscate_c',
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
