@@ -230,18 +230,35 @@ int obf_add_subproto(lua_State *L, luac_Proto *p, luac_Proto *sub_raw) {
 ** Constant helpers
 **=========================================================================*/
 static void grow_k(luac_Proto *p) {
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "grow_k: sizek=%d k_tag=%p k_str=%p k_num=%p\n",
+        p->sizek, (void*)p->k_tag, (void*)p->k_str, (void*)p->k_num);
+#endif
     p->k_tag = realloc(p->k_tag, sizeof(int) * (p->sizek + 1));
     p->k_str = realloc(p->k_str, sizeof(char *) * (p->sizek + 1));
     p->k_str_len = realloc(p->k_str_len, sizeof(int) * (p->sizek + 1));
     p->k_num = realloc(p->k_num, sizeof(double) * (p->sizek + 1));
     p->k_int = realloc(p->k_int, sizeof(int64_t) * (p->sizek + 1));
     p->k_bool = realloc(p->k_bool, sizeof(int) * (p->sizek + 1));
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "grow_k: done k_tag=%p k_str=%p\n", (void*)p->k_tag, (void*)p->k_str);
+#endif
 }
 
 int obf_add_k_string(luac_Proto *p, const char *s, size_t len) {
     int idx = p->sizek;
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "obf_add_k_string: idx=%d len=%zu s=%p\n", idx, len, (void*)s);
+#endif
     grow_k(p);
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "obf_add_k_string: after grow_k k_tag=%p k_str=%p idx=%d\n",
+        (void*)p->k_tag, (void*)p->k_str, idx);
+#endif
     p->k_tag[idx] = (len <= 40) ? LUA_TSHRSTR : LUA_TLNGSTR;
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "obf_add_k_string: k_tag set, calling strndup\n");
+#endif
     p->k_str[idx] = luac_strndup(s, len);
     p->k_str_len[idx] = (int)len;
     p->k_num[idx] = 0; p->k_bool[idx] = 0;

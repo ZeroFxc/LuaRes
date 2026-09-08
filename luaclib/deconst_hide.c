@@ -232,17 +232,24 @@ int deconst_hide_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
 
-    luac_Proto *list[8192];
+    /* heap-allocated to avoid WASM stack overflow (64KB default stack) */
+    int cap = 1024;
+    luac_Proto **list = luac_alloc(sizeof(luac_Proto *) * cap);
     int list_count = 0;
-    luac_Proto *stack[8192];
+    luac_Proto **stk = luac_alloc(sizeof(luac_Proto *) * cap);
     int sp = 0;
-    stack[sp++] = p;
-    while (sp > 0 && list_count < 8192) {
-        luac_Proto *cur = stack[--sp];
+    stk[sp++] = p;
+    while (sp > 0) {
+        luac_Proto *cur = stk[--sp];
+        if (list_count >= cap) {
+            cap *= 2;
+            list = realloc(list, sizeof(luac_Proto *) * cap);
+            stk = realloc(stk, sizeof(luac_Proto *) * cap);
+        }
         list[list_count++] = cur;
         if (cur->p) {
             for (int j = cur->sizep - 1; j >= 0; j--)
-                stack[sp++] = cur->p[j];
+                stk[sp++] = cur->p[j];
         }
     }
 
@@ -250,6 +257,8 @@ int deconst_hide_process(lua_State *L) {
     for (int i = 0; i < list_count; i++) {
         count += clean_function(L, list[i]);
     }
+    free(list);
+    free(stk);
     lua_pushinteger(L, count);
     return 1;
 }

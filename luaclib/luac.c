@@ -51,9 +51,18 @@ char *luac_strdup(const char *s) {
 
 char *luac_strndup(const char *s, size_t len) {
     if (!s) return NULL;
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "luac_strndup: s_addr=0x%x len=%u\n", (unsigned int)(size_t)s, (unsigned int)len);
+#endif
     char *p = luac_alloc(len + 1);
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "luac_strndup: allocated p_addr=0x%x\n", (unsigned int)(size_t)p);
+#endif
     memcpy(p, s, len);
     p[len] = '\0';
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "luac_strndup: done\n");
+#endif
     return p;
 }
 

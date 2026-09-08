@@ -17,6 +17,13 @@ local licenseInputKey = ""
 local licenseInputQQ = ""
 local licenseInputField = 1
 
+local _debug_count = 0
+local function debug_log(msg)
+    _debug_count = _debug_count + 1
+    local existing = filesystem.read_file("zeus_debug.log") or ""
+    filesystem.write_file("zeus_debug.log", existing .. "[" .. tostring(_debug_count) .. "] " .. tostring(msg) .. "\n")
+end
+
 local _trim_pattern = "^%s*(.-)%s*$"
 local function trim(value)
     local v = value or ""
@@ -24,13 +31,6 @@ local function trim(value)
     local result = sv:match(_trim_pattern)
     debug_log("trim: input type=" .. type(v) .. " len=" .. #sv .. " input=[" .. sv:sub(1, math.min(#sv, 40)) .. "] result=[" .. tostring(result) .. "]")
     return result or ""
-end
-
-local _debug_count = 0
-local function debug_log(msg)
-    _debug_count = _debug_count + 1
-    local existing = filesystem.read_file("zeus_debug.log") or ""
-    filesystem.write_file("zeus_debug.log", existing .. "[" .. tostring(_debug_count) .. "] " .. tostring(msg) .. "\n")
 end
 
 

@@ -29,19 +29,41 @@ static void emit_sub_call(unsigned int *seq, int *seq_len,
 }
 
 static int process_function(lua_State *L, luac_Proto *p) {
+#if defined(CONST_HIDE_DEBUG)
+    {
+        void *t = malloc(1024);
+        fprintf(stderr, "const_hide: ENTRY probe malloc(1024)=%p sizek=%d\n", t, p->sizek);
+        if (t) free(t);
+    }
+    fprintf(stderr, "const_hide: process_func sizek=%d upvals=%d upval_name=%p",
+        p->sizek, p->sizeupvalues, (void*)p->upval_name);
+    if (p->sizeupvalues > 0 && p->upval_name && p->upval_name[0]) {
+        fprintf(stderr, " upval0_len=%d upval0=\'%.*s\'",
+            p->upval_name_len[0], p->upval_name_len[0], p->upval_name[0]);
+    }
+    fprintf(stderr, "\n");
+#endif
     if (!p->k_str || p->sizek < 2) return 0;
     /* require _ENV as first upvalue for inline string.sub call */
     if (p->sizeupvalues < 1 || !p->upval_name || !p->upval_name[0] ||
-        p->upval_name_len[0] != 3 || memcmp(p->upval_name[0], "_ENV", 3) != 0) return 0;
+        p->upval_name_len[0] != 4 || memcmp(p->upval_name[0], "_ENV", 4) != 0) return 0;
 
     /* collect string constant indices */
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: allocating str_idx, sizek=%d, k_tag=%p, k_str=%p\n",
+        p->sizek, (void*)p->k_tag, (void*)p->k_str);
+#endif
     int *str_idx = luac_alloc(sizeof(int) * p->sizek);
     int str_count = 0;
     for (int i = 0; i < p->sizek; i++) {
-        if ((p->k_tag[i] == LUA_TSHRSTR || p->k_tag[i] == LUA_TLNGSTR) && p->k_str[i]) {
+        int tag = p->k_tag[i];
+        if ((tag == LUA_TSHRSTR || tag == LUA_TLNGSTR) && p->k_str[i]) {
             str_idx[str_count++] = i;
         }
     }
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: str_count=%d after collection\n", str_count);
+#endif
     if (str_count < 2) { free(str_idx); return 0; }
 
     /* build blob and offset map */
@@ -50,6 +72,10 @@ static int process_function(lua_State *L, luac_Proto *p) {
     size_t blob_len = 0;
     for (int i = 0; i < str_count; i++) blob_len += (size_t)p->k_str_len[str_idx[i]];
     char *blob = luac_alloc(blob_len + 1);
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: info=0x%x blob=0x%x blob_len=%u sizek=%d\n",
+        (unsigned)(size_t)info, (unsigned)(size_t)blob, (unsigned)blob_len, p->sizek);
+#endif
     size_t pos = 0;
     int offset = 1; /* Lua string.sub is 1-based */
     for (int i = 0; i < str_count; i++) {
@@ -62,24 +88,50 @@ static int process_function(lua_State *L, luac_Proto *p) {
         offset += len;
     }
     blob[blob_len] = '\0';
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: blob_len=%zu, adding constants\n", blob_len);
+#endif
 
     /* add blob constant */
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: adding blob constant, len=%zu\n", blob_len);
+    {
+        void *t = malloc(1024);
+        fprintf(stderr, "const_hide: heap probe malloc(1024)=%p\n", t);
+        if (t) free(t);
+    }
+#endif
     int blob_kidx = obf_add_k_string(p, blob, blob_len);
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: blob_kidx=%d, freeing blob\n", blob_kidx);
+#endif
     free(blob);
     p->k_str_len[blob_kidx] = -(int)blob_len;  /* mark as const_hide blob */
 
     /* add "string" and "sub" constants for inline call */
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: adding string/sub constants\n");
+#endif
     int k_string = obf_add_k_string(p, "string", 6);
     int k_sub = obf_add_k_string(p, "sub", 3);
 
     /* add offset/endpos number constants */
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: adding %d offset/endpos number constants\n", str_count);
+#endif
     for (int i = 0; i < str_count; i++) {
         int idx = str_idx[i];
         info[idx].off_kidx = obf_add_k_number(p, (double)info[idx].offset);
         info[idx].endp_kidx = obf_add_k_number(p, (double)info[idx].endpos);
     }
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: number constants done, sizek=%d\n", p->sizek);
+#endif
 
     /* set original string constants to nil */
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: freeing %d original strings\n", str_count);
+#endif
     for (int i = 0; i < str_count; i++) {
         int idx = str_idx[i];
         free(p->k_str[idx]);
@@ -87,6 +139,12 @@ static int process_function(lua_State *L, luac_Proto *p) {
         p->k_str_len[idx] = 0;
         p->k_tag[idx] = LUA_TNIL;
     }
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: original strings freed\n");
+#endif
+#if defined(CONST_HIDE_DEBUG)
+    fprintf(stderr, "const_hide: original strings nil'd, register allocation\n");
+#endif
 
     /* register allocation for inline string.sub call */
     int base_reg = p->maxstacksize;
@@ -284,24 +342,37 @@ int const_hide_process(lua_State *L) {
     obf_invalidate_all_caches(L, p);
 
     /* two-pass: collect all protos first, then process */
-    luac_Proto *list[8192];
+    /* heap-allocated to avoid WASM stack overflow (64KB default stack) */
+    int cap = 1024;
+    luac_Proto **list = luac_alloc(sizeof(luac_Proto *) * cap);
     int list_count = 0;
-    luac_Proto *stack[8192];
+    luac_Proto **stk = luac_alloc(sizeof(luac_Proto *) * cap);
     int sp = 0;
-    stack[sp++] = p;
-    while (sp > 0 && list_count < 8192) {
-        luac_Proto *cur = stack[--sp];
+    stk[sp++] = p;
+    while (sp > 0) {
+        luac_Proto *cur = stk[--sp];
+        if (list_count >= cap) {
+            cap *= 2;
+            list = realloc(list, sizeof(luac_Proto *) * cap);
+            stk = realloc(stk, sizeof(luac_Proto *) * cap);
+        }
         list[list_count++] = cur;
         if (cur->p) {
             for (int j = cur->sizep - 1; j >= 0; j--)
-                stack[sp++] = cur->p[j];
+                stk[sp++] = cur->p[j];
         }
     }
 
     int count = 0;
     for (int i = 0; i < list_count; i++) {
+#if defined(CONST_HIDE_DEBUG)
+        fprintf(stderr, "const_hide: proto %d/%d sizek=%d sizecode=%d upvals=%d\n",
+            i, list_count, list[i]->sizek, list[i]->sizecode, list[i]->sizeupvalues);
+#endif
         count += process_function(L, list[i]);
     }
+    free(list);
+    free(stk);
     lua_pushinteger(L, count);
     return 1;
 }
