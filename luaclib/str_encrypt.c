@@ -70,7 +70,7 @@ static int rewrite_decrypt_sites(lua_State *L, luac_Proto *p,
                                    int *str_idx, int str_count,
                                    int *enc_key_idx,
                                    int decryptor_proto_idx,
-                                   int env_kidx, int dsname_kidx) {
+                                   int dsname_kidx) {
     if (str_count == 0) return 0;
 
     /* count sites to estimate new code size */
@@ -273,9 +273,10 @@ static int rewrite_decrypt_sites(lua_State *L, luac_Proto *p,
     return site_count;
 }
 
-/* install decryptor: compile shared function, add as subproto, emit CLOSURE+SETTABUP at main proto start */
+/* install decryptor: compile shared function, add as subproto, emit CLOSURE+SETTABUP at main proto start.
+   The global key is a random 16-byte binary string (not printable), so it cannot be guessed or intercepted by name. */
 static int install_decryptor(lua_State *L, luac_Proto *main_p,
-                               int *out_proto_idx, int *out_env_kidx, int *out_dsname_kidx) {
+                               int *out_proto_idx, int *out_dsname_kidx) {
     luac_Proto *dec = NULL;
     if (!obf_compile_subproto(L, DECRYPTOR_SRC, &dec)) {
         return 0;
@@ -283,10 +284,17 @@ static int install_decryptor(lua_State *L, luac_Proto *main_p,
     int idx = obf_add_subproto(L, main_p, dec);
     if (idx < 0) return 0;
 
-    int env_kidx = obf_add_k_string(main_p, "_ENV", 4);
-    int dsname_kidx = obf_add_k_string(main_p, "__ds", 4);
+    /* generate random 16-byte binary key (non-printable, unguessable) */
+    static unsigned int rng_state = 0;
+    if (rng_state == 0) rng_state = (unsigned int)time(NULL) ^ (unsigned int)(size_t)main_p;
+    char rndkey[16];
+    for (int i = 0; i < 16; i++) {
+        rng_state = rng_state * 1103515245 + 12345;
+        rndkey[i] = (char)((rng_state >> 16) & 0xFF);
+    }
+    int dsname_kidx = obf_add_k_string(main_p, rndkey, 16);
 
-    /* insert at position 1 (1-based): CLOSURE R(tmp), idx; SETTABUP upval0[const __ds] = R(tmp) */
+    /* insert at position 1 (1-based): CLOSURE R(tmp), idx; SETTABUP upval0[const rndkey] = R(tmp) */
     int tmp_reg = main_p->maxstacksize;
     obf_ensure_stack(main_p, tmp_reg + 1);
 
@@ -297,7 +305,6 @@ static int install_decryptor(lua_State *L, luac_Proto *main_p,
     obf_code_insert(main_p, 1, ins, 2);
 
     *out_proto_idx = idx;
-    *out_env_kidx = env_kidx;
     *out_dsname_kidx = dsname_kidx;
     return 1;
 }
@@ -363,8 +370,8 @@ int str_encrypt_process(lua_State *L) {
     }
 
     /* install shared decryptor in main proto */
-    int dec_idx = 0, env_kidx = 0, dsname_kidx = 0;
-    if (!install_decryptor(L, p, &dec_idx, &env_kidx, &dsname_kidx)) {
+    int dec_idx = 0, dsname_kidx = 0;
+    if (!install_decryptor(L, p, &dec_idx, &dsname_kidx)) {
         lua_pushinteger(L, 0);
         return 1;
     }
@@ -375,7 +382,7 @@ int str_encrypt_process(lua_State *L) {
         if (all_str_count[pi] > 0) {
             total_sites += rewrite_decrypt_sites(L, list[pi],
                 all_str_idx[pi], all_str_count[pi], all_key_idx[pi],
-                dec_idx, env_kidx, dsname_kidx);
+                dec_idx, dsname_kidx);
         }
     }
 
