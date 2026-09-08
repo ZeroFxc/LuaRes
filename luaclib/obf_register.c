@@ -40,6 +40,7 @@ int debug_mutate_process(lua_State *L);
 int call_rewrite_process(lua_State *L);
 int upvalue_promote_process(lua_State *L);
 int block_clone_process(lua_State *L);
+int cfg_shuffle_process(lua_State *L);
 
 static int obf_srand_lua(lua_State *L) {
     unsigned int seed = (unsigned int)luaL_checkinteger(L, 1);
@@ -85,6 +86,7 @@ static const luaL_Reg obf_funcs[] = {
     {"call_rewrite_c", call_rewrite_process},
     {"upvalue_promote_c", upvalue_promote_process},
     {"block_clone_c", block_clone_process},
+    {"cfg_shuffle_c", cfg_shuffle_process},
     {"srand", obf_srand_lua},
     {NULL, NULL}
 };

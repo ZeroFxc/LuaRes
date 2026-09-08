@@ -43,6 +43,7 @@ const MODULE_GROUPS = [
     { id: 'call_rewrite_c', label: '参数/返回值混淆', desc: 'f(a,b)→f({a,b})内部解包，多返回值先打包再解包' },
     { id: 'upvalue_promote_c', label: 'upvalue升降', desc: 'IIFE包装把局部变量提升为upvalue，改变变量存储方式' },
     { id: 'block_clone_c', label: '基本块克隆', desc: '每个直线块克隆一份(寄存器重映射)，不透明谓词选择原版/克隆版，CFG节点翻倍' },
+    { id: 'cfg_shuffle_c', label: 'CFG基本块重排', desc: '物理打乱基本块顺序，块间用JMP连接，反编译器按物理顺序解析看到混乱控制流' },
   ]},
   { name: '其他', modules: [
     { id: 'debug_strip_c', label: '调试信息剥离', desc: '移除 lineinfo/locvars/upvalue 名' },
@@ -58,7 +59,7 @@ const BUILTIN_IDS = new Set(MODULE_GROUPS.flatMap(g => g.modules.map(m => m.id))
 
 // Execution order (matches menu.lua FORWARD_ORDER)
 const EXEC_ORDER = [
-  'const_hide_c','const_shuffle_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c','call_rewrite_c','upvalue_promote_c','block_clone_c',
+  'const_hide_c','const_shuffle_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c','call_rewrite_c','upvalue_promote_c','block_clone_c','cfg_shuffle_c',
   'num_obfuscate_c','str_split_c','bool_obfuscate_c','table_obfuscate_c',
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',

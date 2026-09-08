@@ -82,7 +82,8 @@ static const char *MODULE_LIST =
     "debug_mutate_c,"
     "call_rewrite_c,"
     "upvalue_promote_c,"
-    "block_clone_c";
+    "block_clone_c,"
+    "cfg_shuffle_c";
 
 /*===========================================================================
 ** Helpers
