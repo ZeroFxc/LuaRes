@@ -1,0 +1,5 @@
+local f = load('local v = "ZEUS-123"; return v or ""')
+local bc = string.dump(f, false)
+local out = io.open('test_or.luac', 'wb')
+out:write(bc); out:close()
+print('Compiled', #bc, 'bytes')

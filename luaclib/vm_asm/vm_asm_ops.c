@@ -53,7 +53,7 @@ static const VmOp op_table[] = {
     {"LT",       32, FMT_ABC,  "if ({RK:{B}}<{RK:{C}}) ~= ({A}~=0) then {NEXT} end", NULL},
     {"LE",       33, FMT_ABC,  "if ({RK:{B}}<={RK:{C}}) ~= ({A}~=0) then {NEXT} end", NULL},
     {"TEST",     34, FMT_ABC,  "local _v={REG:{A}}; local _f=(_v==nil or _v==false); if ({C}~=0 and _f) or ({C}==0 and not _f) then {NEXT} end", NULL},
-    {"TESTSET",  35, FMT_ABC,  "local _v={REG:{B}}; local _f=(_v==nil or _v==false); if ({C}~=0 and _f) or ({C}==0 and not _f) then {REG:{A}}=_v else {NEXT} end", NULL},
+    {"TESTSET",  35, FMT_ABC,  "local _v={REG:{B}}; local _f=(_v==nil or _v==false); if ({C}~=0 and _f) or ({C}==0 and not _f) then {NEXT} else {REG:{A}}=_v end", NULL},
     {"CALL",     36, FMT_ABC,  "docall({A},{B},{C})", NULL},
     {"TAILCALL", 37, FMT_ABC,  "return dotailcall({A},{B})", NULL},
     {"RETURN",   38, FMT_AB,   "return doreturn({A},{B})", NULL},

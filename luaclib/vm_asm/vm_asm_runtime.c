@@ -7,6 +7,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* UV debug macro: compile with -DVM_ASM_UV_DEBUG=1 to enable */
+#ifndef VM_ASM_UV_DEBUG
+#define VM_ASM_UV_DEBUG 0
+#endif
+
 char *vm_gen_runtime(const char *R, const char *K, const char *UV,
                      const char *PC, const char *TOP, const char *PROTO,
                      int include_coroutine, int luajit_compat, size_t *len) {
@@ -82,11 +87,11 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
         "        uv[i] = {cell = cells[d.idx]}\n"
 
         "      else\n"
-        "        uv[i] = {val = getuv(d.idx)}\n"
+        "        uv[i] = UV[d.idx] or {val = nil}\n"
         "      end\n"
         "    end\n"
         "    return wrap(factory(uv))\n"
-        "  end\n", PROTO, PROTO, R);
+        "  end\n", PROTO, PROTO, R, UV);
 
     /* ---- call / return ---- */
     vmbuf_printf(&b,
