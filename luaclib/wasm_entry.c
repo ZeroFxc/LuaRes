@@ -173,7 +173,7 @@ static unsigned char *normalize_to_bytecode(const unsigned char *data, int len, 
     lua_getfield(g_L, -1, "dump");
     lua_remove(g_L, -2); /* remove string table, keep dump func */
     lua_pushvalue(g_L, -2); /* copy func */
-    lua_pushboolean(g_L, 1); /* strip */
+    lua_pushboolean(g_L, 0); /* keep debug info for debug_mutate; user can strip with debug_strip module */
     if (lua_pcall(g_L, 2, 1, 0) != LUA_OK) {
         const char *err = lua_tostring(g_L, -1);
         set_error("string.dump: %s", err ? err : "?");
