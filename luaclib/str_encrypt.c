@@ -1,100 +1,79 @@
 /*
-** str_encrypt.c - String constant encryption (C implementation, v5 self-contained pure-opcode)
-** Encrypts string constants as XORed byte integer arrays.
-** Each decrypt site rebuilds its own byte->char lookup table inline (NEWTABLE+SETTABLE),
-** then decrypts with pure opcodes (LOADK/BXOR/GETTABLE/MOVE/CONCAT).
-** Table is rebuilt per-site because CALL frames can clobber any register >= base.
-** No global state, no Lua function calls, no external dependencies.
-** Handles: LOADK, GETTABUP, GETTABLE, SELF, SETTABUP, SETTABLE, EQ, LT, LE
+** str_encrypt.c - String constant encryption (C implementation, v6 shared decryptor)
+** Mode: encrypted strings stored as binary string constants in K table.
+** A single shared decrypt function is installed in _ENV.__ds once per main proto.
+** Each decrypt site: GETTABUP(func) + LOADK(enc_str) + LOADK(key) + CALL -> 4 insns.
+** No per-site table rebuild, no per-byte integer constants in K table.
 */
 #include <time.h>
 #include <string.h>
 #include "obf_util.h"
 
-typedef struct {
-    int key_kidx;
-    int *byte_kidx;
-    int nbytes;
-} EncInfo;
+/* === shared decrypt function source (compiled to proto once) === */
+static const char *DECRYPTOR_SRC =
+"return function(enc, key)\n"
+"  local r = \"\"\n"
+"  local i = 1\n"
+"  local n = #enc\n"
+"  while i <= n do\n"
+"    local b = string.byte(enc, i) ~ key\n"
+"    r = r .. string.char(b)\n"
+"    i = i + 1\n"
+"  end\n"
+"  return r\n"
+"end\n";
 
-static int is_enc_rk(int rk, int *str_idx, int str_count) {
-    if (rk < 256) return 0;
-    int idx = rk - 256;
+static int is_enc_str_idx(int idx, int *str_idx, int str_count) {
     for (int i = 0; i < str_count; i++)
         if (str_idx[i] == idx) return 1;
     return 0;
 }
 
-/* Emit inline table build + decryption into result_reg.
-** Table is rebuilt here so it cannot be clobbered by preceding CALL frames. */
-static void emit_inline_decrypt(unsigned int *code, int *ni,
-                                 int empty_kidx, EncInfo *ei,
-                                 int result_reg, int b2c_reg, int key_reg,
-                                 int tmp_reg, int concat_reg,
-                                 int *unique_bytes, int unique_count,
-                                 int *byte_key_idx, int *byte_char_idx) {
-    /* build byte->char lookup table */
-    code[(*ni)++] = LUAC_ABC(LUAC_OP_NEWTABLE, b2c_reg, 0, unique_count);
-    for (int u = 0; u < unique_count; u++) {
-        int b = unique_bytes[u];
-        code[(*ni)++] = LUAC_ABx(LUAC_OP_LOADK, key_reg, byte_key_idx[b]);
-        code[(*ni)++] = LUAC_ABx(LUAC_OP_LOADK, tmp_reg, byte_char_idx[b]);
-        code[(*ni)++] = LUAC_ABC(LUAC_OP_SETTABLE, b2c_reg, key_reg, tmp_reg);
-    }
-    /* decrypt */
-    code[(*ni)++] = LUAC_ABx(LUAC_OP_LOADK, key_reg, ei->key_kidx);
-    code[(*ni)++] = LUAC_ABx(LUAC_OP_LOADK, concat_reg, empty_kidx);
-    for (int i = 0; i < ei->nbytes; i++) {
-        code[(*ni)++] = LUAC_ABx(LUAC_OP_LOADK, tmp_reg, ei->byte_kidx[i]);
-        code[(*ni)++] = LUAC_ABC(LUAC_OP_BXOR, tmp_reg, tmp_reg, key_reg);
-        code[(*ni)++] = LUAC_ABC(LUAC_OP_GETTABLE, tmp_reg, b2c_reg, tmp_reg);
-        code[(*ni)++] = LUAC_ABC(LUAC_OP_MOVE, concat_reg + 1, tmp_reg, 0);
-        code[(*ni)++] = LUAC_ABC(LUAC_OP_CONCAT, concat_reg, concat_reg, concat_reg + 1);
-    }
-    if (result_reg != concat_reg) {
-        code[(*ni)++] = LUAC_ABC(LUAC_OP_MOVE, result_reg, concat_reg, 0);
-    }
+static int is_enc_rk(int rk, int *str_idx, int str_count) {
+    if (rk < 256) return 0;
+    return is_enc_str_idx(rk - 256, str_idx, str_count);
 }
 
-#define DECRYPT(reg) emit_inline_decrypt(new_code, &ni, empty_kidx, ei_arg, \
-    (reg), b2c_reg, key_reg, tmp_reg, concat_reg, \
-    unique_bytes, unique_count, byte_key_idx, byte_char_idx)
-
-static int encrypt_function(lua_State *L, luac_Proto *p) {
-    if (!p->code || !p->k_str) return 0;
-    int _dbg_sc = 0;
-    for (int _i = 0; _i < p->sizek; _i++) if ((p->k_tag[_i] == 4 || p->k_tag[_i] == 20) && p->k_str[_i]) _dbg_sc++;
-
-    for (int _ci = 0; _ci < p->sizek; _ci++) {
-        if (p->k_tag[_ci] == 4 || p->k_tag[_ci] == 20) {
-                }
-    }
-
-    int *str_idx = luac_alloc(sizeof(int) * p->sizek);
-    int str_count = 0;
-    for (int i = 0; i < p->sizek; i++) {
-        if ((p->k_tag[i] == LUA_TSHRSTR || p->k_tag[i] == LUA_TLNGSTR) && p->k_str[i]
-            && p->k_str_len[i] > 1)  /* skip 1-byte strings (byte->char lookup table entries) */
-            str_idx[str_count++] = i;
-    }
-    if (str_count == 0) { free(str_idx); return 0; }
-
-    int empty_kidx = obf_add_k_string(p, "", 0);
-
-    EncInfo *enc = luac_alloc(sizeof(EncInfo) * p->sizek);
-    memset(enc, 0, sizeof(EncInfo) * p->sizek);
-    int seen[256];
-    memset(seen, 0, sizeof(seen));
-    int unique_bytes[256];
-    int unique_count = 0;
-    /* compute actual required instruction count BEFORE encryption (k_str_len still valid).
-       each decrypt site: 1 NEWTABLE + unique_count SETTABLE + 2 LOADK + 5*nbytes + 1 MOVE.
-       Multiple instructions can reference the same string, so multiply by site count. */
-    int max_bytes = 0;
+/* encrypt strings in one proto: replace each string with XORed binary string */
+static int encrypt_strings_only(luac_Proto *p, int *str_idx, int str_count,
+                                  int *enc_key_idx) {
+    if (str_count == 0) return 0;
+    unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)(size_t)p;
+    int count = 0;
     for (int i = 0; i < str_count; i++) {
-        int l = p->k_str_len[str_idx[i]];
-        if (l > max_bytes) max_bytes = l;
+        int idx = str_idx[i];
+        int len = p->k_str_len[idx];
+        const char *s = p->k_str[idx];
+        if (!s || len <= 1) continue;
+        seed = seed * 1103515245 + 12345;
+        int key = (int)(seed & 0xFF);
+        if (key == 0) key = 1;
+        /* encrypt each byte in-place */
+        char *enc = luac_alloc(len);
+        for (int j = 0; j < len; j++) {
+            enc[j] = (char)((unsigned char)s[j] ^ (unsigned char)key);
+        }
+        /* replace K entry with encrypted binary string */
+        free(p->k_str[idx]);
+        p->k_str[idx] = enc;
+        p->k_str_len[idx] = len;
+        p->k_tag[idx] = LUA_TSHRSTR;
+        /* store key as integer constant */
+        enc_key_idx[idx] = obf_add_k_integer(p, (long long)key);
+        count++;
     }
+    return count;
+}
+
+/* rewrite instructions that reference encrypted strings to call shared decryptor */
+static int rewrite_decrypt_sites(lua_State *L, luac_Proto *p,
+                                   int *str_idx, int str_count,
+                                   int *enc_key_idx,
+                                   int decryptor_proto_idx,
+                                   int env_kidx, int dsname_kidx) {
+    if (str_count == 0) return 0;
+
+    /* count sites to estimate new code size */
     int site_count = 0;
     for (int i = 0; i < p->sizecode; i++) {
         int op = p->code[i] & 0x3F;
@@ -102,66 +81,34 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
         int c = (p->code[i] >> 14) & 0x1FF;
         if (op == LUAC_OP_LOADK) {
             int bx = (int)(p->code[i] >> 14);
-            for (int j = 0; j < str_count; j++) if (str_idx[j] == bx) { site_count++; break; }
+            if (is_enc_str_idx(bx, str_idx, str_count)) site_count++;
         } else if ((op == LUAC_OP_GETTABUP || op == LUAC_OP_GETTABLE || op == LUAC_OP_SELF) && c >= 256) {
-            for (int j = 0; j < str_count; j++) if (str_idx[j] == c - 256) { site_count++; break; }
+            if (is_enc_str_idx(c - 256, str_idx, str_count)) site_count++;
         } else if (op == LUAC_OP_SETTABUP || op == LUAC_OP_SETTABLE) {
             int hit = 0;
-            if (b >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == b - 256) { hit = 1; break; }
-            if (!hit && c >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == c - 256) { hit = 1; break; }
+            if (b >= 256 && is_enc_str_idx(b - 256, str_idx, str_count)) hit = 1;
+            if (!hit && c >= 256 && is_enc_str_idx(c - 256, str_idx, str_count)) hit = 1;
             if (hit) site_count++;
         } else if (op == LUAC_OP_EQ || op == LUAC_OP_LT || op == LUAC_OP_LE) {
             int hit = 0;
-            if (b >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == b - 256) { hit = 1; break; }
-            if (!hit && c >= 256) for (int j = 0; j < str_count; j++) if (str_idx[j] == c - 256) { hit = 1; break; }
+            if (b >= 256 && is_enc_str_idx(b - 256, str_idx, str_count)) hit = 1;
+            if (!hit && c >= 256 && is_enc_str_idx(c - 256, str_idx, str_count)) hit = 1;
             if (hit) site_count++;
         }
     }
-    int per_site = 5 * max_bytes + 800;
-    int max_new = p->sizecode + site_count * per_site + 1024;
-
-    unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)(size_t)p;
-
-    for (int i = 0; i < str_count; i++) {
-        int idx = str_idx[i];
-        int len = p->k_str_len[idx];
-        const char *s = p->k_str[idx];
-        seed = seed * 1103515245 + 12345;
-        int key = (int)(seed & 0xFF);
-        if (key == 0) key = 1;
-        enc[idx].key_kidx = obf_add_k_integer(p, (long long)key);
-        enc[idx].nbytes = len;
-        enc[idx].byte_kidx = luac_alloc(sizeof(int) * len);
-        for (int j = 0; j < len; j++) {
-            unsigned char plain = (unsigned char)s[j];
-            int eb = plain ^ key;
-            enc[idx].byte_kidx[j] = obf_add_k_integer(p, (long long)eb);
-            if (!seen[plain]) { seen[plain] = 1; unique_bytes[unique_count++] = plain; }
-        }
-        free(p->k_str[idx]);
-        p->k_str[idx] = NULL;
-        p->k_str_len[idx] = 0;
-        p->k_tag[idx] = LUA_TNIL;
-    }
-
-    int byte_key_idx[256], byte_char_idx[256];
-    for (int i = 0; i < unique_count; i++) {
-        int b = unique_bytes[i];
-        byte_key_idx[b] = obf_add_k_integer(p, (long long)b);
-        char ch = (char)b;
-        byte_char_idx[b] = obf_add_k_string(p, &ch, 1);
-    }
+    if (site_count == 0) return 0;
 
     int base = p->maxstacksize;
-    int b2c_reg = base;
-    int key_reg = base + 1;
-    int tmp_reg = base + 2;
-    int concat_reg = base + 3;
-    int res1_reg = base + 5;
-    int res2_reg = base + 6;
-    int table_reg = base + 7;
-    obf_ensure_stack(p, base + 8);
+    int func_reg = base;
+    int enc_reg = base + 1;
+    int key_reg = base + 2;
+    int res1_reg = base + 3;
+    int res2_reg = base + 4;
+    int table_reg = base + 5;
+    obf_ensure_stack(p, base + 6);
 
+    /* max 8 insns per site (LOADK+LOADK+GETTABUP+CALL for simple, more for SETTABLE) */
+    int max_new = p->sizecode + site_count * 10 + 64;
     unsigned int *new_code = luac_alloc(sizeof(unsigned int) * max_new);
     int ni = 0;
 
@@ -170,8 +117,17 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
     memset(insert_pos, 0, sizeof(int) * (p->sizecode + 1));
     memset(insert_len, 0, sizeof(int) * (p->sizecode + 1));
     int inserted_so_far = 0;
-    int count = 0;
-    EncInfo *ei_arg;
+
+    /* emit decrypt call: func = _ENV.__ds; func(enc_str, key) -> result_reg */
+    #define EMIT_DECRYPT(result_reg, str_kidx) do { \
+        new_code[ni++] = LUAC_ABC(LUAC_OP_GETTABUP, func_reg, 0, 256 + dsname_kidx); \
+        new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, enc_reg, str_kidx); \
+        new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, key_reg, enc_key_idx[str_kidx]); \
+        new_code[ni++] = LUAC_ABC(LUAC_OP_CALL, func_reg, 3, 2); \
+        if ((result_reg) != func_reg) { \
+            new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, (result_reg), func_reg, 0); \
+        } \
+    } while(0)
 
     for (int i = 0; i < p->sizecode; i++) {
         insert_pos[i] = inserted_so_far;
@@ -184,58 +140,44 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
 
         if (op == LUAC_OP_LOADK) {
             int bx = (int)(ins >> 14);
-            int found = -1;
-            for (int j = 0; j < str_count; j++)
-                if (bx == str_idx[j]) { found = j; break; }
-            if (found >= 0) {
-                ei_arg = &enc[bx];
-                DECRYPT(a);
-                count++;
+            if (is_enc_str_idx(bx, str_idx, str_count)) {
+                EMIT_DECRYPT(a, bx);
             } else {
                 new_code[ni++] = ins;
             }
         } else if (op == LUAC_OP_GETTABUP && is_enc_rk(c, str_idx, str_count)) {
             int cidx = c - 256;
             new_code[ni++] = LUAC_ABC(LUAC_OP_GETUPVAL, table_reg, b, 0);
-            ei_arg = &enc[cidx];
-            DECRYPT(res1_reg);
+            EMIT_DECRYPT(res1_reg, cidx);
             new_code[ni++] = LUAC_ABC(LUAC_OP_GETTABLE, a, table_reg, res1_reg);
-            count++;
         } else if (op == LUAC_OP_GETTABLE && is_enc_rk(c, str_idx, str_count)) {
             int cidx = c - 256;
-            ei_arg = &enc[cidx];
-            DECRYPT(res1_reg);
+            EMIT_DECRYPT(res1_reg, cidx);
             new_code[ni++] = LUAC_ABC(LUAC_OP_GETTABLE, a, b, res1_reg);
-            count++;
         } else if (op == LUAC_OP_SELF && is_enc_rk(c, str_idx, str_count)) {
             int cidx = c - 256;
-            ei_arg = &enc[cidx];
-            DECRYPT(res1_reg);
+            EMIT_DECRYPT(res1_reg, cidx);
             new_code[ni++] = LUAC_ABC(LUAC_OP_SELF, a, b, res1_reg);
-            count++;
         } else if (op == LUAC_OP_SETTABUP) {
             int key_enc = is_enc_rk(b, str_idx, str_count);
             int val_enc = is_enc_rk(c, str_idx, str_count);
             if (key_enc || val_enc) {
                 new_code[ni++] = LUAC_ABC(LUAC_OP_GETUPVAL, table_reg, a, 0);
                 if (val_enc) {
-                    ei_arg = &enc[c - 256];
-                    DECRYPT(res1_reg);
+                    EMIT_DECRYPT(res1_reg, c - 256);
                 } else if (c >= 256) {
                     new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, res1_reg, c - 256);
                 } else {
                     new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, res1_reg, c, 0);
                 }
                 if (key_enc) {
-                    ei_arg = &enc[b - 256];
-                    DECRYPT(res2_reg);
+                    EMIT_DECRYPT(res2_reg, b - 256);
                 } else if (b >= 256) {
                     new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, res2_reg, b - 256);
                 } else {
                     new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, res2_reg, b, 0);
                 }
                 new_code[ni++] = LUAC_ABC(LUAC_OP_SETTABLE, table_reg, res2_reg, res1_reg);
-                count++;
             } else {
                 new_code[ni++] = ins;
             }
@@ -244,23 +186,20 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
             int val_enc = is_enc_rk(c, str_idx, str_count);
             if (key_enc || val_enc) {
                 if (val_enc) {
-                    ei_arg = &enc[c - 256];
-                    DECRYPT(res1_reg);
+                    EMIT_DECRYPT(res1_reg, c - 256);
                 } else if (c >= 256) {
                     new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, res1_reg, c - 256);
                 } else {
                     new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, res1_reg, c, 0);
                 }
                 if (key_enc) {
-                    ei_arg = &enc[b - 256];
-                    DECRYPT(res2_reg);
+                    EMIT_DECRYPT(res2_reg, b - 256);
                 } else if (b >= 256) {
                     new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, res2_reg, b - 256);
                 } else {
                     new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, res2_reg, b, 0);
                 }
                 new_code[ni++] = LUAC_ABC(LUAC_OP_SETTABLE, a, res2_reg, res1_reg);
-                count++;
             } else {
                 new_code[ni++] = ins;
             }
@@ -270,17 +209,14 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
             if (b_enc || c_enc) {
                 int new_b = b, new_c = c;
                 if (c_enc) {
-                    ei_arg = &enc[c - 256];
-                    DECRYPT(res1_reg);
+                    EMIT_DECRYPT(res1_reg, c - 256);
                     new_c = res1_reg;
                 }
                 if (b_enc) {
-                    ei_arg = &enc[b - 256];
-                    DECRYPT(res2_reg);
+                    EMIT_DECRYPT(res2_reg, b - 256);
                     new_b = res2_reg;
                 }
                 new_code[ni++] = LUAC_ABC(op, a, new_b, new_c);
-                count++;
             } else {
                 new_code[ni++] = ins;
             }
@@ -292,8 +228,7 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
         inserted_so_far += insert_len[i];
     }
 
-    /* single-pass correct jump adjustment for JMP, FORPREP, FORLOOP:
-       delta = insert_pos[target] - insert_pos[jmp] */
+    /* fix jumps */
     for (int j = 0; j < ni; j++) {
         int op = new_code[j] & 0x3F;
         if (op == LUAC_OP_JMP || op == LUAC_OP_FORPREP || op == LUAC_OP_FORLOOP ||
@@ -301,7 +236,6 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
             int a = (new_code[j] >> 6) & 0xFF;
             int bx = (new_code[j] >> 14) & 0x3FFFF;
             int sbx = bx - 131071;
-            /* find original index of this instruction */
             int jmp_orig = -1;
             for (int k = 0; k < p->sizecode; k++) {
                 if (k + insert_pos[k] == j) { jmp_orig = k; break; }
@@ -334,20 +268,45 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
     }
 
     p->sizecode = ni;
-
-    for (int i = 0; i < str_count; i++) free(enc[str_idx[i]].byte_kidx);
-    free(enc);
-    free(str_idx);
     free(insert_pos);
     free(insert_len);
-    return count;
+    return site_count;
+}
+
+/* install decryptor: compile shared function, add as subproto, emit CLOSURE+SETTABUP at main proto start */
+static int install_decryptor(lua_State *L, luac_Proto *main_p,
+                               int *out_proto_idx, int *out_env_kidx, int *out_dsname_kidx) {
+    luac_Proto *dec = NULL;
+    if (!obf_compile_subproto(L, DECRYPTOR_SRC, &dec)) {
+        return 0;
+    }
+    int idx = obf_add_subproto(L, main_p, dec);
+    if (idx < 0) return 0;
+
+    int env_kidx = obf_add_k_string(main_p, "_ENV", 4);
+    int dsname_kidx = obf_add_k_string(main_p, "__ds", 4);
+
+    /* insert at position 1 (1-based): CLOSURE R(tmp), idx; SETTABUP upval0[const __ds] = R(tmp) */
+    int tmp_reg = main_p->maxstacksize;
+    obf_ensure_stack(main_p, tmp_reg + 1);
+
+    unsigned int ins[2];
+    ins[0] = LUAC_ABx(LUAC_OP_CLOSURE, tmp_reg, idx);
+    ins[1] = LUAC_ABC(LUAC_OP_SETTABUP, 0, 256 + dsname_kidx, tmp_reg);
+
+    obf_code_insert(main_p, 1, ins, 2);
+
+    *out_proto_idx = idx;
+    *out_env_kidx = env_kidx;
+    *out_dsname_kidx = dsname_kidx;
+    return 1;
 }
 
 int str_encrypt_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
 
-    /* heap-allocated to avoid WASM stack overflow (64KB default stack) */
+    /* collect all protos */
     int cap = 1024;
     luac_Proto **list = luac_alloc(sizeof(luac_Proto *) * cap);
     int list_count = 0;
@@ -368,12 +327,65 @@ int str_encrypt_process(lua_State *L) {
         }
     }
 
-    int count = 0;
-    for (int i = 0; i < list_count; i++) {
-            count += encrypt_function(L, list[i]);
+    /* first pass: encrypt strings in all protos, collect str_idx per proto */
+    int total_encrypted = 0;
+    int **all_str_idx = luac_alloc(sizeof(int *) * list_count);
+    int *all_str_count = luac_alloc(sizeof(int) * list_count);
+    int **all_key_idx = luac_alloc(sizeof(int *) * list_count);
+
+    for (int pi = 0; pi < list_count; pi++) {
+        luac_Proto *cur = list[pi];
+        int *str_idx = luac_alloc(sizeof(int) * cur->sizek);
+        int str_count = 0;
+        for (int i = 0; i < cur->sizek; i++) {
+            if ((cur->k_tag[i] == LUA_TSHRSTR || cur->k_tag[i] == LUA_TLNGSTR) && cur->k_str[i]
+                && cur->k_str_len[i] > 1)
+                str_idx[str_count++] = i;
+        }
+        all_str_idx[pi] = str_idx;
+        all_str_count[pi] = str_count;
+        all_key_idx[pi] = luac_alloc(sizeof(int) * cur->sizek);
+        memset(all_key_idx[pi], 0, sizeof(int) * cur->sizek);
+        if (str_count > 0) {
+            total_encrypted += encrypt_strings_only(cur, str_idx, str_count, all_key_idx[pi]);
+        }
     }
-    free(list);
-    free(stk);
-    lua_pushinteger(L, count);
+
+    if (total_encrypted == 0) {
+        for (int pi = 0; pi < list_count; pi++) {
+            free(all_str_idx[pi]);
+            free(all_key_idx[pi]);
+        }
+        free(all_str_idx); free(all_str_count); free(all_key_idx);
+        free(list); free(stk);
+        lua_pushinteger(L, 0);
+        return 1;
+    }
+
+    /* install shared decryptor in main proto */
+    int dec_idx = 0, env_kidx = 0, dsname_kidx = 0;
+    if (!install_decryptor(L, p, &dec_idx, &env_kidx, &dsname_kidx)) {
+        lua_pushinteger(L, 0);
+        return 1;
+    }
+
+    /* second pass: rewrite decrypt sites in all protos */
+    int total_sites = 0;
+    for (int pi = 0; pi < list_count; pi++) {
+        if (all_str_count[pi] > 0) {
+            total_sites += rewrite_decrypt_sites(L, list[pi],
+                all_str_idx[pi], all_str_count[pi], all_key_idx[pi],
+                dec_idx, env_kidx, dsname_kidx);
+        }
+    }
+
+    for (int pi = 0; pi < list_count; pi++) {
+        free(all_str_idx[pi]);
+        free(all_key_idx[pi]);
+    }
+    free(all_str_idx); free(all_str_count); free(all_key_idx);
+    free(list); free(stk);
+
+    lua_pushinteger(L, total_sites);
     return 1;
 }
