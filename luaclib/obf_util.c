@@ -146,10 +146,13 @@ void obf_visit_protos_post(luac_Proto *p, obf_proto_visitor fn, void *ud) {
 int obf_compile_subproto(lua_State *L, const char *src, luac_Proto **out) {
     int top = lua_gettop(L);
 
-    if (luaL_loadstring(L, src) != LUA_OK) { lua_settop(L, top); return 0; }
+    if (luaL_loadstring(L, src) != LUA_OK) {
+        lua_settop(L, top); return 0;
+    }
 
     lua_getglobal(L, "string");
     lua_getfield(L, -1, "dump");
+    if(!lua_isfunction(L,-1)){/*OCS_DBG*/ fprintf(stderr,"[OCS] string.dump NOT function\n");lua_settop(L,top);return 0;}
     lua_pushvalue(L, -3);
     lua_call(L, 1, 1);
 
@@ -165,7 +168,9 @@ int obf_compile_subproto(lua_State *L, const char *src, luac_Proto **out) {
     }
 
     lua_getglobal(L, "luac");
+    if(!lua_istable(L,-1)){/*OCS_DBG*/ fprintf(stderr,"[OCS] luac NOT table\n");lua_settop(L,top);return 0;}
     lua_getfield(L, -1, "undump");
+    if(!lua_isfunction(L,-1)){/*OCS_DBG*/ fprintf(stderr,"[OCS] luac.undump NOT function\n");lua_settop(L,top);return 0;}
     lua_pushvalue(L, -3);
     lua_pushboolean(L, 0);
     lua_call(L, 2, 1);

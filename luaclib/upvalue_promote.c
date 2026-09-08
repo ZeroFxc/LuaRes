@@ -6,6 +6,13 @@
 #include <string.h>
 #include "obf_util.h"
 
+#define UPVAL_DEBUG 0
+#if UPVAL_DEBUG
+#define DBG(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define DBG(...) ((void)0)
+#endif
+
 static int ins_reads_reg(unsigned int ins, int reg) {
     int op=ins&0x3F,A=(ins>>6)&0xFF,B=(ins>>23)&0x1FF,C=(ins>>14)&0x1FF;
     switch(op){
@@ -120,7 +127,7 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             end++;
             if(end-start>12)break;
         }
-        if(end-start<2){pos=end+1;continue;}
+        if(end-start<2){DBG("[UPVAL] block too short at %d len=%d\n",pos,end-start);pos=end+1;continue;}
         int has_call_ret=0;
         for(int i=start;i<end;i++){
             int op=p->code[i]&0x3F;
@@ -128,7 +135,7 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
                 has_call_ret=1;break;
             }
         }
-        if(has_call_ret){pos=end+1;continue;}
+        if(has_call_ret){DBG("[UPVAL] block has call with ret at %d\n",start);pos=end+1;continue;}
         int defined[256]={0};
         for(int i=start;i<end;i++)
             for(int r=0;r<256;r++)
@@ -142,6 +149,7 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
                     break;
                 }
         }
+        DBG("[UPVAL] block [%d,%d) len=%d maxstack=%d ext_count=%d\n",start,end,end-start,p->maxstacksize,next);
         if(next<=0){pos=end+1;continue;}
         int ext_written=0;
         for(int e=0;e<next;e++)
@@ -153,7 +161,11 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
 
         /* 用 obf_compile_subproto 创建合法 proto 基础 */
         luac_Proto *child=NULL;
-        if(obf_compile_subproto(L,"return",&child)!=0||!child){pos=end+1;continue;}
+        if(obf_compile_subproto(L,"return function() return end",&child)==0||!child){
+            DBG("[UPVAL] obf_compile_subproto FAILED at block %d\n",start);
+            pos=end+1;continue;
+        }
+        DBG("[UPVAL] obf_compile_subproto OK, child code size=%d maxstack=%d\n",child->sizecode,child->maxstacksize);
 
         /* 复制常量池 */
         if(p->sizek>0){
