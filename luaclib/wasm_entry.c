@@ -227,6 +227,7 @@ int wasm_load(const unsigned char *data, int len) {
     }
     int ref = luaL_ref(g_L, LUA_REGISTRYINDEX);
     g_errbuf[0] = '\0';
+    lua_gc(g_L, LUA_GCCOLLECT, 0);
     return ref;
 }
 
@@ -330,6 +331,7 @@ char *wasm_vm_embed(int handle, int luajit_compat, int *out_len) {
     }
     *out_len = (int)src_len;
     g_errbuf[0] = '\0';
+    lua_gc(g_L, LUA_GCCOLLECT, 0);
     return src;
 }
 
