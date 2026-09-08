@@ -80,7 +80,8 @@ static const char *MODULE_LIST =
     "loop_restructure_c,"
     "operator_substitute_c,"
     "debug_mutate_c,"
-    "call_rewrite_c";
+    "call_rewrite_c,"
+    "upvalue_promote_c";
 
 /*===========================================================================
 ** Helpers

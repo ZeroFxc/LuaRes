@@ -1,0 +1,171 @@
+﻿=== 简单赋值 ===
+sizek=1 sizecode=3 numparams=0 is_vararg=2 maxstacksize=2
+  k[0] 1
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] LOADK      A=1 Bx=1
+  [002] RETURN     A=0 B=1 C=0
+
+=== 算术运算 ===
+sizek=1 sizecode=3 numparams=0 is_vararg=2 maxstacksize=2
+  k[0] 7
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] LOADK      A=1 Bx=1
+  [002] RETURN     A=0 B=1 C=0
+
+=== if-else ===
+sizek=3 sizecode=9 numparams=0 is_vararg=2 maxstacksize=3
+  k[0] print
+  k[1] 1
+  k[2] 2
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] GETTABLE   A=1 B=0 C=256
+  [002] LOADK      A=2 Bx=258
+  [003] CALL       A=1 B=2 C=1
+  [004] JMP        A=0 sBx=-130560 (->-130555)
+  [005] GETTABLE   A=1 B=0 C=256
+  [006] LOADK      A=2 Bx=514
+  [007] CALL       A=1 B=2 C=1
+  [008] RETURN     A=0 B=1 C=0
+
+=== while循环 ===
+sizek=3 sizecode=7 numparams=0 is_vararg=2 maxstacksize=2
+  k[0] 0
+  k[1] 3
+  k[2] 1
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] LOADK      A=1 Bx=1
+  [002] LT         A=0 B=1 C=257
+  [003] JMP        A=0 sBx=-130816 (->-130812)
+  [004] ADD        A=1 B=1 C=258
+  [005] JMP        A=0 sBx=129792 (->129798)
+  [006] RETURN     A=0 B=1 C=0
+
+=== for循环 ===
+sizek=3 sizecode=10 numparams=0 is_vararg=2 maxstacksize=7
+  k[0] 1
+  k[1] 3
+  k[2] print
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] LOADK      A=1 Bx=1
+  [002] LOADK      A=2 Bx=258
+  [003] LOADK      A=3 Bx=3
+  [004] FORPREP    A=1 sBx=-130559 (->-130554)
+  [005] GETTABLE   A=5 B=0 C=258
+  [006] MOVE       A=6 B=4 C=0
+  [007] CALL       A=5 B=2 C=1
+  [008] FORLOOP    A=1 sBx=129793 (->129802)
+  [009] RETURN     A=0 B=1 C=0
+
+=== 函数定义 ===
+sizek=0 sizecode=3 numparams=0 is_vararg=2 maxstacksize=2
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] CLOSURE    A=1 Bx=1
+  [002] RETURN     A=0 B=1 C=0
+--- subproto[0] ---
+  sizek=1 sizecode=4 numparams=1 is_vararg=0 maxstacksize=3
+    k[0] 1
+    [000] GETUPVAL   A=1 B=0 C=0
+    [001] ADD        A=2 B=0 C=256
+    [002] RETURN     A=2 B=2 C=0
+    [003] RETURN     A=0 B=1 C=0
+
+=== 闭包 ===
+sizek=0 sizecode=3 numparams=0 is_vararg=2 maxstacksize=2
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] CLOSURE    A=1 Bx=1
+  [002] RETURN     A=0 B=1 C=0
+--- subproto[0] ---
+  sizek=1 sizecode=5 numparams=0 is_vararg=0 maxstacksize=3
+    k[0] 1
+    [000] GETUPVAL   A=0 B=0 C=0
+    [001] LOADK      A=1 Bx=1
+    [002] CLOSURE    A=2 Bx=2
+    [003] RETURN     A=2 B=2 C=0
+    [004] RETURN     A=0 B=1 C=0
+  --- subproto[0] ---
+    sizek=1 sizecode=7 numparams=0 is_vararg=0 maxstacksize=2
+      k[0] 1
+      [000] GETUPVAL   A=0 B=0 C=0
+      [001] GETUPVAL   A=1 B=1 C=0
+      [002] ADD        A=1 B=1 C=256
+      [003] SETUPVAL   A=1 B=1 C=0
+      [004] GETUPVAL   A=1 B=1 C=0
+      [005] RETURN     A=1 B=2 C=0
+      [006] RETURN     A=0 B=1 C=0
+
+=== 可变参数 ===
+sizek=0 sizecode=3 numparams=0 is_vararg=2 maxstacksize=2
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] CLOSURE    A=1 Bx=1
+  [002] RETURN     A=0 B=1 C=0
+--- subproto[0] ---
+  sizek=2 sizecode=7 numparams=0 is_vararg=1 maxstacksize=4
+    k[0] select
+    k[1] 1
+    [000] GETUPVAL   A=0 B=0 C=0
+    [001] GETTABLE   A=1 B=0 C=256
+    [002] LOADK      A=2 Bx=258
+    [003] VARARG     A=3 B=0 C=0
+    [004] TAILCALL   A=1 B=0 C=0
+    [005] RETURN     A=1 B=0 C=0
+    [006] RETURN     A=0 B=1 C=0
+
+=== 逻辑运算 ===
+sizek=0 sizecode=3 numparams=0 is_vararg=2 maxstacksize=2
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] LOADBOOL   A=1 B=1 C=0
+  [002] RETURN     A=0 B=1 C=0
+
+=== 方法调用 ===
+sizek=2 sizecode=8 numparams=0 is_vararg=2 maxstacksize=5
+  k[0] m
+  k[1] 1
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] NEWTABLE   A=1 B=0 C=0
+  [002] CLOSURE    A=2 Bx=2
+  [003] SETTABLE   A=1 B=256 C=2
+  [004] SELF       A=2 B=1 C=256
+  [005] LOADK      A=4 Bx=260
+  [006] CALL       A=2 B=3 C=1
+  [007] RETURN     A=0 B=1 C=0
+--- subproto[0] ---
+  sizek=0 sizecode=3 numparams=2 is_vararg=0 maxstacksize=3
+    [000] GETUPVAL   A=2 B=0 C=0
+    [001] RETURN     A=1 B=2 C=0
+    [002] RETURN     A=0 B=1 C=0
+
+=== repeat-until ===
+sizek=3 sizecode=6 numparams=0 is_vararg=2 maxstacksize=2
+  k[0] 0
+  k[1] 1
+  k[2] 3
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] LOADK      A=1 Bx=1
+  [002] ADD        A=1 B=1 C=257
+  [003] LE         A=0 B=258 C=1
+  [004] JMP        A=0 sBx=130048 (->130053)
+  [005] RETURN     A=0 B=1 C=0
+
+=== 表构造 ===
+sizek=3 sizecode=7 numparams=0 is_vararg=2 maxstacksize=5
+  k[0] 1
+  k[1] 2
+  k[2] 3
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] NEWTABLE   A=1 B=3 C=0
+  [002] LOADK      A=2 Bx=2
+  [003] LOADK      A=3 Bx=259
+  [004] LOADK      A=4 Bx=516
+  [005] SETLIST    A=1 B=3 C=1
+  [006] RETURN     A=0 B=1 C=0
+
+=== 字符串连接 ===
+sizek=2 sizecode=5 numparams=0 is_vararg=2 maxstacksize=3
+  k[0] hello
+  k[1] world
+  [000] GETUPVAL   A=0 B=0 C=0
+  [001] LOADK      A=1 Bx=1
+  [002] LOADK      A=2 Bx=258
+  [003] CONCAT     A=1 B=1 C=2
+  [004] RETURN     A=0 B=1 C=0
+
