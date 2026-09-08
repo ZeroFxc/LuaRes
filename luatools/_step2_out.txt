@@ -1,0 +1,358 @@
+﻿6
+6
+table: 0000000000e4fb50
+table: 0000000000e50320
+true
+false
+nil
+6.6
+table: 0000000000e4fce0
+6
+6
+6
+table: 0000000000e50370
+1
+6
+Lua 5.3
+ok: const_hide
+6
+6
+table: 0000000000e502d0
+table: 0000000000e503c0
+true
+false
+nil
+6.6
+table: 0000000000e50690
+6
+6
+6
+table: 0000000000e50190
+1
+6
+Lua 5.3
+ok: const_shuffle
+6
+6
+table: 0000000000e4fe20
+table: 0000000000e50140
+true
+false
+nil
+6.6
+table: 0000000000e501e0
+6
+6
+6
+table: 0000000000e4fc40
+1
+6
+Lua 5.3
+ok: str_encrypt
+6
+6
+table: 0000000000e03590
+table: 0000000000e02b90
+true
+false
+nil
+6.6
+table: 0000000000e037c0
+6
+6
+6
+table: 0000000000e034f0
+1
+6
+Lua 5.3
+ok: instruction_mutate
+6
+6
+table: 0000000000e02e10
+table: 0000000000e03a90
+true
+false
+nil
+6.6
+table: 0000000000e03450
+6
+6
+6
+table: 0000000000e039f0
+1
+6
+Lua 5.3
+ok: num_obfuscate
+6
+6
+table: 0000000000e03810
+table: 0000000000e031d0
+true
+false
+nil
+6.6
+table: 0000000000e03540
+6
+6
+6
+table: 0000000000e502d0
+1
+6
+Lua 5.3
+ok: str_split
+6
+6
+table: 0000000000e4f8d0
+table: 0000000000e4f920
+true
+false
+nil
+6.6
+table: 0000000000e4ff10
+6
+6
+6
+table: 0000000000e4fec0
+1
+6
+Lua 5.3
+ok: bool_obfuscate
+6
+6
+table: 0000000000e50550
+table: 0000000000e02b90
+true
+false
+nil
+6.6
+table: 0000000000e02c80
+6
+6
+6
+table: 0000000000e035e0
+1
+6
+Lua 5.3
+ok: table_obfuscate
+6
+6
+table: 0000000000e031d0
+table: 0000000000e03590
+true
+false
+nil
+6.6
+table: 0000000000e02dc0
+6
+6
+6
+table: 0000000000e03540
+1
+6
+Lua 5.3
+ok: opaque_predicate
+6
+6
+table: 0000000000e02fa0
+table: 0000000000e02ff0
+true
+false
+nil
+6.6
+table: 0000000000e039f0
+6
+6
+6
+table: 0000000000e036d0
+1
+6
+Lua 5.3
+ok: const_poison
+6
+6
+table: 0000000000e4fbf0
+table: 0000000000e504b0
+true
+false
+nil
+6.6
+table: 0000000000e500f0
+6
+6
+6
+table: 0000000000e02e10
+1
+6
+Lua 5.3
+ok: opaque_junk
+6
+6
+table: 0000000000e03090
+table: 0000000000e02b90
+true
+false
+nil
+6.6
+table: 0000000000e03770
+6
+6
+6
+table: 0000000000e02cd0
+1
+6
+Lua 5.3
+ok: junk_jmp
+6
+6
+table: 0000000000e039a0
+table: 0000000000e03270
+true
+false
+nil
+6.6
+table: 0000000000e034f0
+6
+6
+6
+table: 0000000000e03540
+1
+6
+Lua 5.3
+ok: junk_loadk
+6
+6
+table: 0000000000e4f9c0
+table: 0000000000e4fec0
+true
+false
+nil
+6.6
+table: 0000000000e4f970
+6
+6
+6
+table: 0000000000e4fce0
+1
+6
+Lua 5.3
+ok: junk_move
+6
+6
+table: 0000000000e50820
+table: 0000000000e4fc40
+true
+false
+nil
+6.6
+table: 0000000000e4fec0
+6
+6
+6
+table: 0000000000e4ff10
+1
+6
+Lua 5.3
+ok: luac_obfuscate
+6
+6
+table: 0000000000e02e60
+table: 0000000000e038b0
+true
+false
+nil
+6.6
+table: 0000000000e03270
+6
+6
+6
+table: 0000000000e03090
+1
+6
+Lua 5.3
+ok: luac_flatten
+6
+6
+table: 0000000000e4fc40
+table: 0000000000e50370
+true
+false
+nil
+6.6
+table: 0000000000e50140
+6
+6
+6
+table: 0000000000e4fdd0
+1
+6
+Lua 5.3
+ok: debug_strip
+6
+6
+table: 0000000000abe480
+table: 0000000000e44a30
+true
+false
+nil
+6.6
+table: 0000000000e44ee0
+6
+6
+6
+table: 0000000000e44fd0
+1
+6
+Lua 5.3
+ok: antidec
+6
+6
+table: 0000000000e4fec0
+table: 0000000000e4ff10
+true
+false
+nil
+6.6
+table: 0000000000e4f9c0
+6
+6
+6
+table: 0000000000e4fce0
+1
+6
+Lua 5.3
+ok: proto_shuffle
+6
+6
+table: 0000000000abe480
+table: 0000000000e94c40
+true
+false
+nil
+6.6
+table: 0000000000e95190
+6
+6
+6
+table: 0000000000e942e0
+1
+6
+Lua 5.3
+ok: live_range_split
+6
+6
+table: 0000000000e4fce0
+table: 0000000000e506e0
+true
+false
+nil
+6.6
+table: 0000000000e4fe20
+6
+6
+6
+table: 0000000000e50000
+1
+6
+Lua 5.3
+ok: op48_junk
+ALL OK

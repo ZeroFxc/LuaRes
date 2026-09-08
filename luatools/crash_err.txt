@@ -1,0 +1,447 @@
+[VM] LOADK A=2 Bx=1 rb_tt=68 rb_ival=0 rb_str=luac
+[VM] LOADK A=3 Bx=2 rb_tt=84 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=4 Bx=3 rb_tt=84 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=5 Bx=4 rb_tt=84 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=6 Bx=5 rb_tt=84 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=6 rb_tt=84 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=8 Bx=7 rb_tt=84 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=8 rb_tt=84 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=10 Bx=9 rb_tt=84 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=4 Bx=10 rb_tt=68 rb_ival=0 rb_str=fact(5)
+[VM] LOADK A=5 Bx=11 rb_tt=68 rb_ival=0 rb_str=fib(7)
+[VM] LOADK A=6 Bx=12 rb_tt=68 rb_ival=0 rb_str=table_tests()
+[VM] LOADK A=7 Bx=13 rb_tt=68 rb_ival=0 rb_str=string_tests()
+[VM] LOADK A=8 Bx=14 rb_tt=68 rb_ival=0 rb_str=math_tests()
+[VM] LOADK A=9 Bx=15 rb_tt=68 rb_ival=0 rb_str=loop_tests()
+[VM] LOADK A=10 Bx=16 rb_tt=68 rb_ival=0 rb_str=co_tests()
+[VM] LOADK A=11 Bx=17 rb_tt=68 rb_ival=0 rb_str=closure_tests()
+[VM] LOADK A=5 Bx=22 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=6 Bx=20 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=8 Bx=20 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=12 Bx=23 rb_tt=68 rb_ival=0 rb_str=
+
+[VM] LOADK A=12 Bx=23 rb_tt=68 rb_ival=0 rb_str=
+
+[VM] LOADK A=12 Bx=23 rb_tt=68 rb_ival=0 rb_str=
+
+[VM] LOADK A=12 Bx=23 rb_tt=68 rb_ival=0 rb_str=
+
+[VM] LOADK A=7 Bx=24 rb_tt=68 rb_ival=0 rb_str=local total = 
+[VM] LOADK A=6 Bx=20 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=8 Bx=20 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=11 Bx=25 rb_tt=68 rb_ival=0 rb_str=+
+[VM] LOADK A=11 Bx=25 rb_tt=68 rb_ival=0 rb_str=+
+[VM] LOADK A=11 Bx=25 rb_tt=68 rb_ival=0 rb_str=+
+[VM] LOADK A=7 Bx=26 rb_tt=68 rb_ival=0 rb_str=
+print("TOTAL="..total)
+
+[VM] LOADK A=7 Bx=27 rb_tt=68 rb_ival=0 rb_str=const_hide
+[VM] LOADK A=8 Bx=28 rb_tt=68 rb_ival=0 rb_str=const_shuffle
+[VM] LOADK A=9 Bx=29 rb_tt=68 rb_ival=0 rb_str=str_encrypt
+[VM] LOADK A=10 Bx=30 rb_tt=68 rb_ival=0 rb_str=instruction_mutate
+[VM] LOADK A=11 Bx=31 rb_tt=68 rb_ival=0 rb_str=num_obfuscate
+[VM] LOADK A=12 Bx=32 rb_tt=68 rb_ival=0 rb_str=str_split
+[VM] LOADK A=13 Bx=33 rb_tt=68 rb_ival=0 rb_str=bool_obfuscate
+[VM] LOADK A=14 Bx=34 rb_tt=68 rb_ival=0 rb_str=opaque_predicate
+[VM] LOADK A=15 Bx=35 rb_tt=68 rb_ival=0 rb_str=luac_obfuscate
+[VM] LOADK A=9 Bx=38 rb_tt=68 rb_ival=0 rb_str=funcs ... 
+[VM] LOADK A=8 Bx=20 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=14 Bx=47 rb_tt=68 rb_ival=0 rb_str=_c
+[VM] LOADK A=14 Bx=47 rb_tt=68 rb_ival=0 rb_str=_c
+[VM] LOADK A=14 Bx=47 rb_tt=68 rb_ival=0 rb_str=_c
+[VM] LOADK A=14 Bx=47 rb_tt=68 rb_ival=0 rb_str=_c
+[VM] LOADK A=14 Bx=47 rb_tt=68 rb_ival=0 rb_str=_c
+[VM] LOADK A=14 Bx=47 rb_tt=68 rb_ival=0 rb_str=_c
+[VM] LOADK A=14 Bx=47 rb_tt=68 rb_ival=0 rb_str=_c
+[VM] LOADK A=14 Bx=47 rb_tt=68 rb_ival=0 rb_str=_c
+[VM] LOADK A=14 Bx=47 rb_tt=68 rb_ival=0 rb_str=_c
+[OBF-MISALIGNED] idx=36 op=30 sbx=9 target=46
+[OBF-BAD] idx=60 op=39 sbx=130755 target=130816 range[0,5631]
+[OBF-BAD] idx=64 op=42 sbx=99311 target=99376 range[0,5631]
+[OBF-MISALIGNED] idx=100 op=30 sbx=19 target=120
+[OBF-BAD] idx=110 op=30 sbx=-79075 target=-78964 range[0,5631]
+[OBF-VALIDATE] 329 bad jumps (n=361 ni=5632)
+[OBF-BAD] idx=2 op=42 sbx=38271 target=38274 range[0,1316]
+[OBF-BAD] idx=4 op=42 sbx=106947 target=106952 range[0,1316]
+[OBF-MISALIGNED] idx=35 op=30 sbx=18 target=54
+[OBF-BAD] idx=52 op=30 sbx=-91744 target=-91691 range[0,1316]
+[OBF-BAD] idx=69 op=40 sbx=22378 target=22448 range[0,1316]
+[OBF-VALIDATE] 89 bad jumps (n=83 ni=1317)
+[OBF-BAD] idx=13 op=30 sbx=-53622 target=-53608 range[0,1248]
+[OBF-BAD] idx=25 op=40 sbx=-108533 target=-108507 range[0,1248]
+[OBF-BAD] idx=27 op=30 sbx=-22944 target=-22916 range[0,1248]
+[OBF-MISALIGNED] idx=50 op=30 sbx=6 target=57
+[OBF-MISALIGNED] idx=90 op=30 sbx=13 target=104
+[OBF-VALIDATE] 93 bad jumps (n=83 ni=1249)
+[OBF-MISALIGNED] idx=41 op=30 sbx=16 target=58
+[OBF-BAD] idx=53 op=42 sbx=-88498 target=-88444 range[0,7944]
+[OBF-BAD] idx=71 op=40 sbx=-7017 target=-6945 range[0,7944]
+[OBF-BAD] idx=84 op=40 sbx=-84513 target=-84428 range[0,7944]
+[OBF-BAD] idx=98 op=42 sbx=102655 target=102754 range[0,7944]
+[OBF-VALIDATE] 443 bad jumps (n=515 ni=7945)
+[OBF-MISALIGNED] idx=19 op=39 sbx=10589 target=10609
+[OBF-BAD] idx=37 op=40 sbx=124873 target=124911 range[0,18048]
+[OBF-BAD] idx=38 op=39 sbx=-27441 target=-27402 range[0,18048]
+[OBF-BAD] idx=46 op=30 sbx=-35341 target=-35294 range[0,18048]
+[OBF-MISALIGNED] idx=64 op=30 sbx=11 target=76
+[OBF-VALIDATE] 999 bad jumps (n=1173 ni=18049)
+[VM] LOADK A=54 Bx=103 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=39 Bx=98 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=28 Bx=42 rb_tt=19 rb_ival=-547979548840089590 rb_str=(non-str)
+[VM] LOADK A=29 Bx=43 rb_tt=19 rb_ival=-547979548840089585 rb_str=(non-str)
+[VM] LOADK A=21 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=14 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=16 Bx=0 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=17 Bx=8 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=18 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=14 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=16 Bx=0 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=17 Bx=8 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=18 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=14 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=16 Bx=0 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=17 Bx=8 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=18 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=14 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=16 Bx=0 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=17 Bx=8 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=18 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=14 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=16 Bx=0 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[VM] LOADK A=17 Bx=8 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=18 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=6 Bx=3 rb_tt=19 rb_ival=-7371330677590410168 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=7371330677590410169 rb_str=(non-str)
+[VM] LOADK A=11 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=12 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=11 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=12 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=11 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=12 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=11 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=12 Bx=1 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=28 Bx=44 rb_tt=19 rb_ival=-7302234540163082034 rb_str=(non-str)
+[VM] LOADK A=29 Bx=45 rb_tt=19 rb_ival=7302234540163082041 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=12 Bx=7 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=13 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=9 Bx=6 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=21 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=22 Bx=2 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=7 Bx=4 rb_tt=19 rb_ival=4498788849749744897 rb_str=(non-str)
+[VM] LOADK A=8 Bx=5 rb_tt=19 rb_ival=4498788849749744896 rb_str=(non-str)
+[VM] LOADK A=47 Bx=9 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=48 Bx=9 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] SETTABLE A=18 B=287 C=288 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[VM] SETTABLE A=18 B=289 C=290 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[VM] SETTABLE A=18 B=291 C=292 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[VM] SETTABLE A=18 B=293 C=294 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[VM] SETTABLE A=18 B=295 C=296 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[VM] SETTABLE A=18 B=297 C=298 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[VM] SETTABLE A=18 B=299 C=300 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[VM] SETTABLE A=18 B=301 C=302 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[VM] LOADK A=32 Bx=48 rb_tt=19 rb_ival=1215680370142071545 rb_str=(non-str)
+[VM] LOADK A=33 Bx=49 rb_tt=19 rb_ival=1215680370142071381 rb_str=(non-str)
+[VM] LOADK A=21 Bx=19 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=32 Bx=50 rb_tt=19 rb_ival=-358915150368673735 rb_str=(non-str)
+[VM] LOADK A=33 Bx=51 rb_tt=19 rb_ival=358915150368673950 rb_str=(non-str)
+[VM] LOADK A=32 Bx=52 rb_tt=19 rb_ival=-9004529325961032919 rb_str=(non-str)
+[VM] LOADK A=33 Bx=53 rb_tt=19 rb_ival=-9004529325961033127 rb_str=(non-str)
+[VM] LOADK A=32 Bx=54 rb_tt=19 rb_ival=-1886411052809237537 rb_str=(non-str)
+[VM] LOADK A=33 Bx=55 rb_tt=19 rb_ival=-1886411052809237751 rb_str=(non-str)
+[VM] LOADK A=32 Bx=56 rb_tt=19 rb_ival=-3655799561946235151 rb_str=(non-str)
+[VM] LOADK A=33 Bx=57 rb_tt=19 rb_ival=3655799561946235356 rb_str=(non-str)
+[VM] LOADK A=32 Bx=58 rb_tt=19 rb_ival=8624244678634456365 rb_str=(non-str)
+[VM] LOADK A=33 Bx=59 rb_tt=19 rb_ival=8624244678634456551 rb_str=(non-str)
+[VM] LOADK A=32 Bx=60 rb_tt=19 rb_ival=-6109304454069245389 rb_str=(non-str)
+[VM] LOADK A=33 Bx=61 rb_tt=19 rb_ival=6109304454069245584 rb_str=(non-str)
+[VM] SETTABLE A=18 B=287 C=288 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[VM] SETTABLE A=18 B=289 C=290 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[VM] SETTABLE A=18 B=291 C=292 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[VM] LOADK A=40 Bx=148 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=42 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] SETTABLE A=18 B=293 C=294 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[VM] SETTABLE A=18 B=295 C=296 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[VM] SETTABLE A=18 B=297 C=298 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[VM] SETTABLE A=18 B=299 C=300 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[VM] SETTABLE A=18 B=301 C=302 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[VM] LOADK A=32 Bx=62 rb_tt=19 rb_ival=6616089433577479717 rb_str=(non-str)
+[VM] LOADK A=33 Bx=63 rb_tt=19 rb_ival=-6616089433577479704 rb_str=(non-str)
+[VM] LOADK A=21 Bx=19 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=32 Bx=64 rb_tt=19 rb_ival=-1650289922282239741 rb_str=(non-str)
+[VM] LOADK A=33 Bx=65 rb_tt=19 rb_ival=-1650289922282239867 rb_str=(non-str)
+[VM] LOADK A=32 Bx=66 rb_tt=19 rb_ival=-3767680305426315671 rb_str=(non-str)
+[VM] LOADK A=33 Bx=67 rb_tt=19 rb_ival=-3767680305426315791 rb_str=(non-str)
+[VM] LOADK A=32 Bx=68 rb_tt=19 rb_ival=6621566939783807678 rb_str=(non-str)
+[VM] LOADK A=33 Bx=69 rb_tt=19 rb_ival=6621566939783807697 rb_str=(non-str)
+[VM] LOADK A=12 Bx=5 rb_tt=68 rb_ival=0 rb_str=abcpairs
+[VM] LOADK A=32 Bx=15 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=33 Bx=70 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=32 Bx=10 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=33 Bx=71 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=44 Bx=9 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=45 Bx=9 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] SETTABLE A=1 B=16 C=268 ra_tt=69 rb_tt=68 rb_ival=0 rc_tt=19 rc_str=(non-str)
+[VM] SETTABLE A=18 B=287 C=288 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[VM] SETTABLE A=18 B=289 C=290 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[VM] SETTABLE A=18 B=291 C=292 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[VM] SETTABLE A=18 B=293 C=294 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[VM] SETTABLE A=18 B=295 C=296 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[VM] SETTABLE A=18 B=297 C=298 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[VM] SETTABLE A=18 B=299 C=300 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[VM] SETTABLE A=18 B=301 C=302 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[VM] LOADK A=32 Bx=72 rb_tt=19 rb_ival=1564138258594226264 rb_str=(non-str)
+[VM] LOADK A=33 Bx=73 rb_tt=19 rb_ival=-1564138258594226100 rb_str=(non-str)
+[VM] LOADK A=21 Bx=19 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=32 Bx=74 rb_tt=19 rb_ival=5021642245246992652 rb_str=(non-str)
+[VM] LOADK A=33 Bx=75 rb_tt=19 rb_ival=5021642245246992859 rb_str=(non-str)
+[VM] LOADK A=32 Bx=76 rb_tt=19 rb_ival=9183827211726434538 rb_str=(non-str)
+[VM] LOADK A=33 Bx=77 rb_tt=19 rb_ival=-9183827211726434330 rb_str=(non-str)
+[VM] LOADK A=32 Bx=78 rb_tt=19 rb_ival=-5247022655497793587 rb_str=(non-str)
+[VM] LOADK A=33 Bx=79 rb_tt=19 rb_ival=-5247022655497793765 rb_str=(non-str)
+[VM] LOADK A=32 Bx=80 rb_tt=19 rb_ival=-5208776094560976227 rb_str=(non-str)
+[VM] LOADK A=33 Bx=81 rb_tt=19 rb_ival=-5208776094560976432 rb_str=(non-str)
+[VM] LOADK A=32 Bx=82 rb_tt=19 rb_ival=-1126469356474290503 rb_str=(non-str)
+[VM] LOADK A=33 Bx=83 rb_tt=19 rb_ival=1126469356474290705 rb_str=(non-str)
+[VM] LOADK A=32 Bx=84 rb_tt=19 rb_ival=-926374029774397965 rb_str=(non-str)
+[VM] LOADK A=33 Bx=85 rb_tt=19 rb_ival=926374029774398160 rb_str=(non-str)
+[VM] SETTABLE A=18 B=287 C=288 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[VM] SETTABLE A=18 B=289 C=290 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[VM] SETTABLE A=18 B=291 C=292 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[VM] SETTABLE A=18 B=293 C=294 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[VM] SETTABLE A=18 B=295 C=296 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[VM] SETTABLE A=18 B=297 C=298 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[VM] SETTABLE A=18 B=299 C=300 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[VM] SETTABLE A=18 B=301 C=302 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[VM] LOADK A=32 Bx=86 rb_tt=19 rb_ival=6528064933961754323 rb_str=(non-str)
+[VM] LOADK A=33 Bx=87 rb_tt=19 rb_ival=6528064933961754310 rb_str=(non-str)
+[VM] LOADK A=21 Bx=19 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=32 Bx=88 rb_tt=19 rb_ival=2739026492859920405 rb_str=(non-str)
+[VM] LOADK A=33 Bx=89 rb_tt=19 rb_ival=-2739026492859920279 rb_str=(non-str)
+[VM] LOADK A=32 Bx=90 rb_tt=19 rb_ival=-1588627943361416413 rb_str=(non-str)
+[VM] LOADK A=33 Bx=91 rb_tt=19 rb_ival=-1588627943361416533 rb_str=(non-str)
+[VM] LOADK A=32 Bx=92 rb_tt=19 rb_ival=2653187253376904269 rb_str=(non-str)
+[VM] LOADK A=33 Bx=93 rb_tt=19 rb_ival=2653187253376904158 rb_str=(non-str)
+[VM] LOADK A=12 Bx=5 rb_tt=68 rb_ival=0 rb_str=abcpairs
+[VM] LOADK A=32 Bx=13 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=33 Bx=94 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=32 Bx=1 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=33 Bx=95 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] SETTABLE A=1 B=16 C=272 ra_tt=69 rb_tt=68 rb_ival=0 rc_tt=19 rc_str=(non-str)
+[VM] SETTABLE A=18 B=287 C=288 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[VM] SETTABLE A=18 B=289 C=290 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[VM] SETTABLE A=18 B=291 C=292 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[VM] SETTABLE A=18 B=293 C=294 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[VM] SETTABLE A=18 B=295 C=296 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[VM] SETTABLE A=18 B=297 C=298 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[VM] SETTABLE A=18 B=299 C=300 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[VM] SETTABLE A=18 B=301 C=302 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[VM] LOADK A=32 Bx=96 rb_tt=19 rb_ival=-7717881967598551044 rb_str=(non-str)
+[VM] LOADK A=33 Bx=97 rb_tt=19 rb_ival=7717881967598551208 rb_str=(non-str)
+[VM] LOADK A=21 Bx=19 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=32 Bx=98 rb_tt=19 rb_ival=-907305167334305287 rb_str=(non-str)
+[VM] LOADK A=33 Bx=99 rb_tt=19 rb_ival=907305167334305502 rb_str=(non-str)
+[VM] LOADK A=32 Bx=100 rb_tt=19 rb_ival=-5978241055098612707 rb_str=(non-str)
+[VM] LOADK A=33 Bx=101 rb_tt=19 rb_ival=-5978241055098612915 rb_str=(non-str)
+[VM] LOADK A=32 Bx=102 rb_tt=19 rb_ival=6959826826245685293 rb_str=(non-str)
+[VM] LOADK A=33 Bx=103 rb_tt=19 rb_ival=-6959826826245685079 rb_str=(non-str)
+[VM] LOADK A=32 Bx=104 rb_tt=19 rb_ival=6697252934157476439 rb_str=(non-str)
+[VM] LOADK A=33 Bx=105 rb_tt=19 rb_ival=-6697252934157476234 rb_str=(non-str)
+[VM] LOADK A=32 Bx=106 rb_tt=19 rb_ival=6372179925810452136 rb_str=(non-str)
+[VM] LOADK A=33 Bx=107 rb_tt=19 rb_ival=6372179925810451934 rb_str=(non-str)
+[VM] LOADK A=32 Bx=108 rb_tt=19 rb_ival=147079140936587117 rb_str=(non-str)
+[VM] LOADK A=33 Bx=109 rb_tt=19 rb_ival=147079140936587182 rb_str=(non-str)
+[VM] SETTABLE A=18 B=287 C=288 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[VM] SETTABLE A=18 B=289 C=290 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[VM] SETTABLE A=18 B=291 C=292 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[VM] SETTABLE A=18 B=293 C=294 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[VM] SETTABLE A=18 B=295 C=296 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[VM] SETTABLE A=18 B=297 C=298 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[VM] SETTABLE A=18 B=299 C=300 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[VM] SETTABLE A=18 B=301 C=302 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[VM] LOADK A=32 Bx=110 rb_tt=19 rb_ival=-4282071144824393859 rb_str=(non-str)
+[VM] LOADK A=33 Bx=111 rb_tt=19 rb_ival=4282071144824393872 rb_str=(non-str)
+[VM] LOADK A=21 Bx=19 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=32 Bx=112 rb_tt=19 rb_ival=-215027200114220742 rb_str=(non-str)
+[VM] LOADK A=33 Bx=113 rb_tt=19 rb_ival=215027200114220868 rb_str=(non-str)
+[VM] LOADK A=32 Bx=114 rb_tt=19 rb_ival=-1758373113431980965 rb_str=(non-str)
+[VM] LOADK A=33 Bx=115 rb_tt=19 rb_ival=-1758373113431981085 rb_str=(non-str)
+[VM] LOADK A=32 Bx=116 rb_tt=19 rb_ival=-8879671556891921123 rb_str=(non-str)
+[VM] LOADK A=33 Bx=117 rb_tt=19 rb_ival=-8879671556891921038 rb_str=(non-str)
+[VM] LOADK A=12 Bx=5 rb_tt=68 rb_ival=0 rb_str=abcpairs
+[VM] LOADK A=32 Bx=14 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=33 Bx=118 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=32 Bx=17 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=33 Bx=119 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] SETTABLE A=1 B=16 C=264 ra_tt=69 rb_tt=68 rb_ival=0 rc_tt=19 rc_str=(non-str)
+[VM] LOADK A=32 Bx=120 rb_tt=19 rb_ival=-5754824610101058424 rb_str=(non-str)
+[VM] LOADK A=33 Bx=121 rb_tt=19 rb_ival=5754824610101058424 rb_str=(non-str)
+[VM] SETTABLE A=18 B=287 C=288 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[VM] SETTABLE A=18 B=289 C=290 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[VM] SETTABLE A=18 B=291 C=292 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[VM] SETTABLE A=18 B=293 C=294 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[VM] SETTABLE A=18 B=295 C=296 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[VM] SETTABLE A=18 B=297 C=298 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[VM] SETTABLE A=18 B=299 C=300 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[VM] SETTABLE A=18 B=301 C=302 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[VM] LOADK A=32 Bx=122 rb_tt=19 rb_ival=8207787244501493056 rb_str=(non-str)
+[VM] LOADK A=33 Bx=123 rb_tt=19 rb_ival=8207787244501492892 rb_str=(non-str)
+[VM] LOADK A=21 Bx=19 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=32 Bx=124 rb_tt=19 rb_ival=-2538852318733076078 rb_str=(non-str)
+[VM] LOADK A=33 Bx=125 rb_tt=19 rb_ival=2538852318733076293 rb_str=(non-str)
+[VM] LOADK A=32 Bx=126 rb_tt=19 rb_ival=3108514885566037373 rb_str=(non-str)
+[VM] LOADK A=33 Bx=127 rb_tt=19 rb_ival=-3108514885566037165 rb_str=(non-str)
+[VM] LOADK A=32 Bx=128 rb_tt=19 rb_ival=9157801193431537659 rb_str=(non-str)
+[VM] LOADK A=33 Bx=129 rb_tt=19 rb_ival=9157801193431537445 rb_str=(non-str)
+[VM] LOADK A=32 Bx=130 rb_tt=19 rb_ival=249530005140373071 rb_str=(non-str)
+[VM] LOADK A=33 Bx=131 rb_tt=19 rb_ival=249530005140372866 rb_str=(non-str)
+[VM] LOADK A=32 Bx=132 rb_tt=19 rb_ival=-406729039895835525 rb_str=(non-str)
+[VM] LOADK A=33 Bx=133 rb_tt=19 rb_ival=406729039895835727 rb_str=(non-str)
+[VM] LOADK A=32 Bx=134 rb_tt=19 rb_ival=-6253889381981953492 rb_str=(non-str)
+[VM] LOADK A=33 Bx=135 rb_tt=19 rb_ival=6253889381981953687 rb_str=(non-str)
+[VM] SETTABLE A=18 B=287 C=288 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[VM] SETTABLE A=18 B=289 C=290 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[VM] SETTABLE A=18 B=291 C=292 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[VM] SETTABLE A=18 B=293 C=294 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[VM] SETTABLE A=18 B=295 C=296 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[VM] LOADK A=34 Bx=147 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] SETTABLE A=18 B=297 C=298 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[VM] SETTABLE A=18 B=299 C=300 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[VM] SETTABLE A=18 B=301 C=302 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[VM] LOADK A=32 Bx=136 rb_tt=19 rb_ival=7857672713269747726 rb_str=(non-str)
+[VM] LOADK A=33 Bx=137 rb_tt=19 rb_ival=7857672713269747713 rb_str=(non-str)
+[VM] LOADK A=21 Bx=19 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=32 Bx=138 rb_tt=19 rb_ival=4964340885810468754 rb_str=(non-str)
+[VM] LOADK A=33 Bx=139 rb_tt=19 rb_ival=4964340885810468844 rb_str=(non-str)
+[VM] LOADK A=32 Bx=140 rb_tt=19 rb_ival=2623893860058950429 rb_str=(non-str)
+[VM] LOADK A=33 Bx=141 rb_tt=19 rb_ival=2623893860058950309 rb_str=(non-str)
+[VM] LOADK A=32 Bx=142 rb_tt=19 rb_ival=-6235293571631885109 rb_str=(non-str)
+[VM] LOADK A=37 Bx=35 rb_tt=19 rb_ival=114 rb_str=(non-str)
+[VM] LOADK A=38 Bx=9 rb_tt=19 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=33 Bx=143 rb_tt=19 rb_ival=6235293571631885220 rb_str=(non-str)
+[VM] LOADK A=12 Bx=5 rb_tt=68 rb_ival=0 rb_str=abcpairs
+[VM] LOADK A=32 Bx=3 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM]

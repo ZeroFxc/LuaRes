@@ -1,0 +1,2 @@
+TOTAL=154
+PASS (with GC)

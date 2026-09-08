@@ -1,0 +1,2 @@
+TOTAL=162
+PASS (no const_hide)

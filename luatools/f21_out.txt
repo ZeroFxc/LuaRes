@@ -1,0 +1,11 @@
+seed=1 ... RUN ERR: [string ""]:-1: stack overflow
+seed=2 ... RUN ERR: [string ""]:-1: stack overflow
+seed=3 ... RUN ERR: [string ""]:-1: stack overflow
+seed=4 ... RUN ERR: [string ""]:-1: stack overflow
+seed=5 ... RUN ERR: [string ""]:-1: stack overflow
+seed=6 ... RUN ERR: [string ""]:-1: stack overflow
+seed=7 ... RUN ERR: [string ""]:-1: stack overflow
+seed=8 ... RUN ERR: [string ""]:-1: stack overflow
+seed=9 ... RUN ERR: [string ""]:-1: stack overflow
+seed=10 ... RUN ERR: [string ""]:-1: stack overflow
+DONE

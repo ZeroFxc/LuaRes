@@ -1,0 +1,2 @@
+3funcs ... TOTAL=139
+PASS

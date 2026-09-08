@@ -164,7 +164,9 @@ static TString *LoadString (LoadState *S) {
       char tmp[LUAI_MAXSHORTLEN + 1];
       memcpy(tmp, buff, len);
       decrypt_string((unsigned char *)tmp, len);
-      if (is_valid_text((unsigned char *)tmp, len))
+      /* len==1: single-byte strings always decrypt correctly (XOR with len%255),
+         and is_valid_text rejects high bytes as incomplete UTF-8. */
+      if (len == 1 || is_valid_text((unsigned char *)tmp, len))
         memcpy(buff, tmp, len);
     }
     return luaS_newlstr(S->L, buff, len);
@@ -175,7 +177,7 @@ static TString *LoadString (LoadState *S) {
       char *tmp = luaM_newvector(S->L, len, char);
       memcpy(tmp, getstr(ts), len);
       decrypt_string((unsigned char *)tmp, len);
-      if (is_valid_text((unsigned char *)tmp, len))
+      if (len == 1 || is_valid_text((unsigned char *)tmp, len))
         memcpy(getstr(ts), tmp, len);
       luaM_freearray(S->L, tmp, len);
     }

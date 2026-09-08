@@ -148,6 +148,7 @@ void vm_emit_body(VmBuf *b, const char *body,
                 char idx[64];
                 subst_ops(idx, sizeof(idx), tag+2, vA, vB, vC, vBx, vsBx);
                 if (strcmp(idx,"extra")==0) vmbuf_printf(b, "%s[extra]", K);
+                else if (strcmp(idx,"next_ax")==0) vmbuf_printf(b, "%s[((code[%s+1][2] or 0)|((code[%s+1][5] or 0)<<8))+1]", K, PC, PC);
                 else vmbuf_printf(b, "%s[%s+1]", K, idx);
             }
             else if (strcmp(tag,"PC")==0) vmbuf_puts(b, PC);

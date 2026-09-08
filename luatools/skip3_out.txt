@@ -1,0 +1,9 @@
+no_im ... TOTAL=162
+PASS
+no_ss ... TOTAL=162
+PASS
+no_bo ... TOTAL=162
+PASS
+full ... TOTAL=162
+PASS
+DONE

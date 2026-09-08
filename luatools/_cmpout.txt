@@ -1,0 +1,20 @@
+﻿orig: sizecode=2439
+undump: sizecode=2439
+total code diffs: 0
+  orig code[2434]=01004064 undump=01004064
+  orig code[2435]=8000001e undump=8000001e
+  orig code[2436]=7fffc01e undump=7fffc01e
+  orig code[2437]=00800026 undump=00800026
+  orig code[2438]=8000001e undump=8000001e
+..\luasafe\lua_luac_c.exe : [OBF-MISALIGNED] idx=8 op=30 sbx=1 target=10
+所在位置 行:29 字符: 61
++ ... oding utf8; ..\luasafe\lua_luac_c.exe _cmpcode.lua >_cmpout.txt 2>&1; ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([OBF-MISALIGNED...sbx=1 target=10:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[OBF-MISALIGNED] idx=32 op=30 sbx=1 target=34
+[OBF-MISALIGNED] idx=38 op=30 sbx=1 target=40
+[OBF-MISALIGNED] idx=470 op=30 sbx=1 target=472
+[OBF-MISALIGNED] idx=485 op=30 sbx=1 target=487
+[OBF-VALIDATE] 34 bad jumps (n=813 ni=2439)

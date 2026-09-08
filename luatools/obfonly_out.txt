@@ -1,0 +1,4 @@
+1:const_hide 2:const_shuffle 3:str_encrypt 4:instruction_mutate 5:num_obfuscate 6:str_split 7:bool_obfuscate 8:opaque_predicate 9:luac_obfuscate 
+obfuscation done, code=5605
+dump done, size=108016
+saved

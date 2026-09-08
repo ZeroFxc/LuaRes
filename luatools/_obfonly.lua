@@ -1,0 +1,12 @@
+﻿local luac = require("luac")
+local code = [[print(6) print("6") print(true)]]
+luac.srand(1)
+local p = luac.undump(string.dec(string.dump(load(code), true)), false)
+io.write("before: sizecode="..p.sizecode.."\n")
+luac.luac_obfuscate_c(p)
+io.write("after: sizecode="..p.sizecode.."\n")
+local bc = luac.dump(p, true)
+local f = load(bc)
+io.write("load ok\n")
+f()
+io.write("exec ok\n")

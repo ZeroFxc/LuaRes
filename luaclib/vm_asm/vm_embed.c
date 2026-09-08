@@ -12,6 +12,11 @@
 #include <string.h>
 #include <stdint.h>
 
+/* Debug macro: compile with -DVM_EMBED_DEBUG=1 to enable */
+#ifndef VM_EMBED_DEBUG
+#define VM_EMBED_DEBUG 0
+#endif
+
 /* ---------- 字节码读取 ---------- */
 typedef struct {
     const unsigned char *buf;
@@ -77,9 +82,22 @@ static char *rd_string(Reader *r, size_t *outlen) {
         unsigned char *tmp = malloc(len);
         memcpy(tmp, raw, len);
         decrypt_string(tmp, len);
-        if (is_valid_text(tmp, len)) memcpy(raw, tmp, len);
+        int valid = (len == 1) || is_valid_text(tmp, len);
+        if (len == 1 && (raw[0] >= 0x80)) {
+#if VM_EMBED_DEBUG
+            { FILE *df = fopen("_vm_dbg.txt", "a"); fprintf(df, "rd_string len=%zu raw[0]=%d dec[0]=%d valid=%d\n", len, raw[0], tmp[0], valid); fclose(df); }
+#endif
+        }
+        if (valid) memcpy(raw, tmp, len);
         free(tmp);
     }
+#if VM_EMBED_DEBUG
+    if (len == 1 && raw[0] >= 0x80) {
+        FILE *df = fopen("_vm_dbg.txt", "a");
+        fprintf(df, "rd_string: len=%zu byte=%d encrypted=%d pos=%zu\n", len, raw[0], r->encrypted, r->pos);
+        fclose(df);
+    }
+#endif
     *outlen = len;
     return (char*)raw;
 }
@@ -223,6 +241,9 @@ char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compa
 
     Reader r = { bc, 0, bc_len, (bc[0] == 0x1A) ? 1 : 0 };
     r.pos = 34;
+#if VM_EMBED_DEBUG
+    { FILE *df = fopen("_vm_dbg.txt", "w"); fprintf(df, "bc[0]=0x%02X encrypted=%d bc_len=%zu\n", bc[0], r.encrypted, bc_len); fclose(df); }
+#endif
 
     Buf chunk; buf_init(&chunk);
     serialize_proto(&r, &chunk, 1);

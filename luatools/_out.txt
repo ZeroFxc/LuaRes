@@ -1,0 +1,7 @@
+﻿start
+ch ok
+cs ok
+se ok
+num ok
+opq ok
+obf ok

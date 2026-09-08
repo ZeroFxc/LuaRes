@@ -1,0 +1,30 @@
+[OBF-BAD] idx=5 op=30 sbx=83577 target=83583 range[0,5604]
+[OBF-BAD] idx=8 op=39 sbx=7492 target=7501 range[0,5604]
+[OBF-BAD] idx=27 op=42 sbx=-4771 target=-4743 range[0,5604]
+[OBF-BAD] idx=35 op=30 sbx=-128849 target=-128813 range[0,5604]
+[OBF-BAD] idx=36 op=42 sbx=27018 target=27055 range[0,5604]
+[OBF-VALIDATE] 334 bad jumps (n=366 ni=5605)
+[OBF-MISALIGNED] idx=31 op=30 sbx=15 target=47
+[OBF-BAD] idx=40 op=30 sbx=-52479 target=-52438 range[0,1303]
+[OBF-MISALIGNED] idx=85 op=42 sbx=826 target=912
+[OBF-BAD] idx=100 op=30 sbx=11252 target=11353 range[0,1303]
+[OBF-BAD] idx=103 op=30 sbx=94220 target=94324 range[0,1303]
+[OBF-VALIDATE] 85 bad jumps (n=83 ni=1304)
+[OBF-BAD] idx=21 op=42 sbx=-12391 target=-12369 range[0,1502]
+[OBF-BAD] idx=42 op=40 sbx=-69320 target=-69277 range[0,1502]
+[OBF-BAD] idx=52 op=30 sbx=127815 target=127868 range[0,1502]
+[OBF-MISALIGNED] idx=59 op=30 sbx=18 target=78
+[OBF-BAD] idx=74 op=42 sbx=46758 target=46833 range[0,1502]
+[OBF-VALIDATE] 113 bad jumps (n=89 ni=1503)
+[OBF-BAD] idx=6 op=30 sbx=-10717 target=-10710 range[0,8111]
+[OBF-BAD] idx=35 op=30 sbx=34046 target=34082 range[0,8111]
+[OBF-MISALIGNED] idx=61 op=30 sbx=12 target=74
+[OBF-BAD] idx=69 op=42 sbx=82558 target=82628 range[0,8111]
+[OBF-MISALIGNED] idx=114 op=30 sbx=12 target=127
+[OBF-VALIDATE] 451 bad jumps (n=518 ni=8112)
+[OBF-BAD] idx=29 op=30 sbx=-61840 target=-61810 range[0,9456]
+[OBF-MISALIGNED] idx=44 op=30 sbx=18 target=63
+[OBF-BAD] idx=58 op=39 sbx=39160 target=39219 range[0,9456]
+[OBF-BAD] idx=115 op=39 sbx=-49543 target=-49427 range[0,9456]
+[OBF-MISALIGNED] idx=123 op=30 sbx=16 target=140
+[OBF-VALIDATE] 537 bad jumps (n=617 ni=9457)

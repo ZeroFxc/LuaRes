@@ -1,0 +1,9 @@
+ch+obf ... TOTAL=162
+PASS
+ch+se+obf ... TOTAL=162
+PASS
+ch+se+op+obf ... TOTAL=162
+PASS
+ch+cs+se+num+op+obf ... TOTAL=162
+PASS
+DONE

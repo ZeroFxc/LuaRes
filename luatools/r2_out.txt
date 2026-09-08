@@ -1,0 +1,2 @@
+RESULT: 100/100 passed, 0 failed
+DONE

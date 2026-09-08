@@ -1,0 +1,8 @@
+﻿local f = io.open("_crash.bin", "rb")
+local bc = f:read("*a")
+f:close()
+io.write("loaded "..#bc.." bytes\n"); io.flush()
+local func = load(bc)
+io.write("load ok\n"); io.flush()
+func()
+io.write("exec ok\n"); io.flush()

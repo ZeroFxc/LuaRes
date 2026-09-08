@@ -184,7 +184,7 @@ static char *LoadString(UndumpState *S, size_t *out_len) {
     int used_longfmt = (size == 0xFF);
     if (size == 0xFF) {
         size = 0;
-        for (int i = 0; i < 4; i++) size |= ((size_t)LoadByte(S)) << (i * 8);
+        for (int i = 0; i < (int)sizeof(size_t); i++) size |= ((size_t)LoadByte(S)) << (i * 8);
     }
     if (used_longfmt && size <= 253) g_longfmt_short++;
     if (size == 0) { if (out_len) *out_len = 0; return NULL; }
@@ -204,11 +204,18 @@ static char *LoadString(UndumpState *S, size_t *out_len) {
         unsigned char *tmp = luac_alloc(len);
         memcpy(tmp, s, len);
         andlua_decrypt_string(tmp, len);
-        int valid = andlua_is_valid_text(tmp, len);
+        int valid = (len == 1) || andlua_is_valid_text(tmp, len);
 #if LUACLIB_DEBUG
         fprintf(stderr, "[luac]   decrypt: valid=%d decrypted=", valid);
         for (size_t i = 0; i < len && i < 16; i++) fprintf(stderr, "%02x ", (unsigned char)tmp[i]);
         fprintf(stderr, "\n");
+#endif
+#if LUACLIB_DEBUG
+        if (len == 1 && (unsigned char)s[0] >= 0x80) {
+            FILE *df = fopen("_luac_dbg.txt", "a");
+            fprintf(df, "LoadString: len=%zu orig=%d dec=%d valid=%d encrypted=%d\n", len, (unsigned char)s[0], (unsigned char)tmp[0], valid, S->encrypted);
+            fclose(df);
+        }
 #endif
         if (valid) {
             memcpy(s, tmp, len);
@@ -501,7 +508,7 @@ static void DumpString(DumpState *D, const char *s, size_t len) {
         DumpByte(D, (unsigned char)size);
     } else {
         DumpByte(D, 0xFF);
-        for (int i = 0; i < 4; i++) DumpByte(D, (unsigned char)((size >> (i * 8)) & 0xFF));
+        for (int i = 0; i < (int)sizeof(size_t); i++) DumpByte(D, (unsigned char)((size >> (i * 8)) & 0xFF));
     }
     for (size_t i = 0; i < len; i++) DumpByte(D, (unsigned char)s[i]);
     /* null terminator is NOT stored in bytecode */
@@ -625,7 +632,7 @@ static void DumpHeader(DumpState *D) {
     DumpByte(D, 0x0A);
     /* sizes */
     DumpByte(D, 4);  /* sizeof(int) */
-    DumpByte(D, 4);  /* sizeof(size_t) */
+    DumpByte(D, (unsigned char)sizeof(size_t));  /* sizeof(size_t) */
     DumpByte(D, 4);  /* sizeof(Instruction) */
     DumpByte(D, 8);  /* sizeof(lua_Integer) */
     DumpByte(D, 8);  /* sizeof(lua_Number) */

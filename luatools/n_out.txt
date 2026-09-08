@@ -1,0 +1,8 @@
+no_luac_flatten ... PASS: TOTAL=228
+no_opaque_predicate ... PASS: TOTAL=228
+no_antidec ... PASS: TOTAL=228
+no_proto_shuffle ... PASS: TOTAL=228
+no_live_range_split ... PASS: TOTAL=228
+no_luac_obfuscate ... PASS: TOTAL=228
+no_const_poison ... PASS: TOTAL=228
+DONE

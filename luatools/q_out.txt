@@ -1,0 +1,13 @@
+obf_only ... code=578
+PASS: TOTAL=285
+obf+antidec ... code=578
+PASS: TOTAL=285
+obf+proto ... code=578
+PASS: TOTAL=285
+obf+lrs ... code=578
+PASS: TOTAL=285
+obf+3 ... code=578
+PASS: TOTAL=285
+core7_no_flatten ... code=4588
+PASS: TOTAL=285
+DONE

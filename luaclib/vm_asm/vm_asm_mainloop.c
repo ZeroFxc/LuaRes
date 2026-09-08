@@ -15,6 +15,9 @@ char *vm_gen_mainloop(const VmOp *ops, int nops, const int *remap,
     vmbuf_printf(&b, "  local function RK(x) if x < 256 then return %s[x] end return %s[x - 255] end\n", R, K);
     vmbuf_printf(&b, "  while %s <= #code do\n", PC);
     vmbuf_printf(&b, "    local ins = code[%s]\n", PC);
+#if VM_ASM_DEBUG
+    vmbuf_printf(&b, "    if %s >= 5430 and %s <= 5470 then io.stderr:write('DBG pc='..%s..' op='..(ins[1] or 'nil')..' a='..(ins[2] or 'nil')..' b='..(ins[3] or 'nil')..' c='..(ins[4] or 'nil')..' sbx='..((ins[5] or 0)-131071)..'\\n') end\n", PC, PC, PC);
+#endif
     vmbuf_printf(&b, "    local op = ins[1]\n");
     vmbuf_printf(&b, "    local a = ins[2] or 0\n");
     vmbuf_printf(&b, "    local b = ins[3] or 0\n");

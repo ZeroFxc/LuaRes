@@ -1,0 +1,2 @@
+first5+obf ... TOTAL=285
+PASS

@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include "luac.h"
 #include "vm_asm/vm_asm.h"
 
@@ -105,6 +106,7 @@ static void get_custom_table(lua_State *L) {
 
 EMSCRIPTEN_KEEPALIVE
 int wasm_init(void) {
+    fprintf(stderr, "[WASM_ENTRY] wasm_init called\n");
     if (g_L) return 0;
     g_L = luaL_newstate();
     if (!g_L) return -1;
@@ -205,7 +207,6 @@ int wasm_load(const unsigned char *data, int len) {
     size_t raw_len = 0;
     unsigned char *raw = normalize_to_bytecode(data, len, &raw_len);
     if (!raw) return LUA_NOREF;
-
     lua_getglobal(g_L, "luac");
     if (!lua_istable(g_L, -1)) {
         lua_pop(g_L, 1);
@@ -534,9 +535,10 @@ static int run_print(lua_State *L) {
         lua_getglobal(L, "tostring");
         lua_pushvalue(L, i);
         lua_call(L, 1, 1);
-        const char *s = lua_tostring(L, -1);
+        size_t slen;
+        const char *s = lua_tolstring(L, -1, &slen);
         if (s) {
-            lua_pushstring(L, s);
+            lua_pushlstring(L, s, slen);
             lua_rawseti(L, -3, ++len);
         }
         lua_pop(L, 1);
@@ -552,8 +554,9 @@ static int run_write(lua_State *L) {
     int len = (int)lua_rawlen(L, -1);
     for (int i = 1; i <= n; i++) {
         if (lua_isstring(L, i)) {
-            const char *s = lua_tostring(L, i);
-            lua_pushstring(L, s);
+            size_t slen;
+            const char *s = lua_tolstring(L, i, &slen);
+            lua_pushlstring(L, s, slen);
             lua_rawseti(L, -2, ++len);
         }
     }

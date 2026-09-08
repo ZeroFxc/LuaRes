@@ -16,8 +16,10 @@ static void emit_sub_call(unsigned int *seq, int *seq_len,
                           int blob_kidx, int off_kidx, int end_kidx,
                           int k_string, int k_sub, int result_reg) {
     seq[(*seq_len)++] = LUAC_ABC(LUAC_OP_GETUPVAL, env_r, 0, 0);
-    seq[(*seq_len)++] = LUAC_ABC(LUAC_OP_GETTABLE, str_r, env_r, k_string + 256);
-    seq[(*seq_len)++] = LUAC_ABC(LUAC_OP_GETTABLE, sub_r, str_r, k_sub + 256);
+    seq[(*seq_len)++] = LUAC_ABx(LUAC_OP_LOADK, sub_r + 4, k_string);
+    seq[(*seq_len)++] = LUAC_ABC(LUAC_OP_GETTABLE, str_r, env_r, sub_r + 4);
+    seq[(*seq_len)++] = LUAC_ABx(LUAC_OP_LOADK, sub_r + 4, k_sub);
+    seq[(*seq_len)++] = LUAC_ABC(LUAC_OP_GETTABLE, sub_r, str_r, sub_r + 4);
     seq[(*seq_len)++] = LUAC_ABx(LUAC_OP_LOADK, sub_r + 1, blob_kidx);
     seq[(*seq_len)++] = LUAC_ABx(LUAC_OP_LOADK, sub_r + 2, off_kidx);
     seq[(*seq_len)++] = LUAC_ABx(LUAC_OP_LOADK, sub_r + 3, end_kidx);
@@ -28,6 +30,9 @@ static void emit_sub_call(unsigned int *seq, int *seq_len,
 
 static int process_function(lua_State *L, luac_Proto *p) {
     if (!p->k_str || p->sizek < 2) return 0;
+    /* require _ENV as first upvalue for inline string.sub call */
+    if (p->sizeupvalues < 1 || !p->upval_name || !p->upval_name[0] ||
+        p->upval_name_len[0] != 3 || memcmp(p->upval_name[0], "_ENV", 3) != 0) return 0;
 
     /* collect string constant indices */
     int *str_idx = luac_alloc(sizeof(int) * p->sizek);
@@ -103,8 +108,8 @@ static int process_function(lua_State *L, luac_Proto *p) {
     memset(insert_pos, 0, sizeof(int) * p->sizecode);
     memset(insert_len, 0, sizeof(int) * p->sizecode);
 
-    /* each hidden string can expand to up to 20 instructions (SETTABUP with both key+val hidden: 2*8+1=17) */
-    int max_new = p->sizecode + str_count * 20 + 64;
+    /* each instruction can expand to up to 22 instructions (SETTABUP with both key+val hidden: 2*10+2=22) */
+    int max_new = p->sizecode * 25 + 64;
     unsigned int *new_code = luac_alloc(sizeof(unsigned int) * max_new);
     int ni = 0;
     int count = 0;

@@ -1,0 +1,4 @@
+loaded 108016 bytes
+load ok, executing...
+TOTAL=154
+EXEC OK

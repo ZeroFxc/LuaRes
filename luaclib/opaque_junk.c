@@ -34,7 +34,7 @@ static unsigned int make_junk_inst(luac_Proto *p, int high_reg, int extra) {
         case 11: return LUAC_ABC(LUAC_OP_UNM, reg, reg2, 0);
         case 12: return LUAC_ABC(LUAC_OP_BNOT, reg, reg2, 0);
         case 13: return LUAC_ABC(LUAC_OP_CONCAT, reg, reg2, reg2);
-        case 14: return LUAC_ABC(LUAC_OP_GETTABLE, reg, reg2, kc + LUAC_BITRK);
+        case 14: { int skc = (kc < 256) ? kc : 0; return LUAC_ABC(LUAC_OP_GETTABLE, reg, reg2, skc + LUAC_BITRK); }
         default: return LUAC_ABC(LUAC_OP_SETTABLE, reg, reg2, reg2);
     }
 }

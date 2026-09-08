@@ -1,0 +1,34 @@
+﻿obf ok
+dump ok len=12211
+..\luasafe\lua_luac_c.exe : [OBF-MISALIGNED] idx=8 op=30 sbx=1 target=10
+所在位置 行:1 字符: 34
++ ... s\luatools; ..\luasafe\lua_luac_c.exe _numopq3.lua >_out4.txt 2>&1; W ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([OBF-MISALIGNED...sbx=1 target=10:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[OBF-MISALIGNED] idx=32 op=30 sbx=1 target=34
+[OBF-MISALIGNED] idx=38 op=30 sbx=1 target=40
+[OBF-MISALIGNED] idx=470 op=30 sbx=1 target=472
+[OBF-MISALIGNED] idx=485 op=30 sbx=1 target=487
+[OBF-VALIDATE] 33 bad jumps (n=813 ni=2439)
+[LUNDUMP] undump1 called name=LuaS
+load ok
+[LUNDUMP] LoadConstants start n=274
+[LUNDUMP] k[80] tag=19
+[LUNDUMP] k[81] tag=19
+[LUNDUMP] k[82] tag=19
+[LUNDUMP] k[83] tag=19
+[LUNDUMP] k[84] tag=19
+[LUNDUMP] k[85] tag=19
+[LUNDUMP] k[86] tag=19
+[LUNDUMP] k[87] tag=19
+[LUNDUMP] k[88] tag=19
+[LUNDUMP] k[89] tag=19
+[LUNDUMP] k[90] tag=19
+[LUNDUMP] k[91] tag=19
+[LUNDUMP] k[92] tag=3
+[LUNDUMP] k[93] tag=3
+[LUNDUMP] k[94] tag=19
+[LUNDUMP] k[95] tag=19
+[LUNDUMP] LoadConstants done

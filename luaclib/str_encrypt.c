@@ -37,8 +37,9 @@ static void emit_inline_decrypt(unsigned int *code, int *ni,
     code[(*ni)++] = LUAC_ABC(LUAC_OP_NEWTABLE, b2c_reg, 0, unique_count);
     for (int u = 0; u < unique_count; u++) {
         int b = unique_bytes[u];
-        code[(*ni)++] = LUAC_ABC(LUAC_OP_SETTABLE, b2c_reg,
-                                  byte_key_idx[b] + 256, byte_char_idx[b] + 256);
+        code[(*ni)++] = LUAC_ABx(LUAC_OP_LOADK, key_reg, byte_key_idx[b]);
+        code[(*ni)++] = LUAC_ABx(LUAC_OP_LOADK, tmp_reg, byte_char_idx[b]);
+        code[(*ni)++] = LUAC_ABC(LUAC_OP_SETTABLE, b2c_reg, key_reg, tmp_reg);
     }
     /* decrypt */
     code[(*ni)++] = LUAC_ABx(LUAC_OP_LOADK, key_reg, ei->key_kidx);
@@ -73,7 +74,7 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
     int str_count = 0;
     for (int i = 0; i < p->sizek; i++) {
         if ((p->k_tag[i] == LUA_TSHRSTR || p->k_tag[i] == LUA_TLNGSTR) && p->k_str[i]
-            && p->k_str_len[i] > 0)
+            && p->k_str_len[i] > 1)  /* skip 1-byte strings (byte->char lookup table entries) */
             str_idx[str_count++] = i;
     }
     if (str_count == 0) { free(str_idx); return 0; }
@@ -116,7 +117,7 @@ static int encrypt_function(lua_State *L, luac_Proto *p) {
             if (hit) site_count++;
         }
     }
-    int per_site = 5 * max_bytes + 300;
+    int per_site = 5 * max_bytes + 800;
     int max_new = p->sizecode + site_count * per_site + 1024;
 
     unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)(size_t)p;

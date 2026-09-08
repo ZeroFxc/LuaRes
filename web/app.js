@@ -421,6 +421,8 @@ async function runObfuscation(){
       throw new Error('加载失败: ' + (err || 'unknown'));
     }
     log('字节码加载成功 (handle=' + handle + ')', 'ok');
+    const loadDbg = Module.ccall('wasm_last_error', 'string', [], []);
+    if(loadDbg) log('LOAD_DEBUG: ' + loadDbg, 'info');
 
     for(let i = 0; i < mods.length; i++){
       const mod = mods[i];
@@ -510,6 +512,10 @@ async function runObfuscation(){
     sizeCompare.style.display = 'flex';
 
     log('=== 完成! 输出 ' + fmtBytes(resultBytes.length) + ' (' + (delta>0?'+':'') + delta + '%) ===', 'ok');
+    window._lastResult = resultBytes;
+    window._lastResultIsLua = resultIsLua;
+    window._wasmGetDebug = function() { return Module.ccall('wasm_get_debug', 'string', [], []); };
+    window._wasmClearDebug = function() { Module.ccall('wasm_clear_debug', null, [], []); };
     setStatus('处理完成，可运行或下载结果', 'ready');
     btnDownload.disabled = false;
     btnRun.disabled = false;
@@ -540,23 +546,10 @@ btnProcessRun.addEventListener('click', async () => {
       log('--- 运行' + (resultIsLua ? 'Lua源码' : '字节码') + ' ---', 'run');
       let bcPtr, bcLen;
       if(resultIsLua){
-        const src = new TextDecoder().decode(resultBytes);
-        const compiled = Module.ccall('wasm_load', 'number', ['number','number'], [0,0]);
-        // compile lua source to bytecode via wasm_load (it handles source)
-        const srcBytes = new TextEncoder().encode(src);
-        bcPtr = Module._malloc(srcBytes.length);
-        Module.HEAPU8.set(srcBytes, bcPtr);
-        const h2 = Module.ccall('wasm_load', 'number', ['number','number'], [bcPtr, srcBytes.length]);
-        Module._free(bcPtr);
-        if(h2 < 0){ throw new Error('VM源码编译失败'); }
-        const lenPtr = Module._malloc(4);
-        const dPtr = Module.ccall('wasm_dump', 'number', ['number','number'], [h2, lenPtr]);
-        bcLen = Module.getValue(lenPtr, 'i32');
-        Module._free(lenPtr);
-        bcPtr = Module._malloc(bcLen);
-        Module.HEAPU8.set(Module.HEAPU8.subarray(dPtr, dPtr + bcLen), bcPtr);
-        Module.ccall('wasm_free_dump', null, ['number'], [dPtr]);
-        Module.ccall('wasm_free', null, ['number'], [h2]);
+        // pass lua source directly to wasm_run_bytecode (luaL_loadbuffer handles source, preserves raw bytes)
+        bcPtr = Module._malloc(resultBytes.length);
+        Module.HEAPU8.set(resultBytes, bcPtr);
+        bcLen = resultBytes.length;
       } else {
         bcPtr = Module._malloc(resultBytes.length);
         Module.HEAPU8.set(resultBytes, bcPtr);
@@ -1137,7 +1130,11 @@ async function initWasm(){
       log('WASM 二进制已嵌入 (' + fmtBytes(wasmBinary.length) + ')', 'info');
     }
 
-    Module = await createLuacModule({ wasmBinary: wasmBinary });
+    Module = await createLuacModule({
+      wasmBinary: wasmBinary,
+      printErr: function(text) { window._wasmStderr = (window._wasmStderr || '') + text + '\n'; }
+    });
+    window._Module = Module;
     wasmReady = true;
     wasmStatus.textContent = 'WASM 就绪';
     wasmStatus.style.color = '#3fb950';

@@ -1,0 +1,11 @@
+﻿..\luasafe\lua_luac_c.exe : E:\LuaRes\luasafe\lua_luac_c.exe: _nodec.lua:5: luac.undump: invalid bytecode header
+所在位置 行:15 字符: 59
++ ... oding utf8; ..\luasafe\lua_luac_c.exe _nodec.lua >_out8.txt 2>&1; Wri ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (E:\LuaRes\luasa...bytecode header:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+stack traceback:
+	[C]: in function 'luac.undump'
+	_nodec.lua:5: in main chunk
+	[C]: in ?

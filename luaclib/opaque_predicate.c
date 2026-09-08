@@ -44,6 +44,18 @@ static int get_num_const(luac_Proto *p, double val) {
     return obf_add_k_number(p, val);
 }
 
+/* emit LOADK or LOADKX+EXTRAARG for constant index (handles >255) */
+static int emit_loadk(unsigned int *buf, int reg, int kidx) {
+    if (kidx <= 255) {
+        buf[0] = LUAC_ABx(LUAC_OP_LOADK, reg, kidx);
+        return 1;
+    } else {
+        buf[0] = LUAC_ABx(LUAC_OP_LOADKX, reg, 0);
+        buf[1] = LUAC_Ax(LUAC_OP_EXTRAARG, kidx);
+        return 2;
+    }
+}
+
 /* 在指定位置插入不透明谓词块，返回插入长度 */
 static int insert_predicate_at(luac_Proto *p, int pos) {
     /* scan actual highest register used in code (maxstacksize may be inaccurate) */
@@ -80,8 +92,9 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
     }
     int r1 = actual_max + 1;
     int r2 = actual_max + 2;
-    if (r2 + 1 > 255) return 0;  /* register overflow */
-    obf_ensure_stack(p, r2 + 1);
+    int r3 = actual_max + 3;
+    if (r3 + 1 > 255) return 0;  /* register overflow */
+    obf_ensure_stack(p, r3 + 1);
 
     int pattern = obf_rand() % 8;
     int zero_idx = get_num_const(p, 0.0);
@@ -107,56 +120,63 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
 
     int dead_len = 4 + (int)(obf_rand() % 10); /* 4-13 条死指令 */
     int prefix = 0;
-    unsigned int prefix_buf[8];
+    unsigned int prefix_buf[12];
 
+    /* All patterns use register-only comparisons to avoid C/B field overflow
+       when constant index > 255 (idx+256 > 511 overflows 9-bit field) */
     switch (pattern) {
-        case 0: /* LOADK 0 + LOADK 0 + LT(0<0) + JMP */
-            prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, zero_idx);
-            prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r2, zero_idx);
+        case 0: /* 0<0 always-false */
+            prefix += emit_loadk(&prefix_buf[prefix], r2, zero_idx);
+            prefix += emit_loadk(&prefix_buf[prefix], r3, zero_idx);
+            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LT, 0, r2, r3);
+            prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
+            break;
+        case 1: /* x*x<0 always-false */
+            prefix += emit_loadk(&prefix_buf[prefix], r1, seed_idx);
+            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_MUL, r1, r1, r1);
+            prefix += emit_loadk(&prefix_buf[prefix], r2, zero_idx);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LT, 0, r1, r2);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
-        case 1: /* LOADK N + MUL(r,r) + LT(r<0) + JMP */
-            prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, seed_idx);
-            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_MUL, r1, r1, r1);
-            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LT, 0, r1, zero_idx + LUAC_BITRK);
-            prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
-            break;
-        case 2: /* LOADK N + BXOR(r,r) + EQ(r==0) + JMP(dead) */
-            prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, seed_idx);
+        case 2: /* x^x==0 always-true */
+            prefix += emit_loadk(&prefix_buf[prefix], r1, seed_idx);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_BXOR, r1, r1, r1);
-            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_EQ, 1, r1, zero_idx + LUAC_BITRK);
+            prefix += emit_loadk(&prefix_buf[prefix], r2, zero_idx);
+            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_EQ, 1, r1, r2);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
-        case 3: /* LOADK N + BAND(r,r) + EQ(r==r) + JMP(dead) */
-            prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, seed_idx);
+        case 3: /* x&x==x always-true */
+            prefix += emit_loadk(&prefix_buf[prefix], r1, seed_idx);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_BAND, r1, r1, r1);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_EQ, 1, r1, r1);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
-        case 4: /* LOADK N + BNOT+BNOT + EQ(r==r) + JMP(dead) */
-            prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, seed_idx);
+        case 4: /* ~~x==x always-true */
+            prefix += emit_loadk(&prefix_buf[prefix], r1, seed_idx);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_BNOT, r1, r1, 0);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_BNOT, r1, r1, 0);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_EQ, 1, r1, r1);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
-        case 5: /* LOADK N + ADD(r,1) + LT(r<r+1) + JMP(dead) */
-            prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, seed_idx);
-            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_ADD, r2, r1, one_idx + LUAC_BITRK);
+        case 5: /* x<x+1 always-true */
+            prefix += emit_loadk(&prefix_buf[prefix], r1, seed_idx);
+            prefix += emit_loadk(&prefix_buf[prefix], r3, one_idx);
+            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_ADD, r2, r1, r3);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LT, 1, r1, r2);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
-        case 6: /* LOADK N + IDIV(r,1) + EQ(r==r) + JMP(dead) */
-            prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, seed_idx);
-            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_IDIV, r2, r1, one_idx + LUAC_BITRK);
+        case 6: /* x//1==x always-true */
+            prefix += emit_loadk(&prefix_buf[prefix], r1, seed_idx);
+            prefix += emit_loadk(&prefix_buf[prefix], r3, one_idx);
+            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_IDIV, r2, r1, r3);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_EQ, 1, r2, r1);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
-        case 7: /* LOADK N + MUL(r,r) + LE(0<=r) + JMP(dead) */
-            prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r1, seed_idx);
+        case 7: /* 0<=x*x always-true */
+            prefix += emit_loadk(&prefix_buf[prefix], r1, seed_idx);
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_MUL, r1, r1, r1);
-            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LE, 1, zero_idx + LUAC_BITRK, r1);
+            prefix += emit_loadk(&prefix_buf[prefix], r2, zero_idx);
+            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LE, 1, r2, r1);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
     }
@@ -181,8 +201,8 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
     memmove(&p->code[pos + insert_len], &p->code[pos],
             sizeof(unsigned int) * (p->sizecode - pos));
     memcpy(&p->code[pos], prefix_buf, sizeof(unsigned int) * prefix);
-    p->code[pos + prefix] = LUAC_ABx(LUAC_OP_LOADK, r1, zero_idx);
-    p->code[pos + prefix + 1] = LUAC_ABx(LUAC_OP_LOADK, r2, zero_idx);
+    p->code[pos + prefix] = LUAC_ABx(LUAC_OP_LOADK, r1, zero_idx <= 255 ? zero_idx : 0);
+    p->code[pos + prefix + 1] = LUAC_ABx(LUAC_OP_LOADK, r2, zero_idx <= 255 ? zero_idx : 0);
     for (int i = 2; i < dead_len; i++)
         p->code[pos + prefix + i] = random_dead_insn(p, r1, r2);
     p->sizecode += insert_len;

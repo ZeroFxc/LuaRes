@@ -1,0 +1,481 @@
+﻿..\luasafe\lua_luac_c.exe : [PC] 0 GETUPVAL (00000005) maxstack=9 sizek=24
+所在位置 行:1 字符: 34
++ ... s\luatools; ..\luasafe\lua_luac_c.exe _numopq3.lua >_pctrace.txt 2>&1 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([PC] 0 GETUPVAL...tack=9 sizek=24:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[PC] 1 GETTABLE (00400047) maxstack=9 sizek=24
+[PC] 2 LOADK (00004081) maxstack=9 sizek=24
+[VM] LOADK A=2 Bx=1 rb_tt=68 rb_ival=0 rb_str=luac
+[PC] 3 CALL (01008064) maxstack=9 sizek=24
+[PC] 4 LOADK (00008081) maxstack=9 sizek=24
+[VM] LOADK A=2 Bx=2 rb_tt=68 rb_ival=0 rb_str=print(6) print("6") print(true)
+[PC] 5 GETTABLE (00c0c0c7) maxstack=9 sizek=24
+[PC] 6 LOADK (00010101) maxstack=9 sizek=24
+[VM] LOADK A=4 Bx=4 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[PC] 7 CALL (010040e4) maxstack=9 sizek=24
+[PC] 8 GETTABLE (00c140c7) maxstack=9 sizek=24
+[PC] 9 GETTABLE (00418107) maxstack=9 sizek=24
+[PC] 10 GETTABLE (0241c107) maxstack=9 sizek=24
+[PC] 11 GETTABLE (00418147) maxstack=9 sizek=24
+[PC] 12 GETTABLE (02c20147) maxstack=9 sizek=24
+[PC] 13 GETTABLE (00424187) maxstack=9 sizek=24
+[PC] 14 MOVE (010001c0) maxstack=9 sizek=24
+[PC] 15 CALL (010081a4) maxstack=9 sizek=24
+[PC] 16 LOADBOOL (008001c3) maxstack=9 sizek=24
+[PC] 17 CALL (01800164) maxstack=9 sizek=24
+[PC] 18 CALL (00008124) maxstack=9 sizek=24
+[PC] 19 LOADBOOL (00000143) maxstack=9 sizek=24
+[PC] 20 CALL (018080e4) maxstack=9 sizek=24
+[PC] 21 GETTABLE (00c28107) maxstack=9 sizek=24
+[PC] 22 MOVE (01800140) maxstack=9 sizek=24
+[PC] 23 CALL (01004124) maxstack=9 sizek=24
+[PC] 24 GETTABLE (00c2c107) maxstack=9 sizek=24
+[PC] 25 MOVE (01800140) maxstack=9 sizek=24
+[PC] 26 CALL (01004124) maxstack=9 sizek=24
+[PC] 27 GETTABLE (00c30107) maxstack=9 sizek=24
+[PC] 28 MOVE (01800140) maxstack=9 sizek=24
+[PC] 29 CALL (01004124) maxstack=9 sizek=24
+[PC] 30 GETTABLE (00c34107) maxstack=9 sizek=24
+[PC] 31 MOVE (01800140) maxstack=9 sizek=24
+[PC] 32 CALL (01004124) maxstack=9 sizek=24
+[PC] 33 GETTABLE (00c38107) maxstack=9 sizek=24
+[PC] 34 MOVE (01800140) maxstack=9 sizek=24
+[PC] 35 CALL (01004124) maxstack=9 sizek=24
+[PC] 36 GETTABLE (00c3c107) maxstack=9 sizek=24
+[PC] 37 MOVE (01800140) maxstack=9 sizek=24
+[PC] 38 CALL (01004124) maxstack=9 sizek=24
+[OBF-BAD] idx=2437 op=30 sbx=1 target=2439 range[0,2438] orig=0
+[OBF-BAD] idx=2438 op=30 sbx=0 target=2439 range[0,2438] orig=0
+[OBF-VALIDATE] bad=2 orig_misaligned=0 (n=813 ni=2439)
+[OBF-REG] idx=0 op=1 C=92(reg) >= maxstack=68
+[OBF-REG] idx=3 op=1 C=92(reg) >= maxstack=68
+[OBF-REG] idx=12 op=1 C=92(reg) >= maxstack=68
+[OBF-REG] idx=15 op=1 C=92(reg) >= maxstack=68
+[OBF-REG] idx=24 op=1 C=153(reg) >= maxstack=68
+[OBF-REG] 223 register overflows (maxstack=68)
+[PC] 39 GETTABLE (00440107) maxstack=9 sizek=24
+[PC] 40 GETTABLE (02444107) maxstack=9 sizek=24
+[PC] 41 LOADK (00048141) maxstack=9 sizek=24
+[VM] LOADK A=5 Bx=18 rb_tt=68 rb_ival=0 rb_str=obf ok
+
+[PC] 42 CALL (01004124) maxstack=9 sizek=24
+[PC] 43 GETTABLE (00440107) maxstack=9 sizek=24
+[PC] 44 GETTABLE (0244c107) maxstack=9 sizek=24
+[PC] 45 CALL (00804124) maxstack=9 sizek=24
+[PC] 46 GETTABLE (00c20107) maxstack=9 sizek=24
+[PC] 47 MOVE (01800140) maxstack=9 sizek=24
+[PC] 48 LOADBOOL (00800183) maxstack=9 sizek=24
+[PC] 49 CALL (01808124) maxstack=9 sizek=24
+obf ok
+[PC] 50 GETTABLE (00440147) maxstack=9 sizek=24
+[PC] 51 GETTABLE (02c44147) maxstack=9 sizek=24
+[PC] 52 LOADK (00050181) maxstack=9 sizek=24
+[VM] LOADK A=6 Bx=20 rb_tt=68 rb_ival=0 rb_str=dump ok len=
+[PC] 53 LEN (020001dc) maxstack=9 sizek=24
+[PC] 54 LOADK (00054201) maxstack=9 sizek=24
+[VM] LOADK A=8 Bx=21 rb_tt=68 rb_ival=0 rb_str=
+
+[PC] 55 CONCAT (0302019d) maxstack=9 sizek=24
+[PC] 56 CALL (01004164) maxstack=9 sizek=24
+[PC] 57 GETTABLE (00440147) maxstack=9 sizek=24
+[PC] 58 GETTABLE (02c4c147) maxstack=9 sizek=24
+[PC] 59 CALL (00804164) maxstack=9 sizek=24
+[PC] 60 GETTABLE (00424147) maxstack=9 sizek=24
+[PC] 61 MOVE (02000180) maxstack=9 sizek=24
+dump ok len=12211
+[PC] 62 CALL (01008164) maxstack=9 sizek=24
+[PC] 63 GETTABLE (00440187) maxstack=9 sizek=24
+[PC] 64 GETTABLE (03444187) maxstack=9 sizek=24
+[PC] 65 LOADK (000581c1) maxstack=9 sizek=24
+[VM] LOADK A=7 Bx=22 rb_tt=68 rb_ival=0 rb_str=load ok
+
+[PC] 66 CALL (010041a4) maxstack=9 sizek=24
+[PC] 67 GETTABLE (00440187) maxstack=9 sizek=24
+[PC] 68 GETTABLE (0344c187) maxstack=9 sizek=24
+[PC] 69 CALL (008041a4) maxstack=9 sizek=24
+[PC] 70 MOVE (02800180) maxstack=9 sizek=24
+[PC] 71 CALL (008041a4) maxstack=9 sizek=24
+load ok
+[PC] 0 LOADK (00171081) maxstack=68 sizek=274
+[VM] LOADK A=66 Bx=92 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[PC] 1 JMP (8000001e) maxstack=68 sizek=274
+[PC] 3 LOADK (001710c1) maxstack=68 sizek=274
+[VM] LOADK A=67 Bx=92 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[PC] 4 JMP (8000001e) maxstack=68 sizek=274
+[PC] 6 LT (2110c020) maxstack=68 sizek=274
+[PC] 9 JMP (8007001e) maxstack=68 sizek=274
+[PC] 39 GETUPVAL (00000005) maxstack=68 sizek=274
+[PC] 40 JMP (8000001e) maxstack=68 sizek=274
+[PC] 42 GETUPVAL (000000c5) maxstack=68 sizek=274
+[PC] 43 JMP (8000001e) maxstack=68 sizek=274
+[PC] 45 NEWTABLE (0002030b) maxstack=68 sizek=274
+[PC] 46 JMP (8000001e) maxstack=68 sizek=274
+[PC] 48 LOADK (000989c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=38 rb_tt=19 rb_ival=8612977219013190516 rb_str=(non-str)
+[PC] 49 JMP (8000001e) maxstack=68 sizek=274
+[PC] 51 LOADK (0009ca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=39 rb_tt=19 rb_ival=-8612977219013190401 rb_str=(non-str)
+[PC] 52 JMP (8000001e) maxstack=68 sizek=274
+[PC] 54 ADD (138a034d) maxstack=68 sizek=274
+[PC] 55 JMP (8000001e) maxstack=68 sizek=274
+[PC] 57 LOADK (0005c381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=23 rb_tt=68 rb_ival=0 rb_str=s
+[PC] 58 JMP (8000001e) maxstack=68 sizek=274
+[PC] 60 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[PC] 61 JMP (8000001e) maxstack=68 sizek=274
+[PC] 63 LOADK (000a09c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=40 rb_tt=19 rb_ival=6421173434234456970 rb_str=(non-str)
+[PC] 64 JMP (8000001e) maxstack=68 sizek=274
+[PC] 66 LOADK (000a4a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=41 rb_tt=19 rb_ival=-6421173434234456854 rb_str=(non-str)
+[PC] 67 JMP (8000001e) maxstack=68 sizek=274
+[PC] 69 ADD (138a034d) maxstack=68 sizek=274
+[PC] 70 JMP (8000001e) maxstack=68 sizek=274
+[PC] 72 LOADK (00064381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=25 rb_tt=68 rb_ival=0 rb_str=t
+[PC] 73 JMP (8000001e) maxstack=68 sizek=274
+[PC] 75 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[PC] 76 JMP (8000001e) maxstack=68 sizek=274
+[PC] 78 LOADK (000a89c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=42 rb_tt=19 rb_ival=375681089118967217 rb_str=(non-str)
+[PC] 79 JMP (8000001e) maxstack=68 sizek=274
+[PC] 81 LOADK (000aca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=43 rb_tt=19 rb_ival=375681089118967235 rb_str=(non-str)
+[PC] 82 JMP (8000001e) maxstack=68 sizek=274
+[PC] 84 BXOR (138a0356) maxstack=68 sizek=274
+[VM] BXOR A=13 B=39 C=40 rb_tt=19 rc_tt=19
+[PC] 85 JMP (8000001e) maxstack=68 sizek=274
+[PC] 87 LOADK (0006c381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=27 rb_tt=68 rb_ival=0 rb_str=r
+[PC] 88 JMP (8000001e) maxstack=68 sizek=274
+[PC] 90 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[PC] 91 JMP (8000001e) maxstack=68 sizek=274
+[PC] 93 LOADK (000b09c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=44 rb_tt=19 rb_ival=-4173751601915087983 rb_str=(non-str)
+[PC] 94 JMP (8000001e) maxstack=68 sizek=274
+[PC] 96 LOADK (000b4a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=45 rb_tt=19 rb_ival=-4173751601915088088 rb_str=(non-str)
+[PC] 97 JMP (8000001e) maxstack=68 sizek=274
+[PC] 99 SUB (138a034e) maxstack=68 sizek=274
+[PC] 100 JMP (8000001e) maxstack=68 sizek=274
+[PC] 102 LOADK (00074381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=29 rb_tt=68 rb_ival=0 rb_str=i
+[PC] 103 JMP (8000001e) maxstack=68 sizek=274
+[PC] 105 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[PC] 106 JMP (8000001e) maxstack=68 sizek=274
+[PC] 108 LOADK (000b89c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=46 rb_tt=19 rb_ival=-8209435176202932807 rb_str=(non-str)
+[PC] 109 JMP (8000001e) maxstack=68 sizek=274
+[PC] 111 LOADK (000bca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=47 rb_tt=19 rb_ival=-8209435176202932917 rb_str=(non-str)
+[PC] 112 JMP (8000001e) maxstack=68 sizek=274
+[PC] 114 SUB (138a034e) maxstack=68 sizek=274
+[PC] 115 JMP (8000001e) maxstack=68 sizek=274
+[PC] 117 LOADK (0007c381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=31 rb_tt=68 rb_ival=0 rb_str=n
+[PC] 118 JMP (8000001e) maxstack=68 sizek=274
+[PC] 120 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[PC] 121 JMP (8000001e) maxstack=68 sizek=274
+[PC] 123 LOADK (000c09c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=48 rb_tt=19 rb_ival=-2759824423905588494 rb_str=(non-str)
+[PC] 124 JMP (8000001e) maxstack=68 sizek=274
+[PC] 126 LOADK (000c4a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=49 rb_tt=19 rb_ival=-2759824423905588597 rb_str=(non-str)
+[PC] 127 JMP (8000001e) maxstack=68 sizek=274
+[PC] 129 SUB (138a034e) maxstack=68 sizek=274
+[PC] 130 JMP (8000001e) maxstack=68 sizek=274
+[PC] 132 LOADK (00084381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=33 rb_tt=68 rb_ival=0 rb_str=g
+[PC] 133 JMP (8000001e) maxstack=68 sizek=274
+[PC] 135 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[PC] 136 JMP (8000001e) maxstack=68 sizek=274
+[PC] 138 LOADK (000c89c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=50 rb_tt=19 rb_ival=-7964730680722339100 rb_str=(non-str)
+[PC] 139 JMP (8000001e) maxstack=68 sizek=274
+[PC] 141 LOADK (000cca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=51 rb_tt=19 rb_ival=-7964730680722339217 rb_str=(non-str)
+[PC] 142 JMP (8000001e) maxstack=68 sizek=274
+[PC] 144 SUB (138a034e) maxstack=68 sizek=274
+[PC] 145 JMP (8000001e) maxstack=68 sizek=274
+[PC] 147 LOADK (0008c381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=35 rb_tt=68 rb_ival=0 rb_str=u
+[PC] 148 JMP (8000001e) maxstack=68 sizek=274
+[PC] 150 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[PC] 151 JMP (8000001e) maxstack=68 sizek=274
+[PC] 153 LOADK (000d09c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=52 rb_tt=19 rb_ival=-6542567808433273001 rb_str=(non-str)
+[PC] 154 JMP (8000001e) maxstack=68 sizek=274
+[PC] 156 LOADK (000d4a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=53 rb_tt=19 rb_ival=-6542567808433273099 rb_str=(non-str)
+[PC] 157 JMP (8000001e) maxstack=68 sizek=274
+[PC] 159 SUB (138a034e) maxstack=68 sizek=274
+[PC] 160 JMP (8000001e) maxstack=68 sizek=274
+[PC] 162 LOADK (00094381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=37 rb_tt=68 rb_ival=0 rb_str=b
+[PC] 163 JMP (8000001e) maxstack=68 sizek=274
+[PC] 165 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[PC] 166 JMP (8000001e) maxstack=68 sizek=274
+[PC] 168 LOADK (000d89c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=54 rb_tt=19 rb_ival=230575292110093608 rb_str=(non-str)
+[PC] 169 JMP (8000001e) maxstack=68 sizek=274
+[PC] 171 LOADK (000dca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=55 rb_tt=19 rb_ival=230575292110093578 rb_str=(non-str)
+[PC] 172 JMP (8000001e) maxstack=68 sizek=274
+[PC] 174 SUB (138a034e) maxstack=68 sizek=274
+[PC] 175 JMP (8000001e) maxstack=68 sizek=274
+[PC] 177 LOADK (000283c1) maxstack=68 sizek=274
+[VM] LOADK A=15 Bx=10 rb_tt=68 rb_ival=0 rb_str=
+[PC] 178 JMP (8000001e) maxstack=68 sizek=274
+[PC] 180 LOADK (000e09c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=56 rb_tt=19 rb_ival=4189251403948944634 rb_str=(non-str)
+[PC] 181 JMP (8000001e) maxstack=68 sizek=274
+[PC] 183 LOADK (000e4a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=57 rb_tt=19 rb_ival=4189251403948944535 rb_str=(non-str)
+[PC] 184 JMP (8000001e) maxstack=68 sizek=274
+[PC] 186 BXOR (138a0396) maxstack=68 sizek=274
+[VM] BXOR A=14 B=39 C=40 rb_tt=19 rc_tt=19
+[PC] 187 JMP (8000001e) maxstack=68 sizek=274
+[PC] 189 BXOR (07034396) maxstack=68 sizek=274
+[VM] BXOR A=14 B=14 C=13 rb_tt=19 rc_tt=19
+[PC] 190 JMP (8000001e) maxstack=68 sizek=274
+[PC] 192 GETTABLE (06038387) maxstack=68 sizek=274
+[PC] 193 JMP (8000001e) maxstack=68 sizek=274
+[PC] 195 MOVE (07000400) maxstack=68 sizek=274
+[PC] 196 JMP (8000001e) maxstack=68 sizek=274
+[PC] 198 CONCAT (078403dd) maxstack=68 sizek=274
+[PC] 199 JMP (8000001e) maxstack=68 sizek=274
+[PC] 201 LOADK (000e89c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=58 rb_tt=19 rb_ival=3575142865265600007 rb_str=(non-str)
+[PC] 202 JMP (8000001e) maxstack=68 sizek=274
+[PC] 204 LOADK (000eca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=59 rb_tt=19 rb_ival=-3575142865265599901 rb_str=(non-str)
+[PC] 205 JMP (8000001e) maxstack=68 sizek=274
+[PC] 207 ADD (138a038d) maxstack=68 sizek=274
+[PC] 208 JMP (8000001e) maxstack=68 sizek=274
+[PC] 210 BXOR (07034396) maxstack=68 sizek=274
+[VM] BXOR A=14 B=14 C=13 rb_tt=19 rc_tt=19
+[PC] 211 JMP (8000001e) maxstack=68 sizek=274
+[PC] 213 GETTABLE (06038387) maxstack=68 sizek=274
+[PC] 214 JMP (8000001e) maxstack=68 sizek=274
+[PC] 216 MOVE (07000400) maxstack=68 sizek=274
+[PC] 217 JMP (8000001e) maxstack=68 sizek=274
+[PC] 219 CONCAT (078403dd) maxstack=68 sizek=274
+[PC] 220 JMP (8000001e) maxstack=68 sizek=274
+[PC] 222 LOADK (000f09c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=60 rb_tt=19 rb_ival=-5354324646250333885 rb_str=(non-str)
+[PC] 223 JMP (8000001e) maxstack=68 sizek=274
+[PC] 225 LOADK (000f4a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=61 rb_tt=19 rb_ival=-5354324646250333905 rb_str=(non-str)
+[PC] 226 JMP (8000001e) maxstack=68 sizek=274
+[PC] 228 BXOR (138a0396) maxstack=68 sizek=274
+[VM] BXOR A=14 B=39 C=40 rb_tt=19 rc_tt=19
+[PC] 229 JMP (8000001e) maxstack=68 sizek=274
+[PC] 231 BXOR (07034396) maxstack=68 sizek=274
+[VM] BXOR A=14 B=14 C=13 rb_tt=19 rc_tt=19
+[PC] 232 JMP (8000001e) maxstack=68 sizek=274
+[PC] 234 GETTABLE (06038387) maxstack=68 sizek=274
+[PC] 235 JMP (8000001e) maxstack=68 sizek=274
+[PC] 237 MOVE (07000400) maxstack=68 sizek=274
+[PC] 238 JMP (8000001e) maxstack=68 sizek=274
+[PC] 240 CONCAT (078403dd) maxstack=68 sizek=274
+[PC] 241 JMP (8000001e) maxstack=68 sizek=274
+[PC] 243 LOADK (000f89c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=62 rb_tt=19 rb_ival=354395376952130281 rb_str=(non-str)
+[PC] 244 JMP (8000001e) maxstack=68 sizek=274
+[PC] 246 LOADK (000fca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=63 rb_tt=19 rb_ival=-354395376952130162 rb_str=(non-str)
+[PC] 247 JMP (8000001e) maxstack=68 sizek=274
+[PC] 249 ADD (138a038d) maxstack=68 sizek=274
+[PC] 250 JMP (8000001e) maxstack=68 sizek=274
+[PC] 252 BXOR (07034396) maxstack=68 sizek=274
+[VM] BXOR A=14 B=14 C=13 rb_tt=19 rc_tt=19
+[PC] 253 JMP (8000001e) maxstack=68 sizek=274
+[PC] 255 GETTABLE (06038387) maxstack=68 sizek=274
+[PC] 256 JMP (8000001e) maxstack=68 sizek=274
+[PC] 258 MOVE (07000400) maxstack=68 sizek=274
+[PC] 259 JMP (8000001e) maxstack=68 sizek=274
+[PC] 261 CONCAT (078403dd) maxstack=68 sizek=274
+[PC] 262 JMP (8000001e) maxstack=68 sizek=274
+[PC] 264 LOADK (001009c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=64 rb_tt=19 rb_ival=-8261449631800205651 rb_str=(non-str)
+[PC] 265 JMP (8000001e) maxstack=68 sizek=274
+[PC] 267 LOADK (00104a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=65 rb_tt=19 rb_ival=8261449631800205763 rb_str=(non-str)
+[PC] 268 JMP (8000001e) maxstack=68 sizek=274
+[PC] 270 ADD (138a038d) maxstack=68 sizek=274
+[PC] 271 JMP (8000001e) maxstack=68 sizek=274
+[PC] 273 BXOR (07034396) maxstack=68 sizek=274
+[VM] BXOR A=14 B=14 C=13 rb_tt=19 rc_tt=19
+[PC] 274 JMP (8000001e) maxstack=68 sizek=274
+[PC] 276 GETTABLE (06038387) maxstack=68 sizek=274
+[PC] 277 JMP (8000001e) maxstack=68 sizek=274
+[PC] 279 MOVE (07000400) maxstack=68 sizek=274
+[PC] 280 JMP (8000001e) maxstack=68 sizek=274
+[PC] 282 CONCAT (078403dd) maxstack=68 sizek=274
+[PC] 283 JMP (8000001e) maxstack=68 sizek=274
+[PC] 285 LOADK (001089c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=66 rb_tt=19 rb_ival=6059591356526473651 rb_str=(non-str)
+[PC] 286 JMP (8000001e) maxstack=68 sizek=274
+[PC] 288 LOADK (0010ca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=67 rb_tt=19 rb_ival=6059591356526473530 rb_str=(non-str)
+[PC] 289 JMP (8000001e) maxstack=68 sizek=274
+[PC] 291 SUB (138a038e) maxstack=68 sizek=274
+[PC] 292 JMP (8000001e) maxstack=68 sizek=274
+[PC] 294 BXOR (07034396) maxstack=68 sizek=274
+[VM] BXOR A=14 B=14 C=13 rb_tt=19 rc_tt=19
+[PC] 295 JMP (8000001e) maxstack=68 sizek=274
+[PC] 297 GETTABLE (06038387) maxstack=68 sizek=274
+[PC] 298 JMP (8000001e) maxstack=68 sizek=274
+[PC] 300 MOVE (07000400) maxstack=68 sizek=274
+[PC] 301 JMP (8000001e) maxstack=68 sizek=274
+[PC] 303 CONCAT (078403dd) maxstack=68 sizek=274
+[PC] 304 JMP (8000001e) maxstack=68 sizek=274
+[PC] 306 MOVE (07800240) maxstack=68 sizek=274
+[PC] 307 JMP (8000001e) maxstack=68 sizek=274
+[PC] 309 GETTABLE (01824107) maxstack=68 sizek=274
+[PC] 310 JMP (8000001e) maxstack=68 sizek=274
+[PC] 312 NEWTABLE (0002030b) maxstack=68 sizek=274
+[PC] 313 JMP (8000001e) maxstack=68 sizek=274
+[PC] 315 LOADK (001109c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=68 rb_tt=19 rb_ival=-3802876652053658700 rb_str=(non-str)
+[PC] 316 JMP (8000001e) maxstack=68 sizek=274
+[PC] 318 LOADK (00114a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=69 rb_tt=19 rb_ival=3802876652053658815 rb_str=(non-str)
+[PC] 319 JMP (8000001e) maxstack=68 sizek=274
+[PC] 321 ADD (138a034d) maxstack=68 sizek=274
+[PC] 322 JMP (8000001e) maxstack=68 sizek=274
+[PC] 324 LOADK (0005c381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=23 rb_tt=68 rb_ival=0 rb_str=s
+[PC] 325 JMP (8000001e) maxstack=68 sizek=274
+[PC] 327 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[PC] 328 JMP (8000001e) maxstack=68 sizek=274
+[PC] 330 LOADK (001189c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=70 rb_tt=19 rb_ival=3105962931339443796 rb_str=(non-str)
+[PC] 331 JMP (8000001e) maxstack=68 sizek=274
+[PC] 333 LOADK (0011ca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=71 rb_tt=19 rb_ival=3105962931339443680 rb_str=(non-str)
+[PC] 334 JMP (8000001e) maxstack=68 sizek=274
+[PC] 336 SUB (138a034e) maxstack=68 sizek=274
+[PC] 337 JMP (8000001e) maxstack=68 sizek=274
+[PC] 339 LOADK (00064381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=25 rb_tt=68 rb_ival=0 rb_str=t
+[PC] 340 JMP (8000001e) maxstack=68 sizek=274
+[PC] 342 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[PC] 343 JMP (8000001e) maxstack=68 sizek=274
+[PC] 345 LOADK (001209c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=72 rb_tt=19 rb_ival=-4156533777510011795 rb_str=(non-str)
+[PC] 346 JMP (8000001e) maxstack=68 sizek=274
+[PC] 348 LOADK (00124a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=73 rb_tt=19 rb_ival=-4156533777510011909 rb_str=(non-str)
+[PC] 349 JMP (8000001e) maxstack=68 sizek=274
+[PC] 351 SUB (138a034e) maxstack=68 sizek=274
+[PC] 352 JMP (8000001e) maxstack=68 sizek=274
+[PC] 354 LOADK (0006c381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=27 rb_tt=68 rb_ival=0 rb_str=r
+[PC] 355 JMP (8000001e) maxstack=68 sizek=274
+[PC] 357 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[PC] 358 JMP (8000001e) maxstack=68 sizek=274
+[PC] 360 LOADK (001289c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=74 rb_tt=19 rb_ival=3021560208642442951 rb_str=(non-str)
+[PC] 361 JMP (8000001e) maxstack=68 sizek=274
+[PC] 363 LOADK (0012ca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=75 rb_tt=19 rb_ival=-3021560208642442846 rb_str=(non-str)
+[PC] 364 JMP (8000001e) maxstack=68 sizek=274
+[PC] 366 ADD (138a034d) maxstack=68 sizek=274
+[PC] 367 JMP (8000001e) maxstack=68 sizek=274
+[PC] 369 LOADK (00074381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=29 rb_tt=68 rb_ival=0 rb_str=i
+[PC] 370 JMP (8000001e) maxstack=68 sizek=274
+[PC] 372 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[PC] 373 JMP (8000001e) maxstack=68 sizek=274
+[PC] 375 LOADK (001309c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=76 rb_tt=19 rb_ival=-5927225632675701804 rb_str=(non-str)
+[PC] 376 JMP (8000001e) maxstack=68 sizek=274
+[PC] 378 LOADK (00134a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=77 rb_tt=19 rb_ival=5927225632675701914 rb_str=(non-str)
+[PC] 379 JMP (8000001e) maxstack=68 sizek=274
+[PC] 381 ADD (138a034d) maxstack=68 sizek=274
+[PC] 382 JMP (8000001e) maxstack=68 sizek=274
+[PC] 384 LOADK (0007c381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=31 rb_tt=68 rb_ival=0 rb_str=n
+[PC] 385 JMP (8000001e) maxstack=68 sizek=274
+[PC] 387 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[PC] 388 JMP (8000001e) maxstack=68 sizek=274
+[PC] 390 LOADK (001389c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=78 rb_tt=19 rb_ival=8934585229759017420 rb_str=(non-str)
+[PC] 391 JMP (8000001e) maxstack=68 sizek=274
+[PC] 393 LOADK (0013ca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=79 rb_tt=19 rb_ival=8934585229759017387 rb_str=(non-str)
+[PC] 394 JMP (8000001e) maxstack=68 sizek=274
+[PC] 396 BXOR (138a0356) maxstack=68 sizek=274
+[VM] BXOR A=13 B=39 C=40 rb_tt=19 rc_tt=19
+[PC] 397 JMP (8000001e) maxstack=68 sizek=274
+[PC] 399 LOADK (00084381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=33 rb_tt=68 rb_ival=0 rb_str=g
+[PC] 400 JMP (8000001e) maxstack=68 sizek=274
+[PC] 402 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[PC] 403 JMP (8000001e) maxstack=68 sizek=274
+[PC] 405 LOADK (001409c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=80 rb_tt=19 rb_ival=6174441213568216336 rb_str=(non-str)
+[PC] 406 JMP (8000001e) maxstack=68 sizek=274
+[PC] 408 LOADK (00144a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=81 rb_tt=19 rb_ival=-6174441213568216219 rb_str=(non-str)
+[PC] 409 JMP (8000001e) maxstack=68 sizek=274
+[PC] 411 ADD (138a034d) maxstack=68 sizek=274
+[PC] 412 JMP (8000001e) maxstack=68 sizek=274
+[PC] 414 LOADK (0008c381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=35 rb_tt=68 rb_ival=0 rb_str=u
+[PC] 415 JMP (8000001e) maxstack=68 sizek=274
+[PC] 417 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[PC] 418 JMP (8000001e) maxstack=68 sizek=274
+[PC] 420 LOADK (001489c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=82 rb_tt=19 rb_ival=-8401345411225855227 rb_str=(non-str)
+[PC] 421 JMP (8000001e) maxstack=68 sizek=274
+[PC] 423 LOADK (0014ca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=83 rb_tt=19 rb_ival=-8401345411225855325 rb_str=(non-str)
+[PC] 424 JMP (8000001e) maxstack=68 sizek=274
+[PC] 426 SUB (138a034e) maxstack=68 sizek=274
+[PC] 427 JMP (8000001e) maxstack=68 sizek=274
+[PC] 429 LOADK (00094381) maxstack=68 sizek=274
+[VM] LOADK A=14 Bx=37 rb_tt=68 rb_ival=0 rb_str=b
+[PC] 430 JMP (8000001e) maxstack=68 sizek=274
+[PC] 432 SETTABLE (0683830a) maxstack=68 sizek=274
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[PC] 433 JMP (8000001e) maxstack=68 sizek=274
+[PC] 435 LOADK (001509c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=84 rb_tt=19 rb_ival=-6594122193552151905 rb_str=(non-str)
+[PC] 436 JMP (8000001e) maxstack=68 sizek=274
+[PC] 438 LOADK (00154a01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=85 rb_tt=19 rb_ival=-6594122193552152160 rb_str=(non-str)
+[PC] 439 JMP (8000001e) maxstack=68 sizek=274
+[PC] 441 SUB (138a034e) maxstack=68 sizek=274
+[PC] 442 JMP (8000001e) maxstack=68 sizek=274
+[PC] 444 LOADK (000283c1) maxstack=68 sizek=274
+[VM] LOADK A=15 Bx=10 rb_tt=68 rb_ival=0 rb_str=
+[PC] 445 JMP (8000001e) maxstack=68 sizek=274
+[PC] 447 LOADK (001589c1) maxstack=68 sizek=274
+[VM] LOADK A=39 Bx=86 rb_tt=19 rb_ival=-5434747962485435628 rb_str=(non-str)
+[PC] 448 JMP (8000001e) maxstack=68 sizek=274
+[PC] 450 LOADK (0015ca01) maxstack=68 sizek=274
+[VM] LOADK A=40 Bx=87 rb_tt=19 rb_ival=-5434747962485435768 rb_str=(non-str)
+[PC] 451 JMP (8000001e) maxstack=68 sizek=274
+[PC] 453 SUB (138a038e) maxstack=68 sizek=274
+[PC] 454 JMP (8000001e) maxstack=68 sizek=274
+[PC] 456 LOADKX (00000b02) maxstack=68 sizek=274

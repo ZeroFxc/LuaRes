@@ -1,0 +1,2 @@
+TOTAL=217
+PASS (no string/table)

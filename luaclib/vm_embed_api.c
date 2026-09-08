@@ -16,6 +16,7 @@
 char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compat, size_t *out_len);
 
 int vm_embed_process(lua_State *L) {
+    { FILE *df = fopen("_vm_dbg.txt", "w"); fprintf(df, "vm_embed_process called\n"); fclose(df); }
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
 

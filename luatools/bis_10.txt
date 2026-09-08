@@ -1,0 +1,2 @@
+n=10 (const_hide,const_shuffle,str_encrypt,instruction_mutate,num_obfuscate,str_split,bool_obfuscate,table_obfuscate,opaque_predicate,const_poison) ... TOTAL=285
+PASS

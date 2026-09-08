@@ -110,14 +110,29 @@ static void obfuscate_function(luac_Proto *p) {
         int ka = get_int_const_idx(p, a);
         int kb = get_int_const_idx(p, b);
 
-        /* replace 1 instruction with 2 */
-        p->code[pos] = LUAC_ABx(LUAC_OP_LOADK, state_reg, ka);
-        p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + 1));
-        memmove(&p->code[pos + 2], &p->code[pos + 1],
-                sizeof(unsigned int) * (p->sizecode - pos - 1));
-        p->code[pos + 1] = LUAC_ABC(op, state_reg, state_reg, kb + LUAC_BITRK);
-        p->sizecode += 1;
-        obf_adjust_jumps_insert(p->code, p->sizecode, pos + 2, 1);
+        if (kb <= 255) {
+            /* replace 1 instruction with 2 */
+            p->code[pos] = LUAC_ABx(LUAC_OP_LOADK, state_reg, ka);
+            p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + 1));
+            memmove(&p->code[pos + 2], &p->code[pos + 1],
+                    sizeof(unsigned int) * (p->sizecode - pos - 1));
+            p->code[pos + 1] = LUAC_ABC(op, state_reg, state_reg, kb + LUAC_BITRK);
+            p->sizecode += 1;
+            obf_adjust_jumps_insert(p->code, p->sizecode, pos + 2, 1);
+        } else {
+            /* constant index >255: load into temp register first */
+            int tmp = state_reg + 1;
+            obf_ensure_stack(p, tmp + 1);
+            p->code[pos] = LUAC_ABx(LUAC_OP_LOADK, state_reg, ka);
+            p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + 3));
+            memmove(&p->code[pos + 4], &p->code[pos + 1],
+                    sizeof(unsigned int) * (p->sizecode - pos - 1));
+            p->code[pos + 1] = LUAC_ABx(LUAC_OP_LOADKX, tmp, 0);
+            p->code[pos + 2] = LUAC_Ax(LUAC_OP_EXTRAARG, kb);
+            p->code[pos + 3] = LUAC_ABC(op, state_reg, state_reg, tmp);
+            p->sizecode += 3;
+            obf_adjust_jumps_insert(p->code, p->sizecode, pos + 1, 3);
+        }
     }
     free(loadk_pos);
 

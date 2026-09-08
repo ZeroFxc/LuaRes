@@ -1,0 +1,74 @@
+﻿obf ok
+dump ok len=12211
+load ok
+..\luasafe\lua_luac_c.exe : [VM] LOADK A=2 Bx=1 rb_tt=68 rb_ival=0 rb_str=luac
+所在位置 行:1 字符: 34
++ ... s\luatools; ..\luasafe\lua_luac_c.exe _numopq3.lua >_vmtrace.txt 2>&1 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([VM] LOADK A=2 ...l=0 rb_str=luac:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[VM] LOADK A=2 Bx=2 rb_tt=68 rb_ival=0 rb_str=print(6) print("6") print(true)
+[VM] LOADK A=4 Bx=4 rb_tt=19 rb_ival=1 rb_str=(non-str)
+[OBF-BAD] idx=2437 op=30 sbx=1 target=2439 range[0,2438] orig=0
+[OBF-BAD] idx=2438 op=30 sbx=0 target=2439 range[0,2438] orig=0
+[OBF-VALIDATE] bad=2 orig_misaligned=0 (n=813 ni=2439)
+[OBF-REG] idx=0 op=1 C=92(reg) >= maxstack=68
+[OBF-REG] idx=3 op=1 C=92(reg) >= maxstack=68
+[OBF-REG] idx=12 op=1 C=92(reg) >= maxstack=68
+[OBF-REG] idx=15 op=1 C=92(reg) >= maxstack=68
+[OBF-REG] idx=24 op=1 C=153(reg) >= maxstack=68
+[OBF-REG] 223 register overflows (maxstack=68)
+[VM] LOADK A=5 Bx=18 rb_tt=68 rb_ival=0 rb_str=obf ok
+
+[VM] LOADK A=6 Bx=20 rb_tt=68 rb_ival=0 rb_str=dump ok len=
+[VM] LOADK A=8 Bx=21 rb_tt=68 rb_ival=0 rb_str=
+
+[VM] LOADK A=7 Bx=22 rb_tt=68 rb_ival=0 rb_str=load ok
+
+[VM] LOADK A=66 Bx=92 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=67 Bx=92 rb_tt=3 rb_ival=0 rb_str=(non-str)
+[VM] LOADK A=39 Bx=38 rb_tt=19 rb_ival=8612977219013190516 rb_str=(non-str)
+[VM] LOADK A=40 Bx=39 rb_tt=19 rb_ival=-8612977219013190401 rb_str=(non-str)
+[VM] LOADK A=14 Bx=23 rb_tt=68 rb_ival=0 rb_str=s
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=115 rc_tt=68 rc_str=s
+[VM] LOADK A=39 Bx=40 rb_tt=19 rb_ival=6421173434234456970 rb_str=(non-str)
+[VM] LOADK A=40 Bx=41 rb_tt=19 rb_ival=-6421173434234456854 rb_str=(non-str)
+[VM] LOADK A=14 Bx=25 rb_tt=68 rb_ival=0 rb_str=t
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=116 rc_tt=68 rc_str=t
+[VM] LOADK A=39 Bx=42 rb_tt=19 rb_ival=375681089118967217 rb_str=(non-str)
+[VM] LOADK A=40 Bx=43 rb_tt=19 rb_ival=375681089118967235 rb_str=(non-str)
+[VM] LOADK A=14 Bx=27 rb_tt=68 rb_ival=0 rb_str=r
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=114 rc_tt=68 rc_str=r
+[VM] LOADK A=39 Bx=44 rb_tt=19 rb_ival=-4173751601915087983 rb_str=(non-str)
+[VM] LOADK A=40 Bx=45 rb_tt=19 rb_ival=-4173751601915088088 rb_str=(non-str)
+[VM] LOADK A=14 Bx=29 rb_tt=68 rb_ival=0 rb_str=i
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=105 rc_tt=68 rc_str=i
+[VM] LOADK A=39 Bx=46 rb_tt=19 rb_ival=-8209435176202932807 rb_str=(non-str)
+[VM] LOADK A=40 Bx=47 rb_tt=19 rb_ival=-8209435176202932917 rb_str=(non-str)
+[VM] LOADK A=14 Bx=31 rb_tt=68 rb_ival=0 rb_str=n
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=110 rc_tt=68 rc_str=n
+[VM] LOADK A=39 Bx=48 rb_tt=19 rb_ival=-2759824423905588494 rb_str=(non-str)
+[VM] LOADK A=40 Bx=49 rb_tt=19 rb_ival=-2759824423905588597 rb_str=(non-str)
+[VM] LOADK A=14 Bx=33 rb_tt=68 rb_ival=0 rb_str=g
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=103 rc_tt=68 rc_str=g
+[VM] LOADK A=39 Bx=50 rb_tt=19 rb_ival=-7964730680722339100 rb_str=(non-str)
+[VM] LOADK A=40 Bx=51 rb_tt=19 rb_ival=-7964730680722339217 rb_str=(non-str)
+[VM] LOADK A=14 Bx=35 rb_tt=68 rb_ival=0 rb_str=u
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=117 rc_tt=68 rc_str=u
+[VM] LOADK A=39 Bx=52 rb_tt=19 rb_ival=-6542567808433273001 rb_str=(non-str)
+[VM] LOADK A=40 Bx=53 rb_tt=19 rb_ival=-6542567808433273099 rb_str=(non-str)
+[VM] LOADK A=14 Bx=37 rb_tt=68 rb_ival=0 rb_str=b
+[VM] SETTABLE A=12 B=13 C=14 ra_tt=69 rb_tt=19 rb_ival=98 rc_tt=68 rc_str=b
+[VM] LOADK A=39 Bx=54 rb_tt=19 rb_ival=230575292110093608 rb_str=(non-str)
+[VM] LOADK A=40 Bx=55 rb_tt=19 rb_ival=230575292110093399 rb_str=(non-str)
+[VM] LOADK A=15 Bx=10 rb_tt=68 rb_ival=0 rb_str=
+[VM] LOADK A=39 Bx=56 rb_tt=19 rb_ival=4189251403948944634 rb_str=(non-str)
+[VM] LOADK A=40 Bx=57 rb_tt=19 rb_ival=4189251403948944472 rb_str=(non-str)
+[VM] LOADK A=39 Bx=58 rb_tt=19 rb_ival=3575142865265600007 rb_str=(non-str)
+[VM] LOADK A=40 Bx=59 rb_tt=19 rb_ival=-3575142865265599842 rb_str=(non-str)
+[VM] LOADK A=39 Bx=60 rb_tt=19 rb_ival=-5354324646250333885 rb_str=(non-str)
+[VM] LOADK A=40 Bx=61 rb_tt=19 rb_ival=-5354324646250333728 rb_str=(non-str)
+[VM] LOADK A=39 Bx=62 rb_tt=19 rb_ival=354395376952130281 rb_str=(non-str)
+[VM] LOADK A=40 Bx=63 rb_tt=19 rb_ival=-354395376952130097 rb_str=(non-str)
+[VM] LOADK A=39 Bx=64 rb_tt=19 rb_ival=-8261449631800205651 rb_

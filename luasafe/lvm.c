@@ -29,6 +29,9 @@
 #include "ltable.h"
 #include "ltm.h"
 #include "lvm.h"
+#if LUA_VM_DEBUG
+#include <windows.h>
+#endif
 
 
 /* limit for table tag-method chains (to avoid loops) */
@@ -849,6 +852,16 @@ void luaV_execute (lua_State *L) {
         _vm_last_pc[_vm_last_idx] = _pc;
         _vm_last_op[_vm_last_idx] = _op;
         _vm_last_idx = (_vm_last_idx + 1) % 32;
+        /* heap integrity check */
+        if (!HeapValidate(GetProcessHeap(), 0, NULL)) {
+            fprintf(stderr, "[HEAP-CORRUPT] insn=%lld pc=%d op=%d (%08x) sizecode=%d sizek=%d maxstack=%d\n",
+                _vm_insn_count, _pc, _op, i, cl->p->sizecode, cl->p->sizek, cl->p->maxstacksize);
+            fflush(stderr);
+        }
+        /* per-instruction trace */
+        fprintf(stderr, "[PC] %d %s (%08x) maxstack=%d sizek=%d\n",
+            _pc, _op < 47 ? _opnames[_op] : "?", i, cl->p->maxstacksize, cl->p->sizek);
+        fflush(stderr);
         if (_vm_insn_count % 2000000 == 0) {
             fprintf(stderr, "[VM] %lld insns, last pc=%d %s proto=%p sizecode=%d sizek=%d\n",
                 _vm_insn_count, _pc, _op < 47 ? _opnames[_op] : "?", (void*)cl->p, cl->p->sizecode, cl->p->sizek);
@@ -877,6 +890,7 @@ void luaV_execute (lua_State *L) {
             GETARG_A(i), GETARG_Bx(i), rb->tt_,
             (rb->tt_ == 19) ? (long long)rb->value_.i : 0,
             (rb->tt_ == 4 || rb->tt_ == 20 || rb->tt_ == 68) ? getstr(tsvalue(rb)) : "(non-str)");
+        fflush(stderr);
 #endif
         setobj2s(L, ra, rb);
         vmbreak;
@@ -1124,6 +1138,10 @@ void luaV_execute (lua_State *L) {
       vmcase(OP_BXOR) {
         TValue *rb = RKB(i);
         TValue *rc = RKC(i);
+#if LUA_VM_DEBUG
+        fprintf(stderr, "[VM] BXOR A=%d B=%d C=%d rb_tt=%d rc_tt=%d\n", GETARG_A(i), GETARG_B(i), GETARG_C(i), rb->tt_, rc->tt_);
+        fflush(stderr);
+#endif
         lua_Integer ib; lua_Integer ic;
         if (tointeger(rb, &ib) && tointeger(rc, &ic)) {
           setivalue(ra, intop(^, ib, ic));
