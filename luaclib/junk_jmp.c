@@ -40,7 +40,22 @@ static int is_safe_pos(luac_Proto *p, int pos) {
     if (pos <= 0 || pos >= p->sizecode) return 0;
     int prev_op = p->code[pos-1] & 0x3F;
     if (CONDITION_OPS(prev_op)) return 0;
+    /* LOADBOOL with C!=0 skips the NEXT instruction (compiler idiom).
+       Inserting here would let the junk body execute after the skip. */
+    if (prev_op == LUAC_OP_LOADBOOL && (((p->code[pos-1] >> 14) & 0x1FF) != 0)) return 0;
     if (prev_op == 43 && ((p->code[pos-1] >> 14) & 0x1FF) == 0) return 0;
+    /* Open-vararg live window: after VARARG with B==0, slots R[a..top-1] are live
+       (top can exceed maxstacksize) until consumed by CALL/TAILCALL/RETURN/SETLIST.
+       Junk inside the window clobbers live vararg slots. */
+    {
+        int scan = pos - 1;
+        while (scan >= 0) {
+            int sop = p->code[scan] & 0x3F;
+            if (sop == 36 || sop == 37 || sop == 38 || sop == 43) break; /* consumed */
+            if (sop == 45 && (((p->code[scan] >> 23) & 0x1FF) == 0)) return 0; /* VARARG B==0 */
+            scan--;
+        }
+    }
     int op = p->code[pos] & 0x3F;
     if (op == LUAC_OP_JMP || op == LUAC_OP_RETURN || op == LUAC_OP_EXTRAARG) return 0;
     if (op == LUAC_OP_CLOSURE) return 0;

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <math.h>
 
 /* Debug macro: compile with -DVM_EMBED_DEBUG=1 to enable */
 #ifndef VM_EMBED_DEBUG
@@ -147,6 +148,9 @@ static void serialize_proto(Reader *r, Buf *b, int depth) {
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
     uint32_t ncode = rd_int(r);
+#if VM_EMBED_DEBUG
+    { FILE *df = fopen("_vm_dbg.txt", "a"); fprintf(df, "proto depth=%d pos=%zu ncode=%u", depth, r->pos, ncode); fclose(df); }
+#endif
     buf_str(b, "code={");
     for (uint32_t i = 0; i < ncode; i++) {
         uint32_t ins = rd_int(r);
@@ -165,6 +169,9 @@ static void serialize_proto(Reader *r, Buf *b, int depth) {
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
     uint32_t nk = rd_int(r);
+#if VM_EMBED_DEBUG
+    { FILE *df = fopen("_vm_dbg.txt", "a"); fprintf(df, " nk=%u pos=%zu", nk, r->pos); fclose(df); }
+#endif
     buf_str(b, "k={");
     for (uint32_t i = 0; i < nk; i++) {
         uint8_t t = rd_byte(r);
@@ -174,7 +181,10 @@ static void serialize_proto(Reader *r, Buf *b, int depth) {
             case 1: buf_str(b, rd_byte(r) ? "true" : "false"); break;
             case 3: {
                 double fv = rd_float(r);
+                if (isnan(fv)) { buf_str(b, "(0/0)"); break; }
+                if (isinf(fv)) { buf_str(b, fv > 0 ? "(1/0)" : "(-1/0)"); break; }
                 char tmp[64]; snprintf(tmp, sizeof(tmp), "%.17g", fv);
+                if (!strpbrk(tmp, ".eE") && !strchr(tmp, 'i')) strcat(tmp, ".0");
                 buf_str(b, tmp); break;
             }
             case 19: {
@@ -206,6 +216,9 @@ static void serialize_proto(Reader *r, Buf *b, int depth) {
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
     uint32_t np = rd_int(r);
+#if VM_EMBED_DEBUG
+    { FILE *df = fopen("_vm_dbg.txt", "a"); fprintf(df, " np=%u pos=%zu\n", np, r->pos); fclose(df); }
+#endif
     buf_str(b, "p={");
     for (uint32_t i = 0; i < np; i++) {
         if (i) buf_str(b, ",");

@@ -7,7 +7,13 @@
 */
 #include <time.h>
 #include <string.h>
+#include <stdio.h>
 #include "obf_util.h"
+
+/* shared random dsname (16 raw bytes), per-proto constant copies */
+static char g_rndkey[16];
+
+#define STR_DEBUG 0
 
 /* === shared decrypt function source (compiled to proto once) === */
 static const char *DECRYPTOR_SRC =
@@ -119,8 +125,16 @@ static int rewrite_decrypt_sites(lua_State *L, luac_Proto *p,
     int inserted_so_far = 0;
 
     /* emit decrypt call: func = _ENV.__ds; func(enc_str, key) -> result_reg */
+    /* RK overflow guard: GETTABUP C is RK (9-bit); if dsname_kidx >= 256 the
+       RK encoding overflows into B. Load the name into enc_reg first, then
+       overwrite enc_reg with the encrypted string (safe order). */
     #define EMIT_DECRYPT(result_reg, str_kidx) do { \
-        new_code[ni++] = LUAC_ABC(LUAC_OP_GETTABUP, func_reg, 0, 256 + dsname_kidx); \
+        if (dsname_kidx < 256) { \
+            new_code[ni++] = LUAC_ABC(LUAC_OP_GETTABUP, func_reg, 0, 256 + dsname_kidx); \
+        } else { \
+            new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, enc_reg, dsname_kidx); \
+            new_code[ni++] = LUAC_ABC(LUAC_OP_GETTABUP, func_reg, 0, enc_reg); \
+        } \
         new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, enc_reg, str_kidx); \
         new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, key_reg, enc_key_idx[str_kidx]); \
         new_code[ni++] = LUAC_ABC(LUAC_OP_CALL, func_reg, 3, 2); \
@@ -287,22 +301,32 @@ static int install_decryptor(lua_State *L, luac_Proto *main_p,
     /* generate random 16-byte binary key (non-printable, unguessable) */
     static unsigned int rng_state = 0;
     if (rng_state == 0) rng_state = (unsigned int)time(NULL) ^ (unsigned int)(size_t)main_p;
-    char rndkey[16];
     for (int i = 0; i < 16; i++) {
         rng_state = rng_state * 1103515245 + 12345;
-        rndkey[i] = (char)((rng_state >> 16) & 0xFF);
+        g_rndkey[i] = (char)((rng_state >> 16) & 0xFF);
     }
-    int dsname_kidx = obf_add_k_string(main_p, rndkey, 16);
+    int dsname_kidx = obf_add_k_string(main_p, g_rndkey, 16);
 
     /* insert at position 1 (1-based): CLOSURE R(tmp), idx; SETTABUP upval0[const rndkey] = R(tmp) */
     int tmp_reg = main_p->maxstacksize;
     obf_ensure_stack(main_p, tmp_reg + 1);
 
-    unsigned int ins[2];
-    ins[0] = LUAC_ABx(LUAC_OP_CLOSURE, tmp_reg, idx);
-    ins[1] = LUAC_ABC(LUAC_OP_SETTABUP, 0, 256 + dsname_kidx, tmp_reg);
-
-    obf_code_insert(main_p, 1, ins, 2);
+    /* RK overflow guard: SETTABUP B is RK (9-bit); dsname_kidx >= 256 would
+       overflow into A/C fields. Load the name into an extra register first. */
+    if (dsname_kidx < 256) {
+        unsigned int ins[2];
+        ins[0] = LUAC_ABx(LUAC_OP_CLOSURE, tmp_reg, idx);
+        ins[1] = LUAC_ABC(LUAC_OP_SETTABUP, 0, 256 + dsname_kidx, tmp_reg);
+        obf_code_insert(main_p, 1, ins, 2);
+    } else {
+        int name_reg = main_p->maxstacksize;
+        obf_ensure_stack(main_p, name_reg + 1);
+        unsigned int ins[3];
+        ins[0] = LUAC_ABx(LUAC_OP_LOADK, name_reg, dsname_kidx);
+        ins[1] = LUAC_ABx(LUAC_OP_CLOSURE, tmp_reg, idx);
+        ins[2] = LUAC_ABC(LUAC_OP_SETTABUP, 0, name_reg, tmp_reg);
+        obf_code_insert(main_p, 1, ins, 3);
+    }
 
     *out_proto_idx = idx;
     *out_dsname_kidx = dsname_kidx;
@@ -358,6 +382,9 @@ int str_encrypt_process(lua_State *L) {
         }
     }
 
+#if STR_DEBUG
+    fprintf(stderr, "[STR] total_encrypted=%d list_count=%d\n", total_encrypted, list_count);
+#endif
     if (total_encrypted == 0) {
         for (int pi = 0; pi < list_count; pi++) {
             free(all_str_idx[pi]);
@@ -371,18 +398,63 @@ int str_encrypt_process(lua_State *L) {
 
     /* install shared decryptor in main proto */
     int dec_idx = 0, dsname_kidx = 0;
+#if STR_DEBUG
+    fprintf(stderr, "[STR] before install sizek=%d sizep=%d maxstack=%d\n", p->sizek, p->sizep, p->maxstacksize);
+#endif
     if (!install_decryptor(L, p, &dec_idx, &dsname_kidx)) {
         lua_pushinteger(L, 0);
         return 1;
     }
 
+    /* Re-collect protos. install_decryptor -> obf_add_subproto rebuilt the
+       p table via luac_push_proto, which deep-copies each sub-proto struct
+       and NULLs the original C pointers (ownership transfer). The first
+       list is now dangling; re-collect with the same DFS order (install
+       only appends the decryptor at the end, so the first list_count
+       entries are identical to the first collection). */
+    free(list); free(stk);
+    cap = 1024;
+    list = luac_alloc(sizeof(luac_Proto *) * cap);
+    stk = luac_alloc(sizeof(luac_Proto *) * cap);
+    int list2_count = 0;
+    sp = 0;
+    stk[sp++] = p;
+    while (sp > 0) {
+        luac_Proto *cur = stk[--sp];
+        if (list2_count >= cap) {
+            cap *= 2;
+            list = realloc(list, sizeof(luac_Proto *) * cap);
+            stk = realloc(stk, sizeof(luac_Proto *) * cap);
+        }
+        list[list2_count++] = cur;
+        if (cur->p) for (int j = cur->sizep - 1; j >= 0; j--) stk[sp++] = cur->p[j];
+    }
+
     /* second pass: rewrite decrypt sites in all protos */
     int total_sites = 0;
+#if STR_DEBUG
+    fprintf(stderr, "[STR] after install dec_idx=%d dsname_kidx=%d sizek=%d sizep=%d maxstack=%d\n", dec_idx, dsname_kidx, p->sizek, p->sizep, p->maxstacksize);
+#endif
+    /* use the FIRST list_count: the decryptor appended at the end has no
+       entry in all_str_count/all_key_idx arrays */
     for (int pi = 0; pi < list_count; pi++) {
         if (all_str_count[pi] > 0) {
+#if STR_DEBUG
+            fprintf(stderr, "[STR] rewrite proto %d: code=%d sizek=%d sites=%d maxstack=%d lineinfo=%d codeptr=%p\n",
+                pi, list[pi]->sizecode, list[pi]->sizek, all_str_count[pi], list[pi]->maxstacksize,
+                list[pi]->sizelineinfo, (void*)list[pi]->code);
+#endif
+            int before_code = list[pi]->sizecode;
+            /* dsname constant lives in the MAIN proto's pool; sub-protos need
+               their own copy so the LOADK/GETTABUP at decrypt sites resolve. */
+            int proto_dsname = (pi == 0) ? dsname_kidx
+                                         : obf_add_k_string(list[pi], g_rndkey, 16);
             total_sites += rewrite_decrypt_sites(L, list[pi],
                 all_str_idx[pi], all_str_count[pi], all_key_idx[pi],
-                dec_idx, dsname_kidx);
+                dec_idx, proto_dsname);
+#if STR_DEBUG
+            fprintf(stderr, "[STR] rewrite proto %d: code %d -> %d (sites %d)\n", pi, before_code, list[pi]->sizecode, all_str_count[pi]);
+#endif
         }
     }
 
@@ -391,7 +463,7 @@ int str_encrypt_process(lua_State *L) {
         free(all_key_idx[pi]);
     }
     free(all_str_idx); free(all_str_count); free(all_key_idx);
-    free(list); free(stk);
+    free(list); free(stk); /* list2 (re-collected) also freed here */
 
     lua_pushinteger(L, total_sites);
     return 1;
