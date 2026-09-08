@@ -6,7 +6,7 @@
 #include <string.h>
 #include "obf_util.h"
 
-#define UPVAL_DEBUG 1
+#define UPVAL_DEBUG 0
 #if UPVAL_DEBUG
 #define DBG(...) fprintf(stderr, __VA_ARGS__)
 #else
@@ -242,7 +242,7 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         DBG("\n");
         /* Dump first 3 blocks instructions for debugging */
         static int dbg_block_count=0;
-        if(1){
+        if(UPVAL_DEBUG){
             dbg_block_count++;
             DBG("[DBG_BLOCK %d] instructions:\n",dbg_block_count);
             for(int _di=start;_di<end;_di++){
