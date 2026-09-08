@@ -43,6 +43,7 @@ const MODULE_GROUPS = [
   { name: '其他', modules: [
     { id: 'debug_strip_c', label: '调试信息剥离', desc: '移除 lineinfo/locvars/upvalue 名' },
     { id: 'antidec_c', label: '反编译对抗', desc: '插入干扰 unluac/luadec 的结构' },
+    { id: 'integrity_check_c', label: '完整性校验', desc: '运行时FNV-1a哈希校验字节码，仅用标准库(debug/string)，篡改则死循环' },
   ]},
   { name: '虚拟机组装', modules: [
     { id: 'vm_embed_c', label: '自包含VM打包', desc: '成品式：把字节码转为纯Lua自包含解释器，零外部依赖，最后执行' },
@@ -58,7 +59,7 @@ const EXEC_ORDER = [
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
   'flatten_enhance_c','debug_strip_c','antidec_c','proto_shuffle_c',
-  'live_range_split_c','op48_junk_c','vm_embed_c'
+  'live_range_split_c','op48_junk_c','integrity_check_c','vm_embed_c'
 ];
 const EXEC_ORDER_MAP = new Map(EXEC_ORDER.map((id,i) => [id, i]));
 function sortModulesForExecution(mods){

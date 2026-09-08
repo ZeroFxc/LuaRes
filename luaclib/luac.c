@@ -57,7 +57,7 @@ char *luac_strndup(const char *s, size_t len) {
     return p;
 }
 
-static void luac_free_proto(luac_Proto *p) {
+void luac_free_proto(luac_Proto *p) {
     if (!p) return;
     int i;
     free(p->code);

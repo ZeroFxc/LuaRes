@@ -77,7 +77,8 @@ static const char *MODULE_LIST =
     "debug_strip_c,"
     "antidec_c,"
     "condition_split_c,"
-    "loop_restructure_c";
+    "loop_restructure_c,"
+    "integrity_check_c";
 
 /*===========================================================================
 ** Helpers

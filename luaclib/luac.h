@@ -108,6 +108,7 @@ char *luac_strndup(const char *s, size_t len);
 ** Proto lifecycle (defined in luac.c)
 **=========================================================================*/
 void luac_push_proto(lua_State *L, luac_Proto *p);
+void luac_free_proto(luac_Proto *p);
 
 /*===========================================================================
 ** Obfuscation module registration
