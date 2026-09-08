@@ -48,6 +48,29 @@ static int process_function(lua_State *L, luac_Proto *p) {
     if (p->sizeupvalues < 1 || !p->upval_name || !p->upval_name[0] ||
         p->upval_name_len[0] != 4 || memcmp(p->upval_name[0], "_ENV", 4) != 0) return 0;
 
+    /* Register budget check MUST happen before any mutation.
+       base_reg sits above every register the code can touch; maxstacksize
+       is normally that high-water mark, but some inputs carry a broken
+       (too small) maxstacksize while the code reaches far higher registers,
+       so scan the code. Skipping here leaves the proto untouched. */
+    int base_reg = p->maxstacksize;
+    int max_reg = -1;
+    for (int i = 0; i < p->sizecode; i++) {
+        unsigned int ins = p->code[i];
+        int op = ins & 0x3F;
+        int a = (ins >> 6) & 0xFF;
+        if (a > max_reg) max_reg = a;
+        if (op != LUAC_OP_JMP && op != LUAC_OP_EXTRAARG &&
+            op != LUAC_OP_FORLOOP && op != LUAC_OP_FORPREP && op != LUAC_OP_TFORLOOP) {
+            int b = (ins >> 23) & 0x1FF;
+            int c = (ins >> 14) & 0x1FF;
+            if (b < 256 && b > max_reg) max_reg = b;
+            if (c < 256 && c > max_reg) max_reg = c;
+        }
+    }
+    if (max_reg + 1 > base_reg) base_reg = max_reg + 1;
+    if (base_reg + 10 > 250) return 0;  /* VAL_REG+1 == base_reg+10 must fit */
+
     /* collect string constant indices */
 #if defined(CONST_HIDE_DEBUG)
     fprintf(stderr, "const_hide: allocating str_idx, sizek=%d, k_tag=%p, k_str=%p\n",
@@ -146,18 +169,20 @@ static int process_function(lua_State *L, luac_Proto *p) {
     fprintf(stderr, "const_hide: original strings nil'd, register allocation\n");
 #endif
 
-    /* register allocation for inline string.sub call */
-    int base_reg = p->maxstacksize;
+    /* register allocation for inline string.sub call (base_reg computed early) */
     int ENV_REG = base_reg;
     int STR_REG = base_reg + 1;
     int SUB_REG = base_reg + 2;
-    int TMP_REG = base_reg + 6;  /* beyond sub_r+3 */
-    int KEY_REG = base_reg + 7;
-    int VAL_REG = base_reg + 8;
+    /* TMP/KEY/VAL must sit beyond sub_r+4 (base_reg+6): emit_sub_call
+       uses base_reg+6 as its own temporary (LOADK sub_r+4), so aliasing
+       TMP_REG with it would clobber a GETUPVAL-loaded upvalue in the
+       GETTABUP/SETTABUP rewrites. */
+    int TMP_REG = base_reg + 7;
+    int KEY_REG = base_reg + 8;
+    int VAL_REG = base_reg + 9;
 #if defined(CONST_HIDE_DEBUG)
     fprintf(stderr, "const_hide: base=%d env=%d str=%d sub=%d tmp=%d key=%d val=%d\n", base_reg, ENV_REG, STR_REG, SUB_REG, TMP_REG, KEY_REG, VAL_REG);
 #endif
-    if (VAL_REG + 1 > 250) { free(str_idx); free(info); return 0; }
     obf_ensure_stack(p, VAL_REG + 1);
 
     /* First pass: build new code, track insertions */

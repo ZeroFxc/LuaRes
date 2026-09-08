@@ -73,7 +73,12 @@ static void decrypt_string(unsigned char *buff, size_t len) {
 
 static char *rd_string(Reader *r, size_t *outlen) {
     size_t size = rd_byte(r);
-    if (size == 0xFF) { size = rd_int(r); }
+    if (size == 0xFF) {
+        /* dumper writes sizeof(size_t) bytes (little-endian), not 4 */
+        size = 0;
+        for (int i = 0; i < (int)sizeof(size_t); i++)
+            size |= ((size_t)rd_byte(r)) << (i * 8);
+    }
     if (size == 0) { *outlen = 0; return strdup(""); }
     size_t len = size - 1;
     unsigned char *raw = malloc(len ? len : 1);
