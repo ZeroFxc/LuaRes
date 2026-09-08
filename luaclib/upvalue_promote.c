@@ -6,7 +6,7 @@
 #include <string.h>
 #include "obf_util.h"
 
-#define UPVAL_DEBUG 0
+#define UPVAL_DEBUG 1
 #if UPVAL_DEBUG
 #define DBG(...) fprintf(stderr, __VA_ARGS__)
 #else
@@ -30,12 +30,13 @@ static int ins_reads_reg(unsigned int ins, int reg) {
             return(B<256&&B==reg)||(C<256&&C==reg);
         case LUAC_OP_UNM:case LUAC_OP_BNOT:case LUAC_OP_NOT:case LUAC_OP_LEN:
             return B==reg;
-        case LUAC_OP_CONCAT: return B==reg||C==reg;
+        case LUAC_OP_CONCAT: return(reg>=B&&reg<=C);
         case LUAC_OP_EQ:case LUAC_OP_LT:case LUAC_OP_LE:
             return(B<256&&B==reg)||(C<256&&C==reg);
         case LUAC_OP_TEST: return A==reg;
         case LUAC_OP_TESTSET: return B==reg;
         case LUAC_OP_CALL:case LUAC_OP_TAILCALL:
+            if(A==reg)return 1;
             if(B<=1)return 0;
             for(int i=0;i<B-1;i++)if(A+1+i==reg)return 1;
             return 0;
@@ -47,7 +48,41 @@ static int ins_reads_reg(unsigned int ins, int reg) {
             return A==reg||A+1==reg||A+2==reg||A+3==reg;
         case LUAC_OP_TFORCALL: return A==reg||A+1==reg||A+2==reg;
         case LUAC_OP_TFORLOOP: return A+1==reg;
-        case LUAC_OP_SETLIST: return A==reg;
+        case LUAC_OP_SETLIST:
+            if(B==0)return 0;
+            return(reg>=A+1&&reg<=A+B);
+        default: return 0;
+    }
+}
+
+/* 活跃变量分析用：是否修改了寄存器的值（既读又写也算修改） */
+static int ins_modifies_reg(unsigned int ins, int reg) {
+    int op=ins&0x3F,A=(ins>>6)&0xFF,B=(ins>>23)&0x1FF,C=(ins>>14)&0x1FF;
+    switch(op){
+        case LUAC_OP_MOVE:case LUAC_OP_LOADK:case LUAC_OP_LOADKX:
+        case LUAC_OP_LOADBOOL:case LUAC_OP_GETUPVAL:case LUAC_OP_GETTABUP:
+        case LUAC_OP_GETTABLE:case LUAC_OP_NEWTABLE:
+        case LUAC_OP_ADD:case LUAC_OP_SUB:case LUAC_OP_MUL:
+        case LUAC_OP_MOD:case LUAC_OP_POW:case LUAC_OP_DIV:
+        case LUAC_OP_IDIV:case LUAC_OP_BAND:case LUAC_OP_BOR:
+        case LUAC_OP_BXOR:case LUAC_OP_SHL:case LUAC_OP_SHR:
+        case LUAC_OP_UNM:case LUAC_OP_BNOT:case LUAC_OP_NOT:
+        case LUAC_OP_LEN:case LUAC_OP_TESTSET:
+        case LUAC_OP_FORLOOP:case LUAC_OP_TFORLOOP:
+        case LUAC_OP_CONCAT:
+            return A==reg; /* 既读又写也算修改了值 */
+        case LUAC_OP_VARARG:
+            if(B<=1)return 0;
+            for(int i=0;i<B-1;i++)if(A+i==reg)return 1;
+            return 0;
+        case LUAC_OP_SELF: return A==reg||A+1==reg;
+        case LUAC_OP_LOADNIL:
+            for(int i=0;i<=B;i++)if(A+i==reg)return 1;
+            return 0;
+        case LUAC_OP_CALL:
+            if(C<=1)return 0;
+            for(int i=0;i<C-1;i++)if(A+i==reg)return 1;
+            return 0;
         default: return 0;
     }
 }
@@ -57,15 +92,27 @@ static int ins_writes_reg(unsigned int ins, int reg) {
     switch(op){
         case LUAC_OP_MOVE:case LUAC_OP_LOADK:case LUAC_OP_LOADKX:
         case LUAC_OP_LOADBOOL:case LUAC_OP_GETUPVAL:case LUAC_OP_GETTABUP:
-        case LUAC_OP_GETTABLE:case LUAC_OP_NEWTABLE:case LUAC_OP_SELF:
+        case LUAC_OP_GETTABLE:case LUAC_OP_NEWTABLE:
+        case LUAC_OP_UNM:case LUAC_OP_BNOT:case LUAC_OP_NOT:
+        case LUAC_OP_LEN:case LUAC_OP_TESTSET:
+        case LUAC_OP_FORLOOP:case LUAC_OP_TFORLOOP:
+            return A==reg;
         case LUAC_OP_ADD:case LUAC_OP_SUB:case LUAC_OP_MUL:
         case LUAC_OP_MOD:case LUAC_OP_POW:case LUAC_OP_DIV:
         case LUAC_OP_IDIV:case LUAC_OP_BAND:case LUAC_OP_BOR:
         case LUAC_OP_BXOR:case LUAC_OP_SHL:case LUAC_OP_SHR:
-        case LUAC_OP_UNM:case LUAC_OP_BNOT:case LUAC_OP_NOT:
-        case LUAC_OP_LEN:case LUAC_OP_CONCAT:case LUAC_OP_TESTSET:
-        case LUAC_OP_FORLOOP:case LUAC_OP_TFORLOOP:case LUAC_OP_VARARG:
+            /* If A is also a source (A==B or A==C), read-before-write, don't count as write */
+            if(reg==A && ((B<256&&B==A)||(C<256&&C==A)))return 0;
             return A==reg;
+        case LUAC_OP_CONCAT:
+            /* CONCAT A B C: R(A)=R(B)....R(C). If A in [B,C], read-before-write, don't count as write */
+            if(reg==A && A>=B && A<=C)return 0;
+            return A==reg;
+        case LUAC_OP_VARARG:
+            if(B<=1)return 0;
+            for(int i=0;i<B-1;i++)if(A+i==reg)return 1;
+            return 0;
+        case LUAC_OP_SELF: return A==reg||A+1==reg;
         case LUAC_OP_LOADNIL:
             for(int i=0;i<=B;i++)if(A+i==reg)return 1;
             return 0;
@@ -95,19 +142,26 @@ static void fix_jumps_replace(unsigned int *code,int code_len,
     int delta=new_len-old_len;
     if(delta==0)return;
     int old_end=start+old_len,new_end=start+new_len;
+    DBG("[FIX] start=%d old_len=%d new_len=%d delta=%d old_end=%d new_end=%d code_len=%d\n",
+        start,old_len,new_len,delta,old_end,new_end,code_len);
     for(int i=0;i<code_len;i++){
         int op=code[i]&0x3F;
         if(op!=LUAC_OP_JMP&&op!=LUAC_OP_FORLOOP&&
            op!=LUAC_OP_FORPREP&&op!=LUAC_OP_TFORLOOP)continue;
-        if(i>=start&&i<new_end)continue;
+        if(i>=start&&i<new_end){DBG("[FIX] skip JMP at %d (inside replace region)\n",i);continue;}
         int old_i=(i<start)?i:i-delta;
         int sbx=(int)(code[i]>>14)-131071;
         int old_target=old_i+sbx+1;
         int new_target;
         if(old_target<=start)new_target=old_target;
         else if(old_target>=old_end)new_target=old_target+delta;
-        else continue;
+        else {DBG("[FIX] SKIP JMP at %d op=%d old_i=%d sbx=%d old_target=%d (target inside region [%d,%d))\n",
+            i,op,old_i,sbx,old_target,start,old_end);continue;}
         int new_sbx=new_target-i-1;
+        if(new_sbx!=sbx){
+            DBG("[FIX] JMP at %d op=%d: old_i=%d sbx=%d->%d target=%d->%d\n",
+                i,op,old_i,sbx,new_sbx,old_target,new_target);
+        }
         code[i]=(code[i]&0x3FFF)|((unsigned int)(new_sbx+131071)<<14);
     }
 }
@@ -136,20 +190,70 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             }
         }
         if(has_call_ret){DBG("[UPVAL] block has call with ret at %d\n",start);pos=end+1;continue;}
-        int defined[256]={0};
-        for(int i=start;i<end;i++)
-            for(int r=0;r<256;r++)
-                if(ins_writes_reg(p->code[i],r))defined[r]=1;
+        /* 块中包含 NEWTABLE 时跳过：表创建必须留在父栈帧，IIFE 不会把表引用传回 */
+        int has_newtable=0;
+        for(int i=start;i<end;i++){
+            if((p->code[i]&0x3F)==LUAC_OP_NEWTABLE){has_newtable=1;break;}
+        }
+        if(has_newtable){DBG("[UPVAL] block has NEWTABLE at %d, skip\n",start);pos=end+1;continue;}
+        /* 活跃变量分析：块中写入的寄存器若在块之后被读取，则跳过（IIFE不会把值传回父栈帧） */
+        int live_after=0;
+        for(int r=0;r<p->maxstacksize && !live_after;r++){
+            int written_in_block=0;
+            for(int i=start;i<end;i++){
+                if(ins_modifies_reg(p->code[i],r)){written_in_block=1;break;}
+            }
+            if(!written_in_block)continue;
+            for(int i=end;i<p->sizecode;i++){
+                if(ins_reads_reg(p->code[i],r)){live_after=1;break;}
+                if(ins_modifies_reg(p->code[i],r))break; /* 被重新赋值，不再依赖块中的值 */
+            }
+        }
+        if(live_after){
+            DBG("[UPVAL] block [%d,%d) has live-out register, skip\n",start,end);
+            /* Find which register is live-out */
+            for(int r=0;r<p->maxstacksize;r++){
+                int written_in_block=0;
+                for(int i=start;i<end;i++){
+                    if(ins_modifies_reg(p->code[i],r)){written_in_block=1;break;}
+                }
+                if(!written_in_block)continue;
+                for(int i=end;i<p->sizecode;i++){
+                    if(ins_reads_reg(p->code[i],r)){DBG("  live-out reg R%d first read at pos %d (op=%d)\n",r,i,p->code[i]&0x3F);break;}
+                    if(ins_modifies_reg(p->code[i],r)){DBG("  reg R%d re-written at pos %d (op=%d) before read\n",r,i,p->code[i]&0x3F);break;}
+                }
+            }
+            pos=end+1;continue;
+        }
+        /* 前向数据流分析：第一次出现是读才算外部变量（处理先读后写） */
         int ext_regs[32],next=0;
         for(int r=0;r<p->maxstacksize;r++){
-            if(defined[r])continue;
-            for(int i=start;i<end;i++)
-                if(ins_reads_reg(p->code[i],r)){
-                    if(next<32)ext_regs[next++]=r;
-                    break;
-                }
+            int first_read=-1,first_write=-1;
+            for(int i=start;i<end;i++){
+                if(first_read<0 && ins_reads_reg(p->code[i],r))first_read=i;
+                if(first_write<0 && ins_writes_reg(p->code[i],r))first_write=i;
+            }
+            if(first_read>=0 && (first_write<0 || first_read<first_write)){
+                if(next<32)ext_regs[next++]=r;
+            }
         }
-        DBG("[UPVAL] block [%d,%d) len=%d maxstack=%d ext_count=%d\n",start,end,end-start,p->maxstacksize,next);
+        DBG("[UPVAL] block [%d,%d) len=%d maxstack=%d ext_count=%d",start,end,end-start,p->maxstacksize,next);
+        for(int _ei=0;_ei<next;_ei++)DBG(" R%d",ext_regs[_ei]);
+        DBG("\n");
+        /* Dump first 3 blocks instructions for debugging */
+        static int dbg_block_count=0;
+        if(1){
+            dbg_block_count++;
+            DBG("[DBG_BLOCK %d] instructions:\n",dbg_block_count);
+            for(int _di=start;_di<end;_di++){
+                unsigned int _ins=p->code[_di];
+                DBG("  [%d] op=%d A=%d B=%d C=%d\n",_di,_ins&0x3F,(_ins>>6)&0xFF,(_ins>>23)&0x1FF,(_ins>>14)&0x1FF);
+            }
+            if(end<p->sizecode){
+                unsigned int _ins=p->code[end];
+                DBG("  [%d] NEXT op=%d A=%d B=%d C=%d\n",end,_ins&0x3F,(_ins>>6)&0xFF,(_ins>>23)&0x1FF,(_ins>>14)&0x1FF);
+            }
+        }
         if(next<=0){pos=end+1;continue;}
         int ext_written=0;
         for(int e=0;e<next;e++)
@@ -232,9 +336,32 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
 
         int proto_idx=add_sub_proto(p,child);
         int old_max=p->maxstacksize;
-        if(old_max+1>250){pos=end+1;continue;}
+        if(old_max+1>250){DBG("[UPVAL] skip: old_max+1>250 at %d\n",start);pos=end+1;continue;}
         int Rtmp=old_max;
         obf_ensure_stack(p,Rtmp+1+child->maxstacksize);
+        DBG("[UPVAL] proto_idx=%d Rtmp=%d child_maxstack=%d parent_maxstack=%d->%d\n",
+            proto_idx,Rtmp,child->maxstacksize,old_max,p->maxstacksize);
+
+        /* dump block before */
+        DBG("[UPVAL] BLOCK BEFORE at [%d,%d):\n",start,end);
+        for(int _di=start;_di<end;_di++){
+            unsigned int _ins=p->code[_di];
+            DBG("  [%d] op=%d A=%d B=%d C=%d\n",_di,_ins&0x3F,(_ins>>6)&0xFF,(_ins>>23)&0x1FF,(_ins>>14)&0x1FF);
+        }
+        for(int di=start;di<end;di++){
+            int dop=p->code[di]&0x3F,dA=(p->code[di]>>6)&0xFF,dB=(p->code[di]>>23)&0x1FF,dC=(p->code[di]>>14)&0x1FF;
+            DBG("  [%d] op=%d A=%d B=%d C=%d\n",di,dop,dA,dB,dC);
+        }
+        /* dump child proto */
+        DBG("[UPVAL] CHILD proto: sizecode=%d maxstack=%d sizek=%d nup=%d\n",
+            child->sizecode,child->maxstacksize,child->sizek,child->sizeupvalues);
+        for(int di=0;di<child->sizecode;di++){
+            int dop=child->code[di]&0x3F,dA=(child->code[di]>>6)&0xFF,dB=(child->code[di]>>23)&0x1FF,dC=(child->code[di]>>14)&0x1FF;
+            DBG("  child[%d] op=%d A=%d B=%d C=%d\n",di,dop,dA,dB,dC);
+        }
+        for(int ui=0;ui<child->sizeupvalues;ui++){
+            DBG("  child upval[%d]: instack=%d idx=%d\n",ui,child->upval_instack[ui],child->upval_idx[ui]);
+        }
 
         int replace_count=2;
         unsigned int *replace=malloc(sizeof(unsigned int)*2);
@@ -256,8 +383,20 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
 
         fix_jumps_replace(p->code,p->sizecode,start,block_len,replace_count);
 
+        /* dump code after replace (first 30 instructions) */
+        DBG("[UPVAL] AFTER replace, sizecode=%d, first 30 ins:\n",p->sizecode);
+        for(int di=0;di<(p->sizecode<30?p->sizecode:30);di++){
+            int dop=p->code[di]&0x3F,dA=(p->code[di]>>6)&0xFF,dB=(p->code[di]>>23)&0x1FF,dC=(p->code[di]>>14)&0x1FF;
+            int dsbx=((p->code[di]>>14)&0x3FFFF)-131071;
+            if(dop==LUAC_OP_JMP||dop==LUAC_OP_FORLOOP||dop==LUAC_OP_FORPREP)
+                DBG("  [%d] op=%d A=%d sbx=%d\n",di,dop,dA,dsbx);
+            else
+                DBG("  [%d] op=%d A=%d B=%d C=%d\n",di,dop,dA,dB,dC);
+        }
+
         changed++;
         pos=start+replace_count+1;
+        DBG("[UPVAL] block done, changed=%d, next pos=%d\n",changed,pos);
     }
     return changed;
 }
@@ -272,8 +411,7 @@ int upvalue_promote_process(lua_State *L){
         lua_pop(L,1);
     }
     int n=0;
-    if(p->p)for(int i=0;i<p->sizep;i++)
-        n+=promote_in_proto(L,p->p[i],count>3?count/2:3);
+    /* 只处理主 proto，不处理子 proto：子 proto 函数体被 IIFE 包装后返回值无法传回 */
     n+=promote_in_proto(L,p,count);
     lua_pushinteger(L,n);
     return 1;
