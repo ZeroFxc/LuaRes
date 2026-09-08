@@ -14,6 +14,7 @@ const MODULE_GROUPS = [
   ]},
   { name: '指令混淆', modules: [
     { id: 'instruction_mutate_c', label: '指令变异', desc: '等价指令替换 (MOVE/LOADK 等)' },
+    { id: 'operator_substitute_c', label: '运算符等价替换', desc: 'ADD/SUB/MUL 替换为位运算/算术等价式' },
     { id: 'table_obfuscate_c', label: '表混淆', desc: 'NEWTABLE/SETTABLE 常量隐藏' },
     { id: 'opaque_predicate_c', label: '不透明谓词', desc: '插入恒真/恒假条件分支' },
     { id: 'const_poison_c', label: '常量投毒', desc: '插入无效常量干扰反编译' },
@@ -43,7 +44,7 @@ const MODULE_GROUPS = [
   { name: '其他', modules: [
     { id: 'debug_strip_c', label: '调试信息剥离', desc: '移除 lineinfo/locvars/upvalue 名' },
     { id: 'antidec_c', label: '反编译对抗', desc: '插入干扰 unluac/luadec 的结构' },
-    { id: 'integrity_check_c', label: '完整性校验', desc: '运行时FNV-1a哈希校验字节码，仅用标准库(debug/string)，篡改则死循环' },
+    { id: 'debug_mutate_c', label: '调试信息变异', desc: '伪造 locvar/upval 名和 lineinfo，不剥离' },
   ]},
   { name: '虚拟机组装', modules: [
     { id: 'vm_embed_c', label: '自包含VM打包', desc: '成品式：把字节码转为纯Lua自包含解释器，零外部依赖，最后执行' },
@@ -54,12 +55,12 @@ const BUILTIN_IDS = new Set(MODULE_GROUPS.flatMap(g => g.modules.map(m => m.id))
 
 // Execution order (matches menu.lua FORWARD_ORDER)
 const EXEC_ORDER = [
-  'const_hide_c','const_shuffle_c','str_encrypt_c','instruction_mutate_c',
+  'const_hide_c','const_shuffle_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c',
   'num_obfuscate_c','str_split_c','bool_obfuscate_c','table_obfuscate_c',
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
-  'flatten_enhance_c','debug_strip_c','antidec_c','proto_shuffle_c',
-  'live_range_split_c','op48_junk_c','integrity_check_c','vm_embed_c'
+  'flatten_enhance_c','debug_strip_c','debug_mutate_c','antidec_c','proto_shuffle_c',
+  'live_range_split_c','op48_junk_c','vm_embed_c'
 ];
 const EXEC_ORDER_MAP = new Map(EXEC_ORDER.map((id,i) => [id, i]));
 function sortModulesForExecution(mods){

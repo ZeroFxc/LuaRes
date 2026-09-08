@@ -32,10 +32,11 @@ int jmp_obfuscate_process(lua_State *L);
 int indirect_call_process(lua_State *L);
 int flatten_enhance_process(lua_State *L);
 int reg_shuffle_process(lua_State *L);
-int integrity_check_process(lua_State *L);
 int proto_shuffle_process(lua_State *L);
 int live_range_split_process(lua_State *L);
 int vm_embed_process(lua_State *L);
+int operator_substitute_process(lua_State *L);
+int debug_mutate_process(lua_State *L);
 
 static int obf_srand_lua(lua_State *L) {
     unsigned int seed = (unsigned int)luaL_checkinteger(L, 1);
@@ -73,10 +74,11 @@ static const luaL_Reg obf_funcs[] = {
     {"indirect_call_c", indirect_call_process},
     {"flatten_enhance_c", flatten_enhance_process},
     {"reg_shuffle_c", reg_shuffle_process},
-    {"integrity_check_c", integrity_check_process},
     {"proto_shuffle_c", proto_shuffle_process},
     {"live_range_split_c", live_range_split_process},
     {"vm_embed_c", vm_embed_process},
+    {"operator_substitute_c", operator_substitute_process},
+    {"debug_mutate_c", debug_mutate_process},
     {"srand", obf_srand_lua},
     {NULL, NULL}
 };

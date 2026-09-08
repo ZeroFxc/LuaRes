@@ -78,7 +78,8 @@ static const char *MODULE_LIST =
     "antidec_c,"
     "condition_split_c,"
     "loop_restructure_c,"
-    "integrity_check_c";
+    "operator_substitute_c,"
+    "debug_mutate_c";
 
 /*===========================================================================
 ** Helpers
