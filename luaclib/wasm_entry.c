@@ -81,7 +81,8 @@ static const char *MODULE_LIST =
     "operator_substitute_c,"
     "debug_mutate_c,"
     "call_rewrite_c,"
-    "upvalue_promote_c";
+    "upvalue_promote_c,"
+    "block_clone_c";
 
 /*===========================================================================
 ** Helpers
