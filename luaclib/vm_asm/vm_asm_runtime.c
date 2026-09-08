@@ -91,7 +91,6 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
     /* ---- call / return ---- */
     vmbuf_printf(&b,
         "  local function docall(a, b, c)\n"
-        "    closeuv(0)\n"
         "    local func = %s[a]\n"
         "    local nargs = (b == 0) and (%s - a - 1) or (b - 1)\n"
         "    local args = {}\n"
