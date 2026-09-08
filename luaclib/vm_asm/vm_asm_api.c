@@ -11,7 +11,6 @@
 char *vm_gen_api(size_t *len) {
     VmBuf b; vmbuf_init(&b);
     vmbuf_puts(&b,
-        "-- Public API (generated)\n"
         "local VM = {}\n\n"
         "function VM.load(chunk, env)\n"
         "  local factory = load_chunk(chunk, env or _G)\n"

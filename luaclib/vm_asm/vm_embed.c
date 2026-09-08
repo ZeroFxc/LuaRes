@@ -261,7 +261,8 @@ char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compa
     buf_put(&out, opts.out, opts.out_len);
     vm_assemble_free(&opts);
 
-    buf_str(&out, "\n-- ===== embedded bytecode =====\n");
+    buf_str(&out, "\n");
+
     buf_str(&out, "local _chunk = \n");
     buf_put(&out, chunk.data, chunk.len);
     free(chunk.data);

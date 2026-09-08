@@ -10,9 +10,6 @@ char *vm_gen_stdlib(int include_debug, size_t *len) {
     VmBuf b; vmbuf_init(&b);
 
     vmbuf_puts(&b,
-        "-- Standard library bridge (generated)\n"
-        "-- VM code runs with host _G as default env, so all stdlib is available.\n"
-        "-- vm_pack_proto: convert luac.undump proto to VM table format\n"
         "local function vm_pack_proto(proto)\n"
         "  local chunk = {\n"
         "    num_params = proto.numparams or 0,\n"
@@ -51,7 +48,6 @@ char *vm_gen_stdlib(int include_debug, size_t *len) {
         "  end\n"
         "  return chunk\n"
         "end\n\n"
-        "-- Additional VM-specific load function:\n"
         "local function vm_load(src, chunkname)\n"
         "  local f, err = load(src, chunkname)\n"
         "  if not f then return nil, err end\n"
@@ -62,7 +58,6 @@ char *vm_gen_stdlib(int include_debug, size_t *len) {
 
     if (include_debug) {
         vmbuf_puts(&b,
-            "-- Debug library bridge\n"
             "local vm_debug = {\n"
             "  traceback = debug.traceback,\n"
             "  getinfo = debug.getinfo,\n"

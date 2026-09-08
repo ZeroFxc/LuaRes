@@ -8,7 +8,6 @@
 char *vm_gen_loader(size_t *len) {
     VmBuf b; vmbuf_init(&b);
     vmbuf_puts(&b,
-        "-- Bytecode table loader (generated)\n"
         "local function load_chunk(chunk, env)\n"
         "  local k = {}\n"
         "  for i, kc in ipairs(chunk.k) do\n"

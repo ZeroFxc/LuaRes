@@ -17,7 +17,6 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
                      int include_coroutine, int luajit_compat, size_t *len) {
     VmBuf b; vmbuf_init(&b);
 
-    vmbuf_puts(&b, "-- Runtime helpers (generated)\n");
     vmbuf_puts(&b,
         "  local function _pack(...)\n"
         "    return {n = select('#', ...), ...}\n"
@@ -171,7 +170,6 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
     /* ---- coroutine support ---- */
     if (include_coroutine) {
         vmbuf_puts(&b,
-            "  -- Coroutine: yield saves frame state, resume restores\n"
             "  local co_state = nil\n"
             "  local function vm_yield(...)\n"
             "    if not co_state then error('attempt to yield from outside a coroutine', 2) end\n"
@@ -186,7 +184,6 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
             "    local args = {...}\n"
             "    if co.status == 'suspended' then\n"
             "      co.frame.pc = co.frame.pc\n"
-            "      -- restore and continue\n"
             "      local ok, err = pcall(function()\n"
             "        execute_restore(co.frame, args)\n"
             "      end)\n"
