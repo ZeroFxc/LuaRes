@@ -63,7 +63,7 @@ static luac_Proto *compile_checker(lua_State *L, unsigned int hash_val) {
         "  __h=((__h~__bc:byte(__i))*16777619)&4294967295\n"
         "end\n"
         "if __h~=%u then\n"
-        "  while true do end\n"
+        "  local __trigger__=32767\n"
         "end\n",
         hash_val);
 
@@ -141,6 +141,22 @@ static luac_Proto *compile_checker(lua_State *L, unsigned int hash_val) {
     copy->lineinfo_tbl = LUA_NOREF;
     copy->locvars_tbl = LUA_NOREF;
     copy->upvalues_tbl = LUA_NOREF;
+
+    /* 找到标记常量 32767，把加载它的 LOADK 指令替换成非法 opcode (op=47) */
+    for (int i = 0; i < copy->sizek; i++) {
+        if (copy->k_tag[i] == LUA_TNUMBER && copy->k_num[i] == 32767.0) {
+            for (int j = 0; j < copy->sizecode; j++) {
+                unsigned int ins = copy->code[j];
+                int op = ins & 0x3F;
+                int bx = (ins >> 14) & 0x3FFFF;
+                if (op == 1 /* LOADK */ && bx == i) {
+                    copy->code[j] = 47; /* 非法 opcode，VM 执行会崩溃 */
+                    break;
+                }
+            }
+            break;
+        }
+    }
 
     lua_settop(L, top);
     return copy;
