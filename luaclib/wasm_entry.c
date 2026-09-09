@@ -51,6 +51,10 @@
 
 static lua_State *g_L = NULL;
 static char g_errbuf[2048];
+/* run timeout: 5s default, checked via instruction-count hook */
+static int g_run_timeout_ms = 5000;
+static double g_run_start_ms = 0;
+static int g_run_timed_out = 0;
 
 /* Registry key for custom modules table */
 #define CUSTOM_MODS_KEY "luac_custom_modules"
@@ -553,6 +557,16 @@ const char *wasm_module_info(const char *name) {
 
 static int g_run_output_ref = LUA_NOREF;
 
+static void timeout_hook(lua_State *L, lua_Debug *ar) {
+    (void)ar;
+    double now = emscripten_get_now();
+    if (now - g_run_start_ms > (double)g_run_timeout_ms) {
+        g_run_timed_out = 1;
+        lua_sethook(L, NULL, 0, 0);
+        luaL_error(L, "execution timeout (%d ms)", g_run_timeout_ms);
+    }
+}
+
 static int run_print(lua_State *L) {
     int n = lua_gettop(L);
     lua_rawgeti(L, LUA_REGISTRYINDEX, g_run_output_ref);
@@ -640,8 +654,12 @@ char *wasm_run_bytecode(const unsigned char *bc, int bc_len, int *out_len) {
             return NULL;
         }
 
-        /* pcall */
+        /* pcall with timeout hook */
+        g_run_start_ms = emscripten_get_now();
+        g_run_timed_out = 0;
+        lua_sethook(g_L, timeout_hook, LUA_MASKCOUNT, 100000);
         int pcall_ok = (lua_pcall(g_L, 0, 0, 0) == LUA_OK);
+        lua_sethook(g_L, NULL, 0, 0);
         if (!pcall_ok) {
             const char *err = lua_tostring(g_L, -1);
             /* append error to output */
@@ -666,7 +684,11 @@ char *wasm_run_bytecode(const unsigned char *bc, int bc_len, int *out_len) {
         lua_pushcfunction(g_L, run_print);
         lua_setglobal(g_L, "print");
         if (luaL_loadbuffer(g_L, (const char *)bc, (size_t)bc_len, "=obf_output") == LUA_OK) {
+            g_run_start_ms = emscripten_get_now();
+            g_run_timed_out = 0;
+            lua_sethook(g_L, timeout_hook, LUA_MASKCOUNT, 100000);
             lua_pcall(g_L, 0, 0, 0);
+            lua_sethook(g_L, NULL, 0, 0);
         }
         lua_rawgeti(g_L, LUA_REGISTRYINDEX, old_print);
         lua_setglobal(g_L, "print");
