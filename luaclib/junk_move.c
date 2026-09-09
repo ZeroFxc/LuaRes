@@ -52,7 +52,10 @@ static void inject_function(luac_Proto *p, int count) {
     }
     if (p->lineinfo) { free(p->lineinfo); p->lineinfo = NULL; }
     p->sizelineinfo = 0;
-    for (int i = 0; i < p->sizep; i++) inject_function(p->p[i], count);
+    for (int i = 0; i < p->sizep; i++) {
+        if (obf_is_decrypt_proto(p->p[i])) continue;  /* skip str_encrypt decryptor */
+        inject_function(p->p[i], count);
+    }
 }
 
 int junk_move_process(lua_State *L) {
