@@ -57,7 +57,17 @@ static int get_sbx(unsigned int ins) {
 /* 设置JMP类指令的sBx */
 static unsigned int set_sbx(unsigned int ins, int sbx) {
     int bx = sbx + 131071;
-    return (ins & 0xFFF) | ((bx & 0x3FFFF) << 14);
+    return (ins & 0x3FFF) | ((bx & 0x3FFFF) << 14);
+}
+
+
+/* Find block containing target position (fallback when target is not a block start,
+   e.g. post-CLOSURE upvalue setup or post-TFORCALL) */
+static int find_block_containing(Block *blocks, int nblocks, int target) {
+    for (int tb = 0; tb < nblocks; tb++) {
+        if (blocks[tb].start <= target && target < blocks[tb].end) return tb;
+    }
+    return -1;
 }
 
 static int cfg_shuffle_process_sub(luac_Proto *p);
@@ -91,9 +101,12 @@ int cfg_shuffle_process(lua_State *L) {
         }
     }
 
-    /* CLOSURE 之后必须紧跟 upvalue 设置指令，不能作为块起始（否则打乱后闭包 upvalue 未设置） */
+    /* CLOSURE(44) 之后必须紧跟 upvalue 设置；TFORCALL(41) 之后必须紧跟 TFORLOOP——不能作为块起始 */
     for (int i = 1; i < p->sizecode; i++) {
-        if (is_start[i] && (p->code[i - 1] & 0x3F) == 44) is_start[i] = 0;
+        if (is_start[i]) {
+            int prev_op = p->code[i - 1] & 0x3F;
+            if (prev_op == 44 || prev_op == 41) is_start[i] = 0;
+        }
     }
 
     /* === 步骤2: 构建块列表 === */
@@ -147,11 +160,11 @@ int cfg_shuffle_process(lua_State *L) {
             int sbx = get_sbx(p->code[last]);
             int target = last + 1 + sbx;
             /* 查找目标块 */
-            for (int tb = 0; tb < nblocks; tb++) {
-                if (blocks[tb].start == target) {
+            {
+                int tb = find_block_containing(blocks, nblocks, target);
+                if (tb >= 0) {
                     blocks[b].jmp_target = tb;
                     blocks[b].succ[blocks[b].nsucc++] = tb;
-                    break;
                 }
             }
             /* 检查是否是条件块(前一条是条件指令) */
@@ -175,11 +188,11 @@ int cfg_shuffle_process(lua_State *L) {
             /* 跳转目标 = 循环体 */
             int sbx = get_sbx(p->code[last]);
             int target = last + 1 + sbx;
-            for (int tb = 0; tb < nblocks; tb++) {
-                if (blocks[tb].start == target) {
+            {
+                int tb = find_block_containing(blocks, nblocks, target);
+                if (tb >= 0) {
                     blocks[b].jmp_target = tb;
                     blocks[b].succ[blocks[b].nsucc++] = tb;
-                    break;
                 }
             }
             /* fall-through = 循环结束后 = 下一块 */
@@ -193,11 +206,11 @@ int cfg_shuffle_process(lua_State *L) {
             /* 总是跳转到循环体(通常是下一块) */
             int sbx = get_sbx(p->code[last]);
             int target = last + 1 + sbx;
-            for (int tb = 0; tb < nblocks; tb++) {
-                if (blocks[tb].start == target) {
+            {
+                int tb = find_block_containing(blocks, nblocks, target);
+                if (tb >= 0) {
                     blocks[b].jmp_target = tb;
                     blocks[b].succ[blocks[b].nsucc++] = tb;
-                    break;
                 }
             }
             /* 无fall-through (总是跳转) */
@@ -348,6 +361,14 @@ static int cfg_shuffle_process_sub(luac_Proto *p) {
         }
     }
 
+    /* CLOSURE(44) 之后必须紧跟 upvalue 设置；TFORCALL(41) 之后必须紧跟 TFORLOOP——不能作为块起始 */
+    for (int i = 1; i < p->sizecode; i++) {
+        if (is_start[i]) {
+            int prev_op = p->code[i - 1] & 0x3F;
+            if (prev_op == 44 || prev_op == 41) is_start[i] = 0;
+        }
+    }
+
     int nblocks = 0;
     for (int i = 0; i < p->sizecode; i++) if (is_start[i]) nblocks++;
     if (nblocks < 3) { free(is_start); return 0; }
@@ -375,11 +396,11 @@ static int cfg_shuffle_process_sub(luac_Proto *p) {
         if (op == 30) {
             int sbx = get_sbx(p->code[last]);
             int target = last + 1 + sbx;
-            for (int tb = 0; tb < nblocks; tb++) {
-                if (blocks[tb].start == target) {
+            {
+                int tb = find_block_containing(blocks, nblocks, target);
+                if (tb >= 0) {
                     blocks[b].jmp_target = tb;
                     blocks[b].succ[blocks[b].nsucc++] = tb;
-                    break;
                 }
             }
             if (last > 0 && is_conditional(p->code[last - 1] & 0x3F)) {
@@ -393,11 +414,11 @@ static int cfg_shuffle_process_sub(luac_Proto *p) {
         } else if (op == 39 || op == 42) {
             int sbx = get_sbx(p->code[last]);
             int target = last + 1 + sbx;
-            for (int tb = 0; tb < nblocks; tb++) {
-                if (blocks[tb].start == target) {
+            {
+                int tb = find_block_containing(blocks, nblocks, target);
+                if (tb >= 0) {
                     blocks[b].jmp_target = tb;
                     blocks[b].succ[blocks[b].nsucc++] = tb;
-                    break;
                 }
             }
             if (b + 1 < nblocks) {
@@ -407,11 +428,11 @@ static int cfg_shuffle_process_sub(luac_Proto *p) {
         } else if (op == 40) {
             int sbx = get_sbx(p->code[last]);
             int target = last + 1 + sbx;
-            for (int tb = 0; tb < nblocks; tb++) {
-                if (blocks[tb].start == target) {
+            {
+                int tb = find_block_containing(blocks, nblocks, target);
+                if (tb >= 0) {
                     blocks[b].jmp_target = tb;
                     blocks[b].succ[blocks[b].nsucc++] = tb;
-                    break;
                 }
             }
         } else {
@@ -454,7 +475,7 @@ static int cfg_shuffle_process_sub(luac_Proto *p) {
             if (blocks[b].fall_succ != next_b) {
                 int target_pos = new_start[blocks[b].fall_succ];
                 int sbx = target_pos - (pos + 1);
-                new_code[pos] = set_sbx(LUAC_ABC(27, 0, 0, 0), sbx);
+                new_code[pos] = set_sbx(LUAC_ABC(30, 0, 0, 0), sbx);
                 pos += 1;
             }
         }
