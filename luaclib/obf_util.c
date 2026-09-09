@@ -115,7 +115,7 @@ void obf_code_insert(luac_Proto *p, int pos, const unsigned int *ins, int n) {
         if ((prev & 0x3F) == 3) {  /* LOADBOOL */
             int c = (prev >> 14) & 0x1FF;
             if (c > 0 && c + n <= 511) {
-                p->code[pos0 - 1] = (prev & 0xFFF83FFF) | ((unsigned int)(c + n) << 14);
+                p->code[pos0 - 1] = (prev & 0xFF803FFF) | ((unsigned int)(c + n) << 14);
             }
         }
     }

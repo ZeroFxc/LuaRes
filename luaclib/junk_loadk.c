@@ -49,7 +49,7 @@ static void inject_function(luac_Proto *p, int count, int depth) {
         if (prev_op == 3) {
             int lc = (p->code[pos-1] >> 14) & 0x1FF;
             if (lc > 0 && lc < 511) {
-                p->code[pos-1] = (p->code[pos-1] & 0xFFF83FFF) | ((unsigned int)(lc + 1) << 14);
+                p->code[pos-1] = (p->code[pos-1] & 0xFF803FFF) | ((unsigned int)(lc + 1) << 14);
             }
         }
         obf_adjust_jumps_insert(p->code, p->sizecode, pos + 1, 1);
