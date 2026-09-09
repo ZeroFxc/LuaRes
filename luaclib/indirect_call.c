@@ -21,12 +21,25 @@ static void obfuscate_function(luac_Proto *p) {
     if (!p->code || p->sizecode < 3) return;
 
     int old_max = p->maxstacksize;
-    int extra = 3; /* tbl, keyreg, spare */
-    if (old_max + extra > 250) extra = 250 - old_max;
-    if (extra < 2) return; /* need at least tbl + keyreg */
-    int tbl_reg = old_max;
-    int key_reg = old_max + 1;
-    obf_ensure_stack(p, old_max + extra);
+    /* 先扫描所有 CALL/TAILCALL，计算最大参数区结束位置，临时寄存器必须在参数区之外，
+       否则插入的 NEWTABLE/LOADK/SETTABLE 会覆盖 CALL 参数值 */
+    int max_arg_end = old_max - 1;
+    for (int i = 0; i < p->sizecode; i++) {
+        int op = p->code[i] & 0x3F;
+        if (op == LUAC_OP_CALL || op == LUAC_OP_TAILCALL) {
+            int a = (p->code[i] >> 6) & 0xFF;
+            int b = (p->code[i] >> 23) & 0x1FF;
+            if (b > 0) {
+                int arg_end = a + b - 1;  /* R[A+1..A+B-1] 最后一个参数 */
+                if (arg_end > max_arg_end) max_arg_end = arg_end;
+            }
+        }
+    }
+    int tmp_base = max_arg_end + 1;
+    int tbl_reg = tmp_base;
+    int key_reg = tmp_base + 1;
+    if (key_reg >= 253) return; /* register overflow (uint8 maxstacksize) */
+    obf_ensure_stack(p, key_reg + 1);
 
     int zero_idx = -1;
     for (int i = 0; i < p->sizek; i++) {
@@ -44,7 +57,9 @@ static void obfuscate_function(luac_Proto *p) {
         if (op == LUAC_OP_CALL || op == LUAC_OP_TAILCALL) {
             if (i > 0 && CONDITION_OPS(p->code[i - 1] & 0x3F)) continue;
             int a = (p->code[i] >> 6) & 0xFF;
+            int b = (p->code[i] >> 23) & 0x1FF;
             if (a >= old_max) continue;
+            if (b == 0) continue; /* B=0: args to top, cannot safely use temp regs */
             call_pos[ncall++] = i;
         }
     }
