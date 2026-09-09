@@ -104,7 +104,7 @@ const fileNameEl = $('fileName'), fileInfo = $('fileInfo');
 const origSizeEl = $('origSize'), modCountEl = $('modCount'), customCountEl = $('customCount');
 const moduleScroll = $('moduleScroll');
 const btnProcess = $('btnProcess'), btnProcessRun = $('btnProcessRun'), btnDownload = $('btnDownload'), btnRun = $('btnRun');
-const btnAll = $('btnAll'), btnNone = $('btnNone'), btnClearLog = $('btnClearLog');
+const btnAll = $('btnAll'), btnNone = $('btnNone'), btnClearLog = $('btnClearLog'), btnDebugLocate = $('btnDebugLocate');
 const logArea = $('logArea'), statusDot = $('statusDot'), statusText = $('statusText');
 const sizeCompare = $('sizeCompare'), sizeBefore = $('sizeBefore'), sizeAfter = $('sizeAfter'), sizeDelta = $('sizeDelta');
 const wasmStatus = $('wasmStatus');
@@ -185,6 +185,7 @@ function renderModules(){
     grpEl.className = 'group';
     grpEl.innerHTML = `
       <div class="group-header" data-gi="${gi}">
+        <input type="checkbox" class="group-check" data-gi="${gi}" title="全选/取消该分类">
         <span>${grp.name}</span>
         <span class="count">${grp.modules.length} 个</span>
       </div>
@@ -244,11 +245,46 @@ function renderModules(){
   // group toggle
   moduleScroll.querySelectorAll('.group-header').forEach(h => {
     h.addEventListener('click', e => {
-      if(e.target.classList.contains('remove-mod')) return;
+      if(e.target.classList.contains('remove-mod') || e.target.classList.contains('group-check')) return;
       const items = h.nextElementSibling;
       items.style.display = items.style.display === 'none' ? '' : 'none';
     });
   });
+
+  // group checkbox: check/uncheck all modules in group
+  moduleScroll.querySelectorAll('.group-check').forEach(gcb => {
+    gcb.addEventListener('change', e => {
+      e.stopPropagation();
+      const gi = parseInt(gcb.dataset.gi);
+      const grp = MODULE_GROUPS[gi];
+      const checked = gcb.checked;
+      grp.modules.forEach(m => {
+        const cb = document.getElementById('mod_' + m.id);
+        if(cb) cb.checked = checked;
+      });
+      saveConfig();
+    });
+  });
+
+  // update group checkbox state when individual module changes
+  function updateGroupCheckboxes(){
+    MODULE_GROUPS.forEach((grp, gi) => {
+      const gcb = document.querySelector('.group-check[data-gi="' + gi + '"]');
+      if(!gcb) return;
+      const mods = grp.modules.map(m => document.getElementById('mod_' + m.id));
+      const checked = mods.filter(cb => cb && cb.checked).length;
+      const total = mods.length;
+      gcb.checked = (checked === total);
+      gcb.indeterminate = (checked > 0 && checked < total);
+    });
+  }
+  // override saveConfig to also update group checkboxes
+  const origSaveConfig = saveConfig;
+  saveConfig = function(){
+    origSaveConfig();
+    updateGroupCheckboxes();
+  };
+  updateGroupCheckboxes();
 
   // remove custom module
   moduleScroll.querySelectorAll('.remove-mod').forEach(el => {
@@ -1343,6 +1379,107 @@ btnNone.addEventListener('click', () => {
 
 // ---- Clear log ----
 btnClearLog.addEventListener('click', () => { logArea.innerHTML = ''; });
+
+// ---- Debug Locate: find which module causes error by disabling one by one ----
+async function runObfuscationWithModules(modIds) {
+  // Temporarily set checkboxes to match modIds, run, then restore
+  const allCbs = moduleScroll.querySelectorAll('input[type=checkbox]');
+  const prevStates = {};
+  allCbs.forEach(cb => { prevStates[cb.value] = cb.checked; cb.checked = modIds.includes(cb.value); });
+  try {
+    const ok = await runObfuscation();
+    if(!ok || !resultBytes) return { ok:false, output:'', error:'obfuscation failed' };
+    // run result
+    const bcPtr = Module._malloc(resultBytes.length);
+    Module.HEAPU8.set(resultBytes, bcPtr);
+    const outLenPtr = Module._malloc(4);
+    const outPtr = Module.ccall('wasm_run_bytecode', 'number', ['number','number','number'], [bcPtr, resultBytes.length, outLenPtr]);
+    const outLen = Module.getValue(outLenPtr, 'i32');
+    Module._free(bcPtr);
+    Module._free(outLenPtr);
+    let output = '';
+    if(outPtr && outLen > 0){
+      output = new TextDecoder().decode(Module.HEAPU8.subarray(outPtr, outPtr + outLen));
+      Module.ccall('wasm_free_output', null, ['number'], [outPtr]);
+    }
+    return { ok:true, output:output, error:'' };
+  } catch(e) {
+    return { ok:false, output:'', error:e.message };
+  } finally {
+    allCbs.forEach(cb => { cb.checked = prevStates[cb.value]; });
+  }
+}
+
+function getModuleLabel(id) {
+  const m = MODULE_GROUPS.flatMap(g => g.modules).find(m => m.id === id);
+  return m ? m.label : id;
+}
+
+btnDebugLocate.addEventListener('click', async () => {
+  if(!fileBytes || !wasmReady){ log('请先加载文件并确保 WASM 就绪', 'warn'); return; }
+  const allMods = sortModulesForExecution(getSelectedModules());
+  if(allMods.length === 0){ log('请至少选择一个模块', 'warn'); return; }
+
+  btnDebugLocate.disabled = true;
+  btnDebugLocate.textContent = '定位中...';
+  log('=== 错误定位开始 (' + allMods.length + ' 个模块) ===', 'info');
+
+  // Step 1: run with all modules as baseline
+  log('[0/0] 基准测试 (全部模块)...', 'info');
+  const baseline = await runObfuscationWithModules(allMods);
+  const baselineOutput = baseline.output;
+  const baselineOk = baseline.ok && !baseline.error;
+  log('  基准输出: ' + (baselineOutput.substring(0, 100).replace(/\n/g, ' | ') || '(无输出)') + (baseline.error ? ' ERROR: ' + baseline.error : ''), baselineOk ? 'ok' : 'err');
+
+  // Step 2: disable one module at a time (reverse order) and run
+  const results = [];
+  for(let i = allMods.length - 1; i >= 0; i--){
+    const disabled = allMods[i];
+    const remaining = allMods.filter((_, idx) => idx !== i);
+    const stepNum = allMods.length - i;
+    log('[' + stepNum + '/' + allMods.length + '] 关闭: ' + getModuleLabel(disabled) + ' ...', 'info');
+    const r = await runObfuscationWithModules(remaining);
+    const outputMatch = r.ok && r.output === baselineOutput;
+    results.push({
+      disabled: disabled,
+      disabledLabel: getModuleLabel(disabled),
+      remaining: remaining,
+      ok: r.ok,
+      error: r.error,
+      output: r.output,
+      outputMatch: outputMatch
+    });
+    const status = outputMatch ? '输出一致' : (r.ok ? '输出变化' : '错误: ' + r.error);
+    log('  结果: ' + status + (r.output && !outputMatch ? ' | 输出: ' + r.output.substring(0, 80).replace(/\n/g, ' | ') : ''), outputMatch ? 'ok' : 'warn');
+  }
+
+  // Step 3: show summary table
+  log('\n=== 错误定位结果 ===', 'info');
+  log('基准输出 (' + baselineOutput.length + ' 字节): ' + baselineOutput.substring(0, 120).replace(/\n/g, ' | '), 'info');
+  log('\n按关闭顺序 (从后往前):', 'info');
+
+  // Find culprit: module whose removal makes output match baseline (if baseline was broken)
+  // Or module whose removal breaks output (if baseline was ok)
+  const culpritCandidates = results.filter(r => r.outputMatch !== baselineOk);
+  if(culpritCandidates.length > 0){
+    log('\n*** 可疑模块 (关闭后状态反转) ***', 'err');
+    culpritCandidates.forEach(r => {
+      log('  - ' + r.disabledLabel + ' (' + r.disabled + '): 关闭后' + (r.outputMatch ? '输出恢复一致' : '输出变化/错误'), 'err');
+    });
+  } else {
+    log('\n未找到单一可疑模块 (可能是多模块交互问题)', 'warn');
+  }
+
+  log('\n完整矩阵:', 'info');
+  results.forEach(r => {
+    const mark = r.outputMatch ? '[一致]' : (r.ok ? '[变化]' : '[错误]');
+    log('  ' + mark + ' 关闭 ' + r.disabledLabel + ' -> ' + (r.remaining.length + ' 模块') + (r.error ? ' ERR: ' + r.error : ''), r.outputMatch ? 'ok' : 'warn');
+  });
+
+  btnDebugLocate.disabled = false;
+  btnDebugLocate.textContent = '错误定位';
+  log('=== 错误定位完成 ===', 'ok');
+});
 
 // ---- Help modal ----
 btnHelp.addEventListener('click', () => { helpModal.classList.add('show'); });

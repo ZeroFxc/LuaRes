@@ -36,6 +36,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f111
 .group-header{background:#0d1117;padding:7px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
 .group-header span{font-size:12px;font-weight:500;color:#c9d1d9}
 .group-header .count{font-size:11px;color:#8b949e}
+.group-check{margin-right:8px;cursor:pointer;accent-color:#58a6ff;width:14px;height:14px;flex-shrink:0}
+.group-check:indeterminate{accent-color:#d29922}
 .group-items{padding:6px 10px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
 .group-items.single{grid-template-columns:1fr}
 .module-item{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:5px;cursor:pointer;transition:background .15s}
@@ -199,6 +201,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f111
       <button class="btn btn-secondary" id="btnEditor" disabled>编辑字节码</button>
       <button class="btn btn-secondary" id="btnDownload" disabled>下载结果</button>
       <button class="btn btn-secondary btn-sm" id="btnClearLog" style="flex:none">清空日志</button>
+      <button class="btn btn-secondary btn-sm" id="btnDebugLocate" style="flex:none" title="逐个关闭模块自动运行，定位导致错误的模块">错误定位</button>
     </div>
     <div class="size-compare" id="sizeCompare" style="display:none">
       <div class="size-item"><div class="label">原始</div><div class="value" id="sizeBefore">0</div></div>
