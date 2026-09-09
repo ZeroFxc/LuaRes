@@ -68,6 +68,9 @@ static int inject_function(luac_Proto *p, int count) {
         if (pos > 0 && (p->code[pos - 1] & 0x3F) == 3 && ((p->code[pos - 1] >> 14) & 0x1FF) > 0) continue;
         int op = p->code[pos] & 0x3F;
         if (op == LUAC_OP_RETURN || op == LUAC_OP_EXTRAARG) continue;
+        /* SETLIST C==0 must be followed by EXTRAARG */
+        if (pos > 0 && (p->code[pos - 1] & 0x3F) == LUAC_OP_SETLIST &&
+            ((p->code[pos - 1] >> 14) & 0x1FF) == 0) continue;
         /* avoid CLOSURE + upvalue setup region */
         if (op == LUAC_OP_CLOSURE) continue;
         if (pos > 0 && (p->code[pos - 1] & 0x3F) == LUAC_OP_CLOSURE) continue;

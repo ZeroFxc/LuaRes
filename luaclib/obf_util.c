@@ -80,8 +80,9 @@ void obf_adjust_jumps_insert(unsigned int *code, int code_len, int pos, int n) {
             int delta = 0;
             /* jump before insertion point, target at/after insertion point -> target shifts +n */
             if (i < pos0 && target >= pos0) delta = n;
-            /* jump after insertion point, target before insertion point -> jump shifted +n, sbx needs -n */
-            else if (i >= pos0 + n && target < pos0) delta = -n;
+            /* jump after insertion point, target before insertion point -> jump shifted +n, sbx needs -n.
+               Note: i is post-insertion position, target = old_target + n, so compare target - n. */
+            else if (i >= pos0 + n && target - n < pos0) delta = -n;
             if (delta) code[i] = (code[i] & 0x3FFF) | ((unsigned int)(sbx + delta + 131071) << 14);
         }
     }
@@ -97,8 +98,9 @@ void obf_adjust_jumps_remove(unsigned int *code, int code_len, int pos, int n) {
             int delta = 0;
             /* jump before removal point, target at/after removed region -> target shifts -n */
             if (i < pos0 && target >= pos0 + n) delta = -n;
-            /* jump after removal point, target before removal point -> jump shifted -n, sbx needs +n */
-            else if (i >= pos0 && target < pos0) delta = n;
+            /* jump after removal point, target before removal point -> jump shifted -n, sbx needs +n.
+               Note: i is post-removal position, target = old_target - n, so compare target + n. */
+            else if (i >= pos0 && target + n < pos0) delta = n;
             if (delta) code[i] = (code[i] & 0x3FFF) | ((unsigned int)(sbx + delta + 131071) << 14);
         }
     }
