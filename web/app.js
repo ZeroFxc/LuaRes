@@ -453,6 +453,18 @@ async function runObfuscation(){
     const loadDbg = Module.ccall('wasm_last_error', 'string', [], []);
     if(loadDbg) log('LOAD_DEBUG: ' + loadDbg, 'info');
 
+    // 统一设置/重置 VM shuffle 全局状态（避免模块遍历重复设置或上次残留）
+    {
+      const rsOn = mods.includes('vm_reg_shuffle_c');
+      const csOn = mods.includes('vm_const_shuffle_c');
+      const rsEl = document.getElementById('rs_seed');
+      const csEl = document.getElementById('cs_seed');
+      const rs = rsOn ? (rsEl ? (parseInt(rsEl.value, 10) || 0) : 0) : -1;
+      const cs = csOn ? (csEl ? (parseInt(csEl.value, 10) || 0) : 0) : -1;
+      Module.ccall('wasm_vm_shuffle_opts', null, ['number','number'], [rs, cs]);
+      log('  VM shuffle状态: reg=' + (rsOn ? ('seed=' + (rs > 0 ? rs : '随机')) : '关') + ' const=' + (csOn ? ('seed=' + (cs > 0 ? cs : '随机')) : '关'), 'info');
+    }
+
     for(let i = 0; i < mods.length; i++){
       const mod = mods[i];
       if(mod === 'vm_embed_c') continue;
@@ -474,12 +486,7 @@ async function runObfuscation(){
         log('  VM分发参数: mode=' + m + ' seed=' + (s > 0 ? s : '随机'), 'info');
       }
       if(mod === 'vm_reg_shuffle_c' || mod === 'vm_const_shuffle_c'){
-        const rsEl = document.getElementById('rs_seed');
-        const csEl = document.getElementById('cs_seed');
-        const rs = rsEl ? (parseInt(rsEl.value, 10) || 0) : 0;
-        const cs = csEl ? (parseInt(csEl.value, 10) || 0) : 0;
-        Module.ccall('wasm_vm_shuffle_opts', null, ['number','number'], [rs, cs]);
-        log('  VM shuffle参数: reg_seed=' + (rs > 0 ? rs : '随机/关') + ' const_seed=' + (cs > 0 ? cs : '随机/关'), 'info');
+        // 全局 seed 已在遍历前统一设置/重置，此处不再重复调用
       }
 
       if(isJs){

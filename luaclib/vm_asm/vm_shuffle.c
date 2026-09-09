@@ -183,24 +183,32 @@ void vm_shuffle_fields(int op, int *a, int *b, int *c, int *bx,
 /* ---------- Lua 入口（与 vm_dispatch_shuffle_c 同模式：设全局，seed=0 随机） ---------- */
 static int vm_reg_shuffle_c(lua_State *L) {
     unsigned int seed = 0;
+    int has_seed = 0;
     if (lua_gettop(L) >= 1 && lua_istable(L, 1)) {
         lua_getfield(L, 1, "seed");
-        if (lua_isnumber(L, -1)) seed = (unsigned int)lua_tointeger(L, -1);
+        if (lua_isnumber(L, -1)) { seed = (unsigned int)lua_tointeger(L, -1); has_seed = 1; }
         lua_pop(L, 1);
     }
-    if (seed == 0) seed = (unsigned int)time(NULL);
-    vm_reg_shuffle_set(seed);
+    if (has_seed && seed > 0) {
+        vm_reg_shuffle_set(seed);
+    } else if (!g_rs_on) {
+        vm_reg_shuffle_set((unsigned int)time(NULL));
+    }
     return 0;
 }
 static int vm_const_shuffle_c(lua_State *L) {
     unsigned int seed = 0;
+    int has_seed = 0;
     if (lua_gettop(L) >= 1 && lua_istable(L, 1)) {
         lua_getfield(L, 1, "seed");
-        if (lua_isnumber(L, -1)) seed = (unsigned int)lua_tointeger(L, -1);
+        if (lua_isnumber(L, -1)) { seed = (unsigned int)lua_tointeger(L, -1); has_seed = 1; }
         lua_pop(L, 1);
     }
-    if (seed == 0) seed = (unsigned int)time(NULL);
-    vm_const_shuffle_set(seed);
+    if (has_seed && seed > 0) {
+        vm_const_shuffle_set(seed);
+    } else if (!g_cs_on) {
+        vm_const_shuffle_set((unsigned int)time(NULL));
+    }
     return 0;
 }
 
