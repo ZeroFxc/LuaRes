@@ -6,6 +6,25 @@
 
 #define CONDITION_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET||(op)==LUAC_OP_LOADKX||(op)==LUAC_OP_TFORCALL||(op)==LUAC_OP_CLOSURE)
 
+/* Check if inserting after instruction at idx is safe.
+   Unsafe positions:
+   - VARARG B=0: following MOVE can clobber vararg output registers
+   - CALL B=0,C=0: following MOVE can clobber all return values
+   - LOADBOOL C>0: inserted instruction must adjust C skip count
+   - TAILCALL: no fall-through, insertion after is dead code (harmless but skip)
+*/
+static int is_safe_insert_pos(luac_Proto *p, int idx) {
+    if (idx < 0 || idx >= p->sizecode) return 0;
+    unsigned int ins = p->code[idx];
+    int op = ins & 0x3F;
+    int b = (ins >> 23) & 0x1FF;
+    int c = (ins >> 14) & 0x1FF;
+    if (op == LUAC_OP_VARARG && b == 0) return 0;
+    if (op == LUAC_OP_CALL && b == 0 && c == 0) return 0;
+    if (op == LUAC_OP_LOADBOOL && c > 0) return 0;
+    return 1;
+}
+
 static void inject_function(luac_Proto *p, int count) {
     if (!p->code || p->sizecode < 2 || count <= 0) return;
     int old_maxstack = p->maxstacksize;
@@ -21,6 +40,7 @@ static void inject_function(luac_Proto *p, int count) {
         int prev_op = p->code[pos-1] & 0x3F;
         if (CONDITION_OPS(prev_op)) continue;
         if (prev_op == 43 && ((p->code[pos-1] >> 14) & 0x1FF) == 0) continue;
+        if (!is_safe_insert_pos(p, pos-1)) continue;
         int a = old_maxstack + (int)(obf_rand() % usable);
         int b = old_maxstack + (int)(obf_rand() % usable);
         p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + 1));
