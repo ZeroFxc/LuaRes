@@ -57,7 +57,7 @@ static const VmOp op_table[] = {
     {"CALL",     36, FMT_ABC,  "top = docall({A},{B},{C}, {R}, {TOP}, execute)", NULL},
     {"TAILCALL", 37, FMT_ABC,  "return dotailcall({A},{B}, {R}, {TOP}, execute)", NULL},
     {"RETURN",   38, FMT_AB,   "return doreturn({A},{B}, {TOP}, {R})", NULL},
-    {"FORLOOP",  39, FMT_AsBx, "{REG:{A}}={REG:{A}}+{REG:{A}+2}; if ({REG:{A}+2}>=0 and {REG:{A}}<={REG:{A}+1}) or ({REG:{A}+2}<0 and {REG:{A}}>={REG:{A}+1}) then {REG:{A}+3}={REG:{A}}; {JMP:{sBx}} end", NULL},
+    {"FORLOOP",  39, FMT_AsBx, "{REG:{A}}={REG:{A}}+{REG:{A}+2}; if ({REG:{A}+2}>0 and {REG:{A}}<={REG:{A}+1}) or ({REG:{A}+2}<=0 and {REG:{A}}>={REG:{A}+1}) then {REG:{A}+3}={REG:{A}}; {JMP:{sBx}} end", NULL},
     {"FORPREP",  40, FMT_AsBx, "{REG:{A}}={REG:{A}}-{REG:{A}+2}; {JMP:{sBx}}", NULL},
     {"TFORCALL", 41, FMT_ABC,  "dotforcall({A},{C}, {R})", NULL},
     {"TFORLOOP", 42, FMT_AsBx, "if {REG:{A}+1}~=nil then {REG:{A}}={REG:{A}+1}; {JMP:{sBx}} end", NULL},
