@@ -164,12 +164,10 @@ int loop_restructure_process(lua_State *L) {
         lua_pop(L, 1);
     }
     int total = wrap_plain_segments(p, max_wraps);
-    /* 子 proto 暂不处理：vm_embed 对子 proto 中插入的 FORPREP/FORLOOP 存在兼容性问题
-       （FORPREP 后 R[A]=0，但 FORLOOP 时 R[A]=nil），根因待查 */
-    /* int sub_max = max_wraps > 1 ? max_wraps / 2 : 1;
+    int sub_max = max_wraps > 1 ? max_wraps / 2 : 1;
     for (int i = 0; i < p->sizep; i++) {
         total += wrap_plain_segments(p->p[i], sub_max);
-    } */
+    }
     obf_invalidate_all_caches(L, p);
     lua_pushinteger(L, total);
     return 1;

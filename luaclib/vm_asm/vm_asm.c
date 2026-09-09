@@ -105,7 +105,8 @@ int vm_assemble(VmAsmOpts *opts) {
         "  local _vac = 0\n"
         "  for i = %s.num_params + 1, _nva do _vac = _vac + 1; _va[_vac] = vararg[i] end\n"
         "  _va.n = _vac\n"
-        "  vararg = _va\n",
+        "  vararg = _va\n"
+        "  top = proto.num_params + (_va.n or 0)\n",
         vPROTO, vR, vK, vPROTO, vPROTO, vUV, vUV, vUV, vUV, vPC, vTOP, vPROTO, vPROTO, vR, vPROTO);
 
 
@@ -202,7 +203,8 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
         "  local _vac = 0\n"
         "  for i = %s.num_params + 1, _nva do _vac = _vac + 1; _va[_vac] = vararg[i] end\n"
         "  _va.n = _vac\n"
-        "  vararg = _va\n",
+        "  vararg = _va\n"
+        "  top = proto.num_params + (_va.n or 0)\n",
         vPROTO, vR, vK, vPROTO, vPROTO, vUV, vUV, vUV, vUV, vPC, vTOP, vPROTO, vPROTO, vR, vPROTO);
 
 
