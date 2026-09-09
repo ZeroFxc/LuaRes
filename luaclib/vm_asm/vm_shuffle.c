@@ -76,18 +76,18 @@ int *vm_make_kmap(unsigned int seed, int sizek) {
    A_REMAP : A 字段是寄存器（1=可 remap）
    B/C_REMAP: 0=非寄存器（数量/标志/upvalue索引/未知扩展），1=寄存器/RK（<256 视为寄存器，>=256 为 RK 常量），2=该格式无此字段（iABx/iAsBx/iAx） */
 static const unsigned char A_REMAP[54] = {
-    1,1,1,1,1,1,1,1,1,1,1,1,1,            /*  0-12 MOVE..SELF */
+    1,1,1,1,1,1,1,1,0,1,1,1,1,            /*  0-12 MOVE..SELF (8 SETTABUP A 是 upvalue 索引) */
     1,1,1,1,1,1,1,1,1,1,1,1,              /* 13-24 ADD..SHR */
     1,1,1,1,1,                             /* 25-29 UNM..CONCAT */
-    0,0,0,0,1,1,1,1,1,1,                   /* 30-39 JMP..FORLOOP (30 JMP A 无意义, 31-33 EQ/LT/LE A 未使用) */
+    0,0,0,0,0,1,1,1,1,1,                   /* 30-39 JMP..FORLOOP (30 JMP A 无意义, 31-33 EQ/LT/LE A 未使用, 34 TEST A 是条件标志) */
     1,1,1,1,1,                             /* 40-44 FORPREP..CLOSURE */
     1,0,                                    /* 45 VARARG, 46 EXTRAARG(iAx) */
     1,1,1,1,1,1,1                          /* 47-53 andlua 扩展 */
 };
 static const unsigned char B_REMAP[54] = {
-    1,2,2,0,0,0,0,1,0,0,1,0,1,             /*  0-12 */
+    1,2,2,0,0,0,0,1,1,0,1,0,1,             /*  0-12 (8 SETTABUP B 是 RK) */
     1,1,1,1,1,1,1,1,1,1,1,1,1,             /* 13-25 */
-    1,1,1,1,2,1,1,1,0,1,0,0,2,             /* 26-38 BNOT..RETURN */
+    1,1,1,1,2,1,1,1,1,1,0,0,2,             /* 26-38 BNOT..RETURN (34 TEST B 是寄存器) */
     2,2,0,2,0,2,0,2,0,0,0,0,0,0,0          /* 39-53 */
 };
 static const unsigned char C_REMAP[54] = {
@@ -112,6 +112,14 @@ void vm_reg_anchor_scan(const unsigned int *code, int ncode,
         unsigned int lo = 0, hi = 0;
         int scan = 0;
         switch (op) {
+            case 30: /* JMP A sBx: A!=0 时关闭 idx>=A-1 的 upvalue，该范围内寄存器必须锚定
+                           (防止 remap 把非循环局部变量映射进关闭范围被错误关闭) */
+                if (a > 0) { lo = a - 1; hi = maxstack; scan = 1; }
+                break;
+            case 4: /* LOADNIL A B: R[A..B]=nil; B<A 时 Lua 语义只 R[A]=nil */
+                lo = a; hi = ((int)b >= (int)a) ? (b + 1) : (a + 1); scan = 1; break;
+            case 29: /* CONCAT A B C: 读 R[B..C] */
+                lo = b; hi = c + 1; scan = 1; break;
             case 12: /* SELF A B C: 写 R[A], R[A+1] */
                 lo = a; hi = a + 2; scan = 1; break;
             case 36: case 37: /* CALL/TAILCALL: 读 R[A..A+B-1] 写 R[A..A+C-2] */
@@ -122,6 +130,8 @@ void vm_reg_anchor_scan(const unsigned int *code, int ncode,
                 lo = a; hi = (b == 0) ? (unsigned int)maxstack : a + b;
                 scan = 1; break;
             case 39: case 40: /* FORLOOP/FORPREP: 控制 R[A..A+2] + 循环变量副本 R[A+3] */
+                lo = a; hi = a + 4; scan = 1; break;
+            case 42: /* TFORLOOP A sBx: 控制 R[A..A+3] (迭代函数+状态+控制变量+返回值) */
                 lo = a; hi = a + 4; scan = 1; break;
             case 41: /* TFORCALL A C: 控制 R[A..A+2] + 返回值 R[A+3..A+3+C-1] */
                 lo = a; hi = a + 3 + ((c > 0) ? (int)c : 1); scan = 1; break;

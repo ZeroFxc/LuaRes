@@ -177,6 +177,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
         vm_reg_anchor_scan(ins_arr, (int)ncode, anchored, maxstacksize, numparams);
         reg_map = vm_make_regmap(rseed, anchored, maxstacksize);
         free(anchored);
+
     }
     int *k_map = NULL;
     if (ctx->const_on && nk > 0) k_map = vm_make_kmap(cseed, (int)nk);
