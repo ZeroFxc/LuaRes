@@ -83,6 +83,9 @@ char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
                       int luajit_compat, unsigned int seed, size_t *len);
 int *vm_dispatch_make_remap(unsigned int seed, int nops);
 void vm_dispatch_set(unsigned int seed, int mode);
+void vm_dispatch_set_explicit(unsigned int seed, int mode);
+void vm_dispatch_reset(void);
+int vm_dispatch_has_explicit(void);
 unsigned int vm_dispatch_get_seed(void);
 int vm_dispatch_get_mode(void);
 char *vm_gen_loader(size_t *len);

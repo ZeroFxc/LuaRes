@@ -186,6 +186,16 @@ function renderModules(){
           <div class="module-item">
             <input type="checkbox" id="mod_${m.id}" value="${m.id}" ${savedSet.has(m.id)?'checked':''}>
             <label for="mod_${m.id}" title="${m.desc}">${m.label}</label>
+            ${m.id === 'vm_dispatch_shuffle_c' ? `
+            <div class="ds-opts" style="margin-top:3px;font-size:11px;color:#8b949e;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <span>分发 <select id="ds_mode" style="font-size:11px;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:4px">
+                <option value="0">switch 有序</option>
+                <option value="1">switch 乱序</option>
+                <option value="2">查表</option>
+                <option value="3">算术槽</option>
+              </select></span>
+              <span>seed <input id="ds_seed" type="number" min="0" value="0" style="width:64px;font-size:11px;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:4px" title="0=每轮随机"></span>
+            </div>` : ''}
           </div>
         `).join('')}
       </div>`;
@@ -443,6 +453,15 @@ async function runObfuscation(){
           ? (customModules.find(m=>m.name===mod)?.label || mod)
           : (MODULE_GROUPS.flatMap(g=>g.modules).find(m=>m.id===mod)?.label || mod));
       setStatus('应用模块 ' + (i+1) + '/' + mods.length + ': ' + label, 'working');
+
+      if(mod === 'vm_dispatch_shuffle_c'){
+        const modeEl = document.getElementById('ds_mode');
+        const seedEl = document.getElementById('ds_seed');
+        const m = modeEl ? (parseInt(modeEl.value, 10) || 0) : 0;
+        const s = seedEl ? (parseInt(seedEl.value, 10) || 0) : 0;
+        Module.ccall('wasm_dispatch_opts', null, ['number','number'], [m, s]);
+        log('  VM分发参数: mode=' + m + ' seed=' + (s > 0 ? s : '随机'), 'info');
+      }
 
       if(isJs){
         const jsMod = jsModules.find(m => m.name === mod);

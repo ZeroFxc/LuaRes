@@ -32,11 +32,23 @@
 /* ---------- global dispatch configuration ---------- */
 static unsigned int g_ds_seed = 0;
 static int g_ds_mode = 0;
+static int g_ds_has_explicit = 0;
 
 void vm_dispatch_set(unsigned int seed, int mode) {
     g_ds_seed = seed;
     g_ds_mode = (mode >= 0 && mode <= 3) ? mode : 0;
 }
+void vm_dispatch_set_explicit(unsigned int seed, int mode) {
+    g_ds_seed = seed;
+    g_ds_mode = (mode >= 0 && mode <= 3) ? mode : 0;
+    g_ds_has_explicit = 1;
+}
+void vm_dispatch_reset(void) {
+    g_ds_seed = 0;
+    g_ds_mode = 0;
+    g_ds_has_explicit = 0;
+}
+int vm_dispatch_has_explicit(void) { return g_ds_has_explicit; }
 unsigned int vm_dispatch_get_seed(void) { return g_ds_seed; }
 int vm_dispatch_get_mode(void) { return g_ds_mode; }
 
@@ -258,8 +270,13 @@ int vm_dispatch_shuffle_process(lua_State *L) {
         if (lua_isnumber(L, -1)) mode = (int)lua_tointeger(L, -1);
         lua_pop(L, 1);
     }
-    if (mode < 0 || mode > 3) mode = 0;
-    if (seed == 0) seed = (unsigned int)time(NULL);  /* each round differs */
-    vm_dispatch_set(seed, mode);
+    if (vm_dispatch_has_explicit()) {
+        seed = vm_dispatch_get_seed();
+        mode = vm_dispatch_get_mode();
+    } else {
+        if (mode < 0 || mode > 3) mode = 0;
+        if (seed == 0) seed = (unsigned int)time(NULL);  /* each round differs */
+        vm_dispatch_set(seed, mode);
+    }
     return 0;
 }

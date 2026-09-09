@@ -132,8 +132,14 @@ int wasm_init(void) {
     /* create custom modules registry table */
     lua_newtable(g_L);
     lua_setfield(g_L, LUA_REGISTRYINDEX, CUSTOM_MODS_KEY);
+    vm_dispatch_reset();  /* clear any previous explicit dispatch opts */
     g_errbuf[0] = '\0';
     return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void wasm_dispatch_opts(int mode, int seed) {
+    vm_dispatch_set_explicit((unsigned int)seed, mode);
 }
 
 EMSCRIPTEN_KEEPALIVE
