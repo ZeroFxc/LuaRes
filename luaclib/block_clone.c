@@ -131,7 +131,7 @@ static int find_blocks(luac_Proto *p, Block **out_blocks) {
 
 static int is_cloneable(luac_Proto *p, int start, int end) {
     int len = end - start + 1;
-    if (len < 2 || len > 15) return 0;
+    if (len < 2 || len > 32) return 0;
 
     for (int i = start; i <= end; i++) {
         int op = p->code[i] & 0x3F;
