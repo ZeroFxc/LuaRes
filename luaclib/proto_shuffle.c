@@ -40,6 +40,9 @@ static int process_function(lua_State *L, luac_Proto *p) {
             lua_newtable(L);
             for (int i = 0; i < n; i++) {
                 luac_push_proto(L, new_p[i]);
+                /* luac_push_proto nulls the source struct's pointers; point
+                   p->p[] at the valid userdata copy instead of the nulled one. */
+                new_p[i] = (luac_Proto *)lua_touserdata(L, -1);
                 lua_rawseti(L, -2, i + 1);
             }
             /* replace old ref */

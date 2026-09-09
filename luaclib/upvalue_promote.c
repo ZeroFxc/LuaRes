@@ -274,16 +274,19 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         /* 复制常量池 */
         if(p->sizek>0){
             free(child->k_tag);free(child->k_str);free(child->k_str_len);
-            free(child->k_num);free(child->k_bool);
+            free(child->k_num);free(child->k_bool);free(child->k_int);
             child->sizek=p->sizek;
             child->k_tag=malloc(sizeof(int)*p->sizek);
             child->k_str=malloc(sizeof(char*)*p->sizek);
             child->k_str_len=malloc(sizeof(int)*p->sizek);
             child->k_num=malloc(sizeof(double)*p->sizek);
             child->k_bool=malloc(sizeof(int)*p->sizek);
+            child->k_int=malloc(sizeof(int64_t)*p->sizek);
             memcpy(child->k_tag,p->k_tag,sizeof(int)*p->sizek);
             memcpy(child->k_num,p->k_num,sizeof(double)*p->sizek);
             memcpy(child->k_bool,p->k_bool,sizeof(int)*p->sizek);
+            if(p->k_int) memcpy(child->k_int,p->k_int,sizeof(int64_t)*p->sizek);
+            else memset(child->k_int,0,sizeof(int64_t)*p->sizek);
             for(int ci=0;ci<p->sizek;ci++){
                 if(p->k_tag[ci]==4&&p->k_str[ci]){
                     child->k_str[ci]=malloc(p->k_str_len[ci]+1);
@@ -303,7 +306,9 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         child->upval_name_len=malloc(sizeof(int)*nup);
         child->upval_instack=malloc(sizeof(unsigned char)*nup);
         child->upval_idx=malloc(sizeof(unsigned char)*nup);
-        child->upval_name[0]="_ENV";child->upval_name_len[0]=4;
+        child->upval_name[0]=malloc(5);
+        memcpy(child->upval_name[0],"_ENV",5);
+        child->upval_name_len[0]=4;
         child->upval_instack[0]=0;child->upval_idx[0]=0;
         for(int i=0;i<next;i++){
             char *nm=malloc(4);

@@ -251,6 +251,7 @@ static int clone_blocks_in_proto(luac_Proto *p, int max_clones) {
     /* Determine high register base and extend stack */
     int high_base = p->maxstacksize;
     int need_extra = 0;
+    int est_new = p->sizecode; /* exact upper bound: clone overhead counted below */
     for (int bi = 0; bi < nblocks; bi++) {
         if (!selected[bi]) continue;
         char input[256] = {0}, output[256] = {0};
@@ -258,6 +259,11 @@ static int clone_blocks_in_proto(luac_Proto *p, int max_clones) {
         analyze_block(p, blocks[bi].start, blocks[bi].end, input, output, &max_reg);
         int extra = max_reg + 2; /* high regs + temp for predicate */
         if (extra > need_extra) need_extra = extra;
+        int n_in = 0, n_out = 0;
+        for (int r = 0; r < 256; r++) { if (input[r]) n_in++; if (output[r]) n_out++; }
+        int blen = blocks[bi].end - blocks[bi].start + 1;
+        /* predicate(3) + original(blen) + merge JMP(1) + input MOVE(n_in) + clone(blen) + output MOVE(n_out) */
+        est_new += 3 + blen + 1 + n_in + blen + n_out;
     }
 
     int new_max = high_base + need_extra;
@@ -265,9 +271,8 @@ static int clone_blocks_in_proto(luac_Proto *p, int max_clones) {
     obf_ensure_stack(p, new_max);
     high_base = p->maxstacksize - need_extra; /* recompute after ensure */
 
-    /* Build new code array */
+    /* Build new code array (est_new is an exact upper bound) */
     int old_n = p->sizecode;
-    int est_new = old_n + nselect * 20; /* generous estimate */
     unsigned int *new_code = (unsigned int *)malloc(sizeof(unsigned int) * est_new);
     int *pos_map = (int *)malloc(sizeof(int) * old_n); /* old_pos -> new_pos */
     int new_n = 0;
