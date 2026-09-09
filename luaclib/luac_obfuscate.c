@@ -16,12 +16,29 @@ static unsigned int make_jmp(int sbx) {
     return LUAC_AsBx(LUAC_OP_JMP, 0, sbx);
 }
 
-static unsigned int random_inst(void) {
-    return (unsigned int)(obf_rand() % 0x100000000u);
+static unsigned int random_inst(int maxstack) {
+    /* Safe garbage: only standard Lua 5.3 opcodes (0-46), registers within
+       [0, maxstack). Never use random 32-bit values: op field may hit
+       luasafe extensions (47-53: SECTION/IS/TRY etc.) which execute and
+       crash, or undefined opcodes (54-63) that confuse downstream modules.
+       Registers must be within maxstacksize or downstream control-flow
+       analysis (luac_flatten etc.) will access out-of-bounds registers. */
+    if (maxstack < 1) maxstack = 1;
+    int choice = obf_rand() % 4;
+    int r1 = obf_rand() % maxstack;
+    int r2 = obf_rand() % maxstack;
+    switch (choice) {
+        case 0: return LUAC_ABC(0, r1, r2, 0);              /* MOVE */
+        case 1: return LUAC_ABC(3, r1, obf_rand() % 2, 0);  /* LOADBOOL */
+        case 2: return LUAC_ABC(4, r1, r1, 0);               /* LOADNIL */
+        default: return LUAC_ABC(0, r1, r1, 0);              /* MOVE same reg (NOP-like) */
+    }
 }
 
 static void handle_code(luac_Proto *p) {
     if (!p->code || p->sizecode == 0) return;
+    /* Ensure enough stack for garbage instruction registers (used by luac_flatten analysis) */
+    if (p->maxstacksize < 64) obf_ensure_stack(p, 64);
     int n = p->sizecode;
 
     /* first pass: compute group sizes and total new length */
@@ -83,10 +100,10 @@ static void handle_code(luac_Proto *p) {
             if (logical) {
                 new_code[ni++] = make_jmp(brush + 1); /* extra JMP for logical */
             } else {
-                new_code[ni++] = random_inst(); /* garbage */
+                new_code[ni++] = random_inst(p->maxstacksize); /* garbage */
             }
             for (int j = 0; j < brush; j++) {
-                new_code[ni++] = random_inst();
+                new_code[ni++] = random_inst(p->maxstacksize);
             }
             i++; /* skip EXTRAARG in the loop */
             continue;
@@ -121,11 +138,11 @@ static void handle_code(luac_Proto *p) {
         if (logical) {
             new_code[ni++] = make_jmp(brush + 1); /* at pos 2: target brush+4 = next group JMP, preserves conditional skip */
         } else {
-            new_code[ni++] = random_inst();
+            new_code[ni++] = random_inst(p->maxstacksize);
         }
         /* brush random garbage */
         for (int j = 0; j < brush; j++) {
-            new_code[ni++] = random_inst();
+            new_code[ni++] = random_inst(p->maxstacksize);
         }
     }
 

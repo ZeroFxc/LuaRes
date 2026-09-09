@@ -7,7 +7,7 @@
 
 static unsigned int make_op48(int multi) {
     int op = 48;
-    if (multi) op = 47 + (int)(obf_rand() % 17); /* 47-63 */
+    if (multi) op = 54 + (int)(obf_rand() % 10); /* 54-63: undefined opcodes, VM ignores; 47-53 are luasafe extensions (SECTION/IS/TRY etc.) that WILL execute */
     int a = 127;
     int b = 256 + (int)(obf_rand() % 256);
     int c = (int)(obf_rand() % 201);
