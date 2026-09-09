@@ -180,9 +180,8 @@ static int rewrite_returns_in_proto(luac_Proto *p) {
             int B = (p->code[i] >> 23) & 0x1FF;
             if (B > 2) {  /* 返回 B-1 个值 (>=2) */
                 int nret = B - 1;
-                if (nret > 20) { i++; continue; }  /* 太多返回值跳过 */
 
-                int kidx[32];
+                int *kidx = malloc(sizeof(int) * nret);
                 for (int k = 0; k < nret; k++)
                     kidx[k] = get_or_add_int(p, (long long)(k + 1));
 
@@ -196,6 +195,7 @@ static int rewrite_returns_in_proto(luac_Proto *p) {
                 }
                 insert_at(p, i, seq, n);
                 free(seq);
+                free(kidx);
                 changed++;
                 i += n + 1;  /* 跳过 RETURN */
                 continue;
