@@ -41,7 +41,12 @@ static unsigned int make_junk_inst(luac_Proto *p, int high_reg, int extra) {
 
 static int inject_function(luac_Proto *p, int count) {
     if (!p->code || p->sizecode < 5 || count <= 0) return 0;
-
+    /* B=0 instructions read to stack top — expanding maxstack injects extra values */
+    for (int _si = 0; _si < p->sizecode; _si++) {
+        int _op = p->code[_si] & 0x3F;
+        if ((_op == 36 || _op == 37 || _op == 38 || _op == 45 || _op == 43) &&
+            ((p->code[_si] >> 23) & 0x1FF) == 0) return 0;
+    }
     int old_maxstack = p->maxstacksize;
     int extra = 12;
     if (old_maxstack + extra > 250) extra = 250 - old_maxstack;
@@ -59,6 +64,8 @@ static int inject_function(luac_Proto *p, int count) {
         attempts++;
         int pos = 1 + (int)(obf_rand() % (p->sizecode - 1));
         if (pos > 0 && CONDITION_OPS(p->code[pos - 1] & 0x3F)) continue;
+        /* LOADBOOL C>0 skips next instruction — inserting JMP here makes junk execute */
+        if (pos > 0 && (p->code[pos - 1] & 0x3F) == 3 && ((p->code[pos - 1] >> 14) & 0x1FF) > 0) continue;
         int op = p->code[pos] & 0x3F;
         if (op == LUAC_OP_RETURN || op == LUAC_OP_EXTRAARG) continue;
         /* avoid CLOSURE + upvalue setup region */
