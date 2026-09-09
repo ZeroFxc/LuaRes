@@ -8,22 +8,32 @@
 static void inject_function(luac_Proto *p, int count) {
     if (!p->code || p->sizecode < 2 || count <= 0) return;
     if (p->is_vararg) return;
-    if (p->maxstacksize < 3) return; /* need at least R0,R1,R2 */
+    if (p->maxstacksize < 4) return; /* need 3 high registers for swap-restore */
 
-    /* deterministic: 2 MOVE save/restore chains using R1 and R2 */
+    /* Use the 3 highest registers as scratch — they are temporaries, never
+       hold parameters or live values at function entry, so corrupting them
+       is safe. Do a full swap(r0,r1) via r2, then swap back — net no-op. */
+    int r0 = p->maxstacksize - 1;
+    int r1 = p->maxstacksize - 2;
+    int r2 = p->maxstacksize - 3;
+
     int chains = 2;
     if (chains > count) chains = count;
-    int n = chains * 2;
+    int n = chains * 6;  /* 6 instructions per swap-restore chain */
 
     p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + n));
     memmove(&p->code[n], &p->code[0], sizeof(unsigned int) * p->sizecode);
 
-    /* chain 0: MOVE R2, R1; MOVE R1, R2 — swap and restore R1/R2 */
-    p->code[0] = LUAC_ABC(LUAC_OP_MOVE, 2, 1, 0);
-    p->code[1] = LUAC_ABC(LUAC_OP_MOVE, 1, 2, 0);
-    /* chain 1: MOVE R2, R1; MOVE R1, R2 — repeat */
-    p->code[2] = LUAC_ABC(LUAC_OP_MOVE, 2, 1, 0);
-    p->code[3] = LUAC_ABC(LUAC_OP_MOVE, 1, 2, 0);
+    int pos = 0;
+    for (int ch = 0; ch < chains; ch++) {
+        /* swap r0,r1 via r2 temp, then swap back = net identity */
+        p->code[pos++] = LUAC_ABC(LUAC_OP_MOVE, r2, r0, 0);  /* r2 = r0 */
+        p->code[pos++] = LUAC_ABC(LUAC_OP_MOVE, r0, r1, 0);  /* r0 = r1 */
+        p->code[pos++] = LUAC_ABC(LUAC_OP_MOVE, r1, r2, 0);  /* r1 = old r0 */
+        p->code[pos++] = LUAC_ABC(LUAC_OP_MOVE, r2, r0, 0);  /* r2 = old r1 */
+        p->code[pos++] = LUAC_ABC(LUAC_OP_MOVE, r0, r1, 0);  /* r0 = old r0 */
+        p->code[pos++] = LUAC_ABC(LUAC_OP_MOVE, r1, r2, 0);  /* r1 = old r1 */
+    }
 
     p->sizecode += n;
 
