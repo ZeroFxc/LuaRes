@@ -140,9 +140,17 @@ static void buf_escape_string(Buf *b, const char *s, size_t len) {
 }
 
 /* ---------- proto 递归解析 + 序列化（已解码常量） ---------- */
-static void serialize_proto(Reader *r, Buf *b, int depth, const int *remap);
+typedef struct {
+    const int *op_remap;   /* dispatch opcode remap or NULL */
+    int reg_on; unsigned int reg_seed;
+    int const_on; unsigned int const_seed;
+    int *idxp;             /* shared proto counter (deterministic per-proto seeds) */
+    const int *parent_reg; /* parent proto reg map (for instack=1 upvalues) */
+} EmbedCtx;
 
-static void serialize_proto(Reader *r, Buf *b, int depth, const int *remap) {
+static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx);
+
+static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     size_t slen;
     char *src = rd_string(r, &slen); free(src);
     rd_int(r); rd_int(r);
@@ -150,71 +158,132 @@ static void serialize_proto(Reader *r, Buf *b, int depth, const int *remap) {
     uint8_t is_vararg = rd_byte(r);
     uint8_t maxstacksize = rd_byte(r);
 
+    uint32_t ncode = rd_int(r);
+    unsigned int *ins_arr = ncode ? malloc(ncode * sizeof(unsigned int)) : NULL;
+    for (uint32_t i = 0; i < ncode; i++) ins_arr[i] = rd_int(r);
+
+    uint32_t nk = rd_int(r);
+
+    /* per-proto deterministic seeds derived from base seed + proto index */
+    int pidx = (*ctx->idxp)++;
+    unsigned int rseed = ctx->reg_seed ^ (unsigned int)(pidx * 2654435761u);
+    unsigned int cseed = ctx->const_seed ^ (unsigned int)(pidx * 2246822519u);
+
+    /* reg map: anchor scan (CALL/SETLIST/VARARG/RETURN/SELF/TFORCALL zones stay
+       in place), non-anchored registers permute */
+    int *reg_map = NULL;
+    if (ctx->reg_on && maxstacksize > 0) {
+        unsigned char *anchored = malloc(maxstacksize);
+        vm_reg_anchor_scan(ins_arr, (int)ncode, anchored, maxstacksize, numparams);
+        reg_map = vm_make_regmap(rseed, anchored, maxstacksize);
+        free(anchored);
+    }
+    int *k_map = NULL;
+    if (ctx->const_on && nk > 0) k_map = vm_make_kmap(cseed, (int)nk);
+
     buf_str(b, "{\n");
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
-    uint32_t ncode = rd_int(r);
-#if VM_EMBED_DEBUG
-    { FILE *df = fopen("_vm_dbg.txt", "a"); fprintf(df, "proto depth=%d pos=%zu ncode=%u", depth, r->pos, ncode); fclose(df); }
-#endif
     buf_str(b, "code={");
     for (uint32_t i = 0; i < ncode; i++) {
-        uint32_t ins = rd_int(r);
-        uint32_t op = ins & 0x3F;
-        if (remap) op = (uint32_t)remap[op];
-        uint32_t a = (ins >> 6) & 0xFF;
-        uint32_t c = (ins >> 14) & 0x1FF;
-        uint32_t bop = (ins >> 23) & 0x1FF;
-        uint32_t bx = ins >> 14;
-        int32_t sbx = (int32_t)bx - 131071;
+        uint32_t ins = ins_arr[i];
+        uint32_t raw_op = ins & 0x3F;
+        uint32_t op = raw_op;
+        if (ctx->op_remap) op = (uint32_t)ctx->op_remap[raw_op];
+        int a = (ins >> 6) & 0xFF;
+        int c = (ins >> 14) & 0x1FF;
+        int bop = (ins >> 23) & 0x1FF;
+        int bx = (int)(ins >> 14);
+        /* 字段语义按原始 opcode 判定（dispatch remap 只改输出编号，不改变字段含义） */
+        vm_shuffle_fields((int)raw_op, &a, &bop, &c, &bx,
+                          reg_map, maxstacksize, k_map, (int)nk);
+        int32_t sbx = bx - 131071;
         char tmp[128];
-        snprintf(tmp, sizeof(tmp), "%s{%u,%u,%u,%u,%u,%d}",
+        snprintf(tmp, sizeof(tmp), "%s{%u,%d,%d,%d,%d,%d}",
                  i ? "," : "", op, a, bop, c, bx, sbx);
         buf_str(b, tmp);
     }
     buf_str(b, "},\n");
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
-    uint32_t nk = rd_int(r);
-#if VM_EMBED_DEBUG
-    { FILE *df = fopen("_vm_dbg.txt", "a"); fprintf(df, " nk=%u pos=%zu", nk, r->pos); fclose(df); }
-#endif
-    buf_str(b, "k={");
+    /* read all constants (stream advances past const area), emit in shuffled order */
+    typedef struct { int t; char *s; size_t sl; double f; int64_t iv; int bv; } KVal;
+    KVal *kvs = nk ? malloc(nk * sizeof(KVal)) : NULL;
     for (uint32_t i = 0; i < nk; i++) {
-        uint8_t t = rd_byte(r);
-        if (i) buf_char(b, ',');
-        switch (t) {
-            case 0: buf_str(b, "nil"); break;
-            case 1: buf_str(b, rd_byte(r) ? "true" : "false"); break;
-            case 3: {
-                double fv = rd_float(r);
-                if (isnan(fv)) { buf_str(b, "(0/0)"); break; }
-                if (isinf(fv)) { buf_str(b, fv > 0 ? "(1/0)" : "(-1/0)"); break; }
-                char tmp[64]; snprintf(tmp, sizeof(tmp), "%.17g", fv);
-                if (!strpbrk(tmp, ".eE") && !strchr(tmp, 'i')) strcat(tmp, ".0");
-                buf_str(b, tmp); break;
+        KVal *kv = &kvs[i];
+        kv->t = rd_byte(r); kv->s = NULL; kv->sl = 0; kv->f = 0; kv->iv = 0; kv->bv = 0;
+        switch (kv->t) {
+            case 0: break;
+            case 1: kv->bv = rd_byte(r); break;
+            case 3: kv->f = rd_float(r); break;
+            case 19: kv->iv = rd_integer(r); break;
+            case 4: case 20: kv->s = rd_string(r, &kv->sl); break;
+            default: break; /* poison/unknown: no payload */
+        }
+    }
+    buf_str(b, "k={");
+    if (k_map) {
+        /* 新表位置 k_map[old] = 原表 old（指令 new=k_map[old] 取新表[k_map[old]]=原表[old] 一致） */
+        KVal **ordered = malloc(nk * sizeof(KVal*));
+        for (uint32_t i = 0; i < nk; i++) ordered[k_map[i]] = &kvs[i];
+        for (uint32_t i = 0; i < nk; i++) {
+            KVal *kv = ordered[i];
+            if (i) buf_char(b, ',');
+            switch (kv->t) {
+                case 0: buf_str(b, "nil"); break;
+                case 1: buf_str(b, kv->bv ? "true" : "false"); break;
+                case 3: {
+                    double fv = kv->f;
+                    if (isnan(fv)) { buf_str(b, "(0/0)"); break; }
+                    if (isinf(fv)) { buf_str(b, fv > 0 ? "(1/0)" : "(-1/0)"); break; }
+                    char tmp[64]; snprintf(tmp, sizeof(tmp), "%.17g", fv);
+                    if (!strpbrk(tmp, ".eE") && !strchr(tmp, 'i')) strcat(tmp, ".0");
+                    buf_str(b, tmp); break;
+                }
+                case 19: {
+                    char tmp[64]; snprintf(tmp, sizeof(tmp), "%lld", (long long)kv->iv);
+                    buf_str(b, tmp); break;
+                }
+                case 4: case 20: buf_escape_string(b, kv->s, kv->sl); break;
+                default: buf_str(b, "nil"); break;
             }
-            case 19: {
-                int64_t iv = rd_integer(r);
-                char tmp[64]; snprintf(tmp, sizeof(tmp), "%lld", (long long)iv);
-                buf_str(b, tmp); break;
+        }
+        free(ordered);
+    } else {
+        for (uint32_t i = 0; i < nk; i++) {
+            KVal *kv = &kvs[i];
+            if (i) buf_char(b, ',');
+            switch (kv->t) {
+                case 0: buf_str(b, "nil"); break;
+                case 1: buf_str(b, kv->bv ? "true" : "false"); break;
+                case 3: {
+                    double fv = kv->f;
+                    if (isnan(fv)) { buf_str(b, "(0/0)"); break; }
+                    if (isinf(fv)) { buf_str(b, fv > 0 ? "(1/0)" : "(-1/0)"); break; }
+                    char tmp[64]; snprintf(tmp, sizeof(tmp), "%.17g", fv);
+                    if (!strpbrk(tmp, ".eE") && !strchr(tmp, 'i')) strcat(tmp, ".0");
+                    buf_str(b, tmp); break;
+                }
+                case 19: {
+                    char tmp[64]; snprintf(tmp, sizeof(tmp), "%lld", (long long)kv->iv);
+                    buf_str(b, tmp); break;
+                }
+                case 4: case 20: buf_escape_string(b, kv->s, kv->sl); break;
+                default: buf_str(b, "nil"); break;
             }
-            case 4: case 20: {
-                size_t sl; char *sv = rd_string(r, &sl);
-                buf_escape_string(b, sv, sl);
-                free(sv); break;
-            }
-            default: buf_str(b, "nil"); break; /* poison/unknown const */
         }
     }
     buf_str(b, "},\n");
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
+    for (uint32_t i = 0; i < nk; i++) free(kvs[i].s);
+    free(kvs);
 
     uint32_t nuv = rd_int(r);
     buf_str(b, "upvalues={");
     for (uint32_t i = 0; i < nuv; i++) {
         uint8_t instack = rd_byte(r);
         uint8_t idx = rd_byte(r);
+        if (instack && ctx->parent_reg) idx = (uint8_t)ctx->parent_reg[idx];
         char tmp[64];
         snprintf(tmp, sizeof(tmp), "%s{instack=%d,idx=%d}", i ? "," : "", instack, idx);
         buf_str(b, tmp);
@@ -223,13 +292,12 @@ static void serialize_proto(Reader *r, Buf *b, int depth, const int *remap) {
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
     uint32_t np = rd_int(r);
-#if VM_EMBED_DEBUG
-    { FILE *df = fopen("_vm_dbg.txt", "a"); fprintf(df, " np=%u pos=%zu\n", np, r->pos); fclose(df); }
-#endif
     buf_str(b, "p={");
+    EmbedCtx sub = *ctx;
+    sub.parent_reg = reg_map; /* children's instack=1 upvalues refer to OUR frame */
     for (uint32_t i = 0; i < np; i++) {
-        if (i) buf_str(b, ",");
-        serialize_proto(r, b, depth + 1, remap);
+        if (i) buf_char(b, ',');
+        serialize_proto(r, b, depth + 1, &sub);
     }
     buf_str(b, "},\n");
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
@@ -239,15 +307,19 @@ static void serialize_proto(Reader *r, Buf *b, int depth, const int *remap) {
              numparams, is_vararg, maxstacksize);
     buf_str(b, tmp);
 
+    free(k_map);
+    free(reg_map);
+    free(ins_arr);
+
     uint32_t nline = rd_int(r); r->pos += nline * 4;
     uint32_t nloc = rd_int(r);
     for (uint32_t i = 0; i < nloc; i++) {
-        char *s = rd_string(r, &slen); free(s);
+        char *sv = rd_string(r, &slen); free(sv);
         rd_int(r); rd_int(r);
     }
     uint32_t nupn = rd_int(r);
     for (uint32_t i = 0; i < nupn; i++) {
-        char *s = rd_string(r, &slen); free(s);
+        char *sv = rd_string(r, &slen); free(sv);
     }
 }
 
@@ -275,8 +347,19 @@ char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compa
     { FILE *df = fopen("_vm_dbg.txt", "w"); fprintf(df, "bc[0]=0x%02X encrypted=%d bc_len=%zu dmode=%d dseed=%u\n", bc[0], r.encrypted, bc_len, dmode, dseed); fclose(df); }
 #endif
 
+    EmbedCtx ctx = {0};
+    ctx.op_remap = remap;
+    ctx.reg_on = vm_reg_shuffle_enabled();
+    ctx.reg_seed = vm_reg_shuffle_get_seed();
+    ctx.const_on = vm_const_shuffle_enabled();
+    ctx.const_seed = vm_const_shuffle_get_seed();
+    if (ctx.reg_on && ctx.reg_seed == 0) { ctx.reg_seed = (unsigned int)time(NULL); vm_reg_shuffle_set(ctx.reg_seed); }
+    if (ctx.const_on && ctx.const_seed == 0) { ctx.const_seed = (unsigned int)time(NULL); vm_const_shuffle_set(ctx.const_seed); }
+    int pidx = 0;
+    ctx.idxp = &pidx;
+
     Buf chunk; buf_init(&chunk);
-    serialize_proto(&r, &chunk, 1, remap);
+    serialize_proto(&r, &chunk, 1, &ctx);
     if (remap) { free(remap); remap = NULL; }
 
     VmAsmOpts opts = {0};

@@ -84,7 +84,9 @@ static const char *MODULE_LIST =
     "upvalue_promote_c,"
     "block_clone_c,"
     "cfg_shuffle_c,"
-    "vm_dispatch_shuffle_c";
+    "vm_dispatch_shuffle_c,"
+    "vm_reg_shuffle_c,"
+    "vm_const_shuffle_c";
 
 /*===========================================================================
 ** Helpers
@@ -133,6 +135,8 @@ int wasm_init(void) {
     lua_newtable(g_L);
     lua_setfield(g_L, LUA_REGISTRYINDEX, CUSTOM_MODS_KEY);
     vm_dispatch_reset();  /* clear any previous explicit dispatch opts */
+    vm_reg_shuffle_reset();
+    vm_const_shuffle_reset();
     g_errbuf[0] = '\0';
     return 0;
 }
@@ -140,6 +144,14 @@ int wasm_init(void) {
 EMSCRIPTEN_KEEPALIVE
 void wasm_dispatch_opts(int mode, int seed) {
     vm_dispatch_set_explicit((unsigned int)seed, mode);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void wasm_vm_shuffle_opts(int reg_seed, int const_seed) {
+    if (reg_seed >= 0) vm_reg_shuffle_set((unsigned int)reg_seed);
+    else vm_reg_shuffle_reset();
+    if (const_seed >= 0) vm_const_shuffle_set((unsigned int)const_seed);
+    else vm_const_shuffle_reset();
 }
 
 EMSCRIPTEN_KEEPALIVE

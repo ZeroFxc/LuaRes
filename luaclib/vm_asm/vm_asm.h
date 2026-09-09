@@ -11,6 +11,9 @@
 
 #include <stddef.h>
 
+/* Lua state (forward decl; lua.h included by consuming units via obf_util.h) */
+typedef struct lua_State lua_State;
+
 /* Operand formats */
 enum {
     FMT_ABC  = 0,
@@ -59,6 +62,25 @@ char *vmbuf_detach(VmBuf *b, size_t *out_len);
 /* RNG */
 void vm_srand(unsigned int seed);
 unsigned int vm_rand(void);
+
+/* vm_shuffle: VM 内部名空间重映射 (reg/const) */
+void vm_reg_shuffle_set(unsigned int seed);
+void vm_reg_shuffle_reset(void);
+int vm_reg_shuffle_enabled(void);
+unsigned int vm_reg_shuffle_get_seed(void);
+void vm_const_shuffle_set(unsigned int seed);
+void vm_const_shuffle_reset(void);
+int vm_const_shuffle_enabled(void);
+unsigned int vm_const_shuffle_get_seed(void);
+int *vm_make_perm(unsigned int seed, int n);
+int *vm_make_kmap(unsigned int seed, int sizek);
+void vm_reg_anchor_scan(const unsigned int *code, int ncode,
+                        unsigned char *anchored, int maxstack, int numparams);
+int *vm_make_regmap(unsigned int seed, const unsigned char *anchored, int maxstack);
+void vm_shuffle_fields(int op, int *a, int *b, int *c, int *bx,
+                       const int *reg_map, int maxstack,
+                       const int *k_map, int sizek);
+int vm_shuffle_register(lua_State *L);
 
 /* Identifier generator */
 void vm_gen_id(char *buf, int len);

@@ -42,6 +42,7 @@ int upvalue_promote_process(lua_State *L);
 int block_clone_process(lua_State *L);
 int cfg_shuffle_process(lua_State *L);
 int vm_dispatch_shuffle_process(lua_State *L);
+int vm_shuffle_register(lua_State *L);
 
 static int obf_srand_lua(lua_State *L) {
     unsigned int seed = (unsigned int)luaL_checkinteger(L, 1);
@@ -99,4 +100,8 @@ void luac_register_obfuscators(lua_State *L, int table_idx) {
         lua_pushcfunction(L, f->func);
         lua_setfield(L, abs_idx, f->name);
     }
+    /* vm_reg_shuffle_c / vm_const_shuffle_c: expect table on top */
+    lua_pushvalue(L, abs_idx);
+    vm_shuffle_register(L);
+    lua_pop(L, 1);
 }
