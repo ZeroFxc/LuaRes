@@ -66,6 +66,9 @@ static int encrypt_strings_only(luac_Proto *p, int *str_idx, int str_count,
         p->k_tag[idx] = LUA_TSHRSTR;
         /* store key as integer constant */
         enc_key_idx[idx] = obf_add_k_integer(p, (long long)key);
+#if STR_DEBUG
+        fprintf(stderr, "[ENC] idx=%d key=%d enc_key_idx=%d k_num[%d]=%lld\n", idx, key, enc_key_idx[idx], enc_key_idx[idx], (long long)p->k_num[enc_key_idx[idx]]);
+#endif
         count++;
     }
     return count;
@@ -108,10 +111,16 @@ static int rewrite_decrypt_sites(lua_State *L, luac_Proto *p,
     int func_reg = base;
     int enc_reg = base + 1;
     int key_reg = base + 2;
-    int res1_reg = base + 3;
-    int res2_reg = base + 4;
-    int table_reg = base + 5;
-    obf_ensure_stack(p, base + 6);
+    /* decryptor function uses ~10 registers starting at func_reg; res1/res2/table
+       must be above that range or they get clobbered by the CALL. */
+    int res1_reg = base + 20;
+    int res2_reg = base + 21;
+    int table_reg = base + 22;
+    obf_ensure_stack(p, base + 23);
+#if STR_DEBUG
+    fprintf(stderr, "[REGS] base=%d func=%d enc=%d key=%d res1=%d res2=%d table=%d maxstack=%d\n",
+        base, func_reg, enc_reg, key_reg, res1_reg, res2_reg, table_reg, p->maxstacksize);
+#endif
 
     /* max 8 insns per site (LOADK+LOADK+GETTABUP+CALL for simple, more for SETTABLE) */
     int max_new = p->sizecode + site_count * 10 + 64;
