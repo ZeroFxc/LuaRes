@@ -307,7 +307,7 @@ function renderModules(){
 }
 
 function getSelectedModules(){
-  return Array.from(moduleScroll.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+  return Array.from(moduleScroll.querySelectorAll('input[type=checkbox]:checked:not(.group-check)')).map(cb => cb.value);
 }
 
 // ---- Custom modules ----
