@@ -12,10 +12,16 @@ static void inject_function(luac_Proto *p, int count, int depth) {
        stack top — expanding maxstack injects junk register values. Skip such functions. */
     for (int _si = 0; _si < p->sizecode; _si++) {
         int _op = p->code[_si] & 0x3F;
-        if ((_op == 36 || _op == 37 || _op == 38 || _op == 45 || _op == 43) &&
-            ((p->code[_si] >> 23) & 0x1FF) == 0) {
-            if (p->p) for (int i = 0; i < p->sizep; i++)
-                inject_function(p->p[i], count, depth > 0 ? depth-1 : 0);
+        int _b = (p->code[_si] >> 23) & 0x1FF;
+        int _c = (p->code[_si] >> 14) & 0x1FF;
+        /* B=0: VARARG/CALL/TAILCALL/RETURN/SETLIST use stack top */
+        if ((_op == 36 || _op == 37 || _op == 38 || _op == 45 || _op == 43) && _b == 0) {
+            if (p->p) for (int i = 0; i < p->sizep; i++) { if (obf_is_decrypt_proto(p->p[i])) continue; inject_function(p->p[i], count, depth > 0 ? depth-1 : 0); }
+            return;
+        }
+        /* C=0 CALL/TAILCALL: all return values stored R(A)..top, can overlap high regs */
+        if ((_op == 36 || _op == 37) && _c == 0) {
+            if (p->p) for (int i = 0; i < p->sizep; i++) { if (obf_is_decrypt_proto(p->p[i])) continue; inject_function(p->p[i], count, depth > 0 ? depth-1 : 0); }
             return;
         }
     }
@@ -57,7 +63,7 @@ static void inject_function(luac_Proto *p, int count, int depth) {
     }
     if (p->lineinfo) { free(p->lineinfo); p->lineinfo = NULL; }
     p->sizelineinfo = 0;
-    if (depth > 0) { for (int i = 0; i < p->sizep; i++) inject_function(p->p[i], count, depth-1); }
+    if (depth > 0) { for (int i = 0; i < p->sizep; i++) { if (obf_is_decrypt_proto(p->p[i])) continue; inject_function(p->p[i], count, depth-1); } }
 }
 
 int junk_loadk_process(lua_State *L) {
