@@ -104,7 +104,7 @@ const fileNameEl = $('fileName'), fileInfo = $('fileInfo');
 const origSizeEl = $('origSize'), modCountEl = $('modCount'), customCountEl = $('customCount');
 const moduleScroll = $('moduleScroll');
 const btnProcess = $('btnProcess'), btnProcessRun = $('btnProcessRun'), btnDownload = $('btnDownload'), btnRun = $('btnRun');
-const btnAll = $('btnAll'), btnNone = $('btnNone'), btnClearLog = $('btnClearLog'), btnDebugLocate = $('btnDebugLocate');
+const btnAll = $('btnAll'), btnNone = $('btnNone'), btnClearLog = $('btnClearLog'), btnDebugLocate = $('btnDebugLocate'), btnDebugLocateCum = $('btnDebugLocateCum');
 const logArea = $('logArea'), statusDot = $('statusDot'), statusText = $('statusText');
 const sizeCompare = $('sizeCompare'), sizeBefore = $('sizeBefore'), sizeAfter = $('sizeAfter'), sizeDelta = $('sizeDelta');
 const wasmStatus = $('wasmStatus');
@@ -1437,7 +1437,9 @@ btnDebugLocate.addEventListener('click', async () => {
     const disabled = allMods[i];
     const remaining = allMods.filter((_, idx) => idx !== i);
     const stepNum = allMods.length - i;
-    log('[' + stepNum + '/' + allMods.length + '] 关闭: ' + getModuleLabel(disabled) + ' ...', 'info');
+    const progress = Math.round((stepNum / allMods.length) * 100);
+    log('[' + stepNum + '/' + allMods.length + '] (' + progress + '%) 关闭: ' + getModuleLabel(disabled) + ' ...', 'info');
+    btnDebugLocate.textContent = '定位中 ' + progress + '%';
     const r = await runObfuscationWithModules(remaining);
     const outputMatch = r.ok && r.output === baselineOutput;
     results.push({
@@ -1479,6 +1481,79 @@ btnDebugLocate.addEventListener('click', async () => {
   btnDebugLocate.disabled = false;
   btnDebugLocate.textContent = '错误定位';
   log('=== 错误定位完成 ===', 'ok');
+});
+
+// ---- Cumulative debug locate: disable modules one by one without restoring ----
+btnDebugLocateCum.addEventListener('click', async () => {
+  if(!fileBytes || !wasmReady){ log('请先加载文件并确保 WASM 就绪', 'warn'); return; }
+  const allMods = sortModulesForExecution(getSelectedModules());
+  if(allMods.length === 0){ log('请至少选择一个模块', 'warn'); return; }
+
+  btnDebugLocateCum.disabled = true;
+  btnDebugLocateCum.textContent = '定位中...';
+  log('=== 累积定位开始 (' + allMods.length + ' 个模块) ===', 'info');
+  log('方法: 从后往前累积关闭模块不恢复，定位最少需关闭哪些模块使状态反转', 'info');
+
+  // Step 1: baseline with all modules
+  log('[0/' + allMods.length + '] 基准测试 (全部模块)...', 'info');
+  const baseline = await runObfuscationWithModules(allMods);
+  const baselineOutput = baseline.output;
+  const baselineOk = baseline.ok && !baseline.error;
+  log('  基准输出: ' + (baselineOutput.substring(0, 100).replace(/\n/g, ' | ') || '(无输出)') + (baseline.error ? ' ERROR: ' + baseline.error : ''), baselineOk ? 'ok' : 'err');
+
+  // Step 2: cumulatively disable modules (reverse order), do NOT restore
+  const results = [];
+  const disabledSoFar = [];
+  for(let i = allMods.length - 1; i >= 0; i--){
+    const disabled = allMods[i];
+    disabledSoFar.push(disabled);
+    const remaining = allMods.filter(m => !disabledSoFar.includes(m));
+    const stepNum = allMods.length - i;
+    const progress = Math.round((stepNum / allMods.length) * 100);
+    log('[' + stepNum + '/' + allMods.length + '] (' + progress + '%) 累积关闭: ' + getModuleLabel(disabled) + ' (剩余 ' + remaining.length + ' 模块)...', 'info');
+    btnDebugLocateCum.textContent = '定位中 ' + progress + '%';
+
+    const r = await runObfuscationWithModules(remaining);
+    const outputMatch = r.ok && r.output === baselineOutput;
+    results.push({
+      disabled: disabled,
+      disabledLabel: getModuleLabel(disabled),
+      disabledCount: disabledSoFar.length,
+      remainingLabels: remaining.map(m => getModuleLabel(m)),
+      ok: r.ok,
+      error: r.error,
+      output: r.output,
+      outputMatch: outputMatch
+    });
+    const status = outputMatch ? '输出一致' : (r.ok ? '输出变化' : '错误: ' + r.error);
+    log('  结果: ' + status + (r.output && !outputMatch ? ' | 输出: ' + r.output.substring(0, 80).replace(/\n/g, ' | ') : ''), outputMatch ? 'ok' : 'warn');
+  }
+
+  // Step 3: summary
+  log('\n=== 累积定位结果 ===', 'info');
+  log('基准输出 (' + baselineOutput.length + ' 字节): ' + baselineOutput.substring(0, 120).replace(/\n/g, ' | '), 'info');
+
+  // Find first point where output state changed relative to baseline
+  const firstChange = results.find(r => r.outputMatch !== baselineOk);
+  if(firstChange){
+    log('\n*** 关键转折点 (关闭到此处状态首次反转) ***', 'err');
+    log('  触发模块: ' + firstChange.disabledLabel + ' (' + firstChange.disabled + ')', 'err');
+    log('  累计关闭 ' + firstChange.disabledCount + ' 个模块:', 'err');
+    const cumLabels = disabledSoFar.slice(0, firstChange.disabledCount).map(m => getModuleLabel(m));
+    log('    ' + cumLabels.join(', '), 'err');
+  } else {
+    log('\n未找到转折点 (关闭全部模块后状态仍与基准一致)', 'warn');
+  }
+
+  log('\n完整矩阵:', 'info');
+  results.forEach(r => {
+    const mark = r.outputMatch ? '[一致]' : (r.ok ? '[变化]' : '[错误]');
+    log('  ' + mark + ' 关闭 ' + r.disabledLabel + ' (累计' + r.disabledCount + '个) -> 剩余' + (allMods.length - r.disabledCount) + '模块' + (r.error ? ' ERR: ' + r.error : ''), r.outputMatch ? 'ok' : 'warn');
+  });
+
+  btnDebugLocateCum.disabled = false;
+  btnDebugLocateCum.textContent = '累积定位';
+  log('=== 累积定位完成 ===', 'ok');
 });
 
 // ---- Help modal ----
