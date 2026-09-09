@@ -91,6 +91,11 @@ int cfg_shuffle_process(lua_State *L) {
         }
     }
 
+    /* CLOSURE 之后必须紧跟 upvalue 设置指令，不能作为块起始（否则打乱后闭包 upvalue 未设置） */
+    for (int i = 1; i < p->sizecode; i++) {
+        if (is_start[i] && (p->code[i - 1] & 0x3F) == 44) is_start[i] = 0;
+    }
+
     /* === 步骤2: 构建块列表 === */
     int nblocks = 0;
     for (int i = 0; i < p->sizecode; i++) {
