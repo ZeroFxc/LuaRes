@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
+#include <time.h>
 
 /* Debug macro: compile with -DVM_EMBED_DEBUG=1 to enable */
 #ifndef VM_EMBED_DEBUG
@@ -139,9 +140,9 @@ static void buf_escape_string(Buf *b, const char *s, size_t len) {
 }
 
 /* ---------- proto 递归解析 + 序列化（已解码常量） ---------- */
-static void serialize_proto(Reader *r, Buf *b, int depth);
+static void serialize_proto(Reader *r, Buf *b, int depth, const int *remap);
 
-static void serialize_proto(Reader *r, Buf *b, int depth) {
+static void serialize_proto(Reader *r, Buf *b, int depth, const int *remap) {
     size_t slen;
     char *src = rd_string(r, &slen); free(src);
     rd_int(r); rd_int(r);
@@ -160,6 +161,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth) {
     for (uint32_t i = 0; i < ncode; i++) {
         uint32_t ins = rd_int(r);
         uint32_t op = ins & 0x3F;
+        if (remap) op = (uint32_t)remap[op];
         uint32_t a = (ins >> 6) & 0xFF;
         uint32_t c = (ins >> 14) & 0x1FF;
         uint32_t bop = (ins >> 23) & 0x1FF;
@@ -227,7 +229,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth) {
     buf_str(b, "p={");
     for (uint32_t i = 0; i < np; i++) {
         if (i) buf_str(b, ",");
-        serialize_proto(r, b, depth + 1);
+        serialize_proto(r, b, depth + 1, remap);
     }
     buf_str(b, "},\n");
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
@@ -257,19 +259,33 @@ char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compa
         return NULL;
     }
 
+    /* dispatch shuffle: enabled via vm_dispatch_shuffle_c / vm_dispatch_set */
+    int dmode = vm_dispatch_get_mode();
+    unsigned int dseed = vm_dispatch_get_seed();
+    int dnops; vm_op_table(&dnops);
+    int *remap = NULL;
+    if (dmode > 0) {
+        if (dseed == 0) { dseed = (unsigned int)time(NULL); vm_dispatch_set(dseed, dmode); }
+        remap = vm_dispatch_make_remap(dseed, dnops);
+    }
+
     Reader r = { bc, 0, bc_len, (bc[0] == 0x1A) ? 1 : 0 };
     r.pos = 34;
 #if VM_EMBED_DEBUG
-    { FILE *df = fopen("_vm_dbg.txt", "w"); fprintf(df, "bc[0]=0x%02X encrypted=%d bc_len=%zu\n", bc[0], r.encrypted, bc_len); fclose(df); }
+    { FILE *df = fopen("_vm_dbg.txt", "w"); fprintf(df, "bc[0]=0x%02X encrypted=%d bc_len=%zu dmode=%d dseed=%u\n", bc[0], r.encrypted, bc_len, dmode, dseed); fclose(df); }
 #endif
 
     Buf chunk; buf_init(&chunk);
-    serialize_proto(&r, &chunk, 1);
+    serialize_proto(&r, &chunk, 1, remap);
+    if (remap) { free(remap); remap = NULL; }
 
     VmAsmOpts opts = {0};
     opts.include_coroutine = 1;
     opts.include_debug = 0;
     opts.luajit_compat = luajit_compat;
+    opts.dispatch_mode = dmode;
+    opts.remap = (dmode > 0);
+    opts.seed = dseed;
     if (vm_assemble_runtime(&opts) != 0) {
         free(chunk.data);
         return NULL;

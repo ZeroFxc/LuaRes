@@ -1,4 +1,4 @@
-/*
+﻿/*
 ** vm_asm_ops.c - Opcode metadata table
 ** Each entry: name, standard opcode, operand format, handler template.
 ** Templates use placeholders: {A} {B} {C} {Bx} {sBx} {REG:x} {RK:x} {K:x} {JMP:x} {NEXT} {PC}
@@ -9,17 +9,17 @@ static const VmOp op_table[] = {
     {"MOVE",     0,  FMT_ABC,  "{REG:{A}} = {REG:{B}}", NULL},
     {"LOADK",    1,  FMT_ABx,  "{REG:{A}} = {K:{Bx}}", NULL},
 #if VM_ASM_DEBUG
-    {"LOADKX",   2,  FMT_AB,   "local _nx=code[{PC}+1]; local _ax=(_nx[2] or 0)|((_nx[5] or 0)<<8); io.stderr:write('LOADKX pc='..{PC}..' a='..{A}..' nx_a='..(_nx[2] or 0)..' nx_bx='..(_nx[5] or 0)..' ax='.._ax..' #K='..#K..'\\n'); io.stderr:flush(); {REG:{A}}=K[_ax+1]; {NEXT}", NULL},
+    {"LOADKX",   2,  FMT_AB,   "local _nx={CODE}[{PC}+1]; local _ax=(_nx[2] or 0)|((_nx[5] or 0)<<8); io.stderr:write('LOADKX pc='..{PC}..' a='..{A}..' nx_a='..(_nx[2] or 0)..' nx_bx='..(_nx[5] or 0)..' ax='.._ax..' #K='..#K..'\\n'); io.stderr:flush(); {REG:{A}}=K[_ax+1]; {NEXT}", NULL},
 #else
-    {"LOADKX",   2,  FMT_AB,   "local _nx=code[{PC}+1]; {REG:{A}}=K[(_nx[2] or 0)|((_nx[5] or 0)<<8)+1]; {NEXT}", NULL},
+    {"LOADKX",   2,  FMT_AB,   "local _nx={CODE}[{PC}+1]; {REG:{A}}=K[(_nx[2] or 0)|((_nx[5] or 0)<<8)+1]; {NEXT}", NULL},
 #endif
     {"LOADBOOL", 3,  FMT_ABC,  "{REG:{A}} = ({B}~=0); if {C}~=0 then {NEXT} end", NULL},
     {"LOADNIL",  4,  FMT_AB,   "for _i={A},{A}+{B} do {REG:_i}=nil end", NULL},
-    {"GETUPVAL", 5,  FMT_AB,   "{REG:{A}} = getuv({B})", NULL},
-    {"GETTABUP", 6,  FMT_ABC,  "{REG:{A}} = getuv({B})[{RK:{C}}]", NULL},
+    {"GETUPVAL", 5,  FMT_AB,   "{REG:{A}} = getuv({B}, {UV})", NULL},
+    {"GETTABUP", 6,  FMT_ABC,  "{REG:{A}} = getuv({B}, {UV})[{RK:{C}}]", NULL},
     {"GETTABLE", 7,  FMT_ABC,  "{REG:{A}} = {REG:{B}}[{RK:{C}}]", NULL},
-    {"SETTABUP", 8,  FMT_ABC,  "getuv({A})[{RK:{B}}] = {RK:{C}}", NULL},
-    {"SETUPVAL", 9,  FMT_AB,   "setuv({B}, {REG:{A}})", NULL},
+    {"SETTABUP", 8,  FMT_ABC,  "getuv({A}, {UV})[{RK:{B}}] = {RK:{C}}", NULL},
+    {"SETUPVAL", 9,  FMT_AB,   "setuv({B}, {REG:{A}}, {UV})", NULL},
     {"SETTABLE", 10, FMT_ABC,  "{REG:{A}}[{RK:{B}}] = {RK:{C}}", NULL},
     {"NEWTABLE", 11, FMT_ABC,  "{REG:{A}} = {}", NULL},
     {"SELF",     12, FMT_ABC,  "{REG:{A}+1}={REG:{B}}; {REG:{A}}={REG:{B}}[{RK:{C}}]", NULL},
@@ -47,23 +47,23 @@ static const VmOp op_table[] = {
     {"BNOT",     26, FMT_AB,   "{REG:{A}} = ~{REG:{B}}", "{REG:{A}} = _bnot({REG:{B}})"},
     {"NOT",      27, FMT_AB,   "{REG:{A}} = not {REG:{B}}", NULL},
     {"LEN",      28, FMT_AB,   "{REG:{A}} = #{REG:{B}}", NULL},
-    {"CONCAT",   29, FMT_ABC,  "local _s={}; for _i={B},{C} do _s[#_s+1]=tostring({REG:_i}) end; {REG:{A}}=table.concat(_s)", NULL},
-    {"JMP",      30, FMT_AsBx, "if {A}~=0 then closeuv({A}-1) end; {JMP:{sBx}}", NULL},
+    {"CONCAT",   29, FMT_ABC,  "local _v={REG:{C}}; if {C}>{B} then for _i={C}-1,{B},-1 do _v={REG:_i}.._v end end; {REG:{A}}=_v", NULL},
+    {"JMP",      30, FMT_AsBx, "if {A}~=0 then closeuv({A}-1, R) end; {JMP:{sBx}}", NULL},
     {"EQ",       31, FMT_ABC,  "if ({RK:{B}}=={RK:{C}}) ~= ({A}~=0) then {NEXT} end", NULL},
     {"LT",       32, FMT_ABC,  "if ({RK:{B}}<{RK:{C}}) ~= ({A}~=0) then {NEXT} end", NULL},
     {"LE",       33, FMT_ABC,  "if ({RK:{B}}<={RK:{C}}) ~= ({A}~=0) then {NEXT} end", NULL},
     {"TEST",     34, FMT_ABC,  "local _v={REG:{A}}; local _f=(_v==nil or _v==false); if ({C}~=0 and _f) or ({C}==0 and not _f) then {NEXT} end", NULL},
     {"TESTSET",  35, FMT_ABC,  "local _v={REG:{B}}; local _f=(_v==nil or _v==false); if ({C}~=0 and _f) or ({C}==0 and not _f) then {NEXT} else {REG:{A}}=_v end", NULL},
-    {"CALL",     36, FMT_ABC,  "docall({A},{B},{C})", NULL},
-    {"TAILCALL", 37, FMT_ABC,  "return dotailcall({A},{B})", NULL},
-    {"RETURN",   38, FMT_AB,   "return doreturn({A},{B})", NULL},
+    {"CALL",     36, FMT_ABC,  "top = docall({A},{B},{C}, {R}, {TOP}, execute)", NULL},
+    {"TAILCALL", 37, FMT_ABC,  "return dotailcall({A},{B}, {R}, {TOP}, execute)", NULL},
+    {"RETURN",   38, FMT_AB,   "return doreturn({A},{B}, {TOP}, {R})", NULL},
     {"FORLOOP",  39, FMT_AsBx, "{REG:{A}}={REG:{A}}+{REG:{A}+2}; if ({REG:{A}+2}>=0 and {REG:{A}}<={REG:{A}+1}) or ({REG:{A}+2}<0 and {REG:{A}}>={REG:{A}+1}) then {REG:{A}+3}={REG:{A}}; {JMP:{sBx}} end", NULL},
     {"FORPREP",  40, FMT_AsBx, "{REG:{A}}={REG:{A}}-{REG:{A}+2}; {JMP:{sBx}}", NULL},
-    {"TFORCALL", 41, FMT_ABC,  "dotforcall({A},{C})", NULL},
+    {"TFORCALL", 41, FMT_ABC,  "dotforcall({A},{C}, {R})", NULL},
     {"TFORLOOP", 42, FMT_AsBx, "if {REG:{A}+1}~=nil then {REG:{A}}={REG:{A}+1}; {JMP:{sBx}} end", NULL},
-    {"SETLIST",  43, FMT_ABC,  "dosetlist({A},{B},{C})", NULL},
-    {"CLOSURE",  44, FMT_ABx,  "{REG:{A}} = makeclosure({Bx})", NULL},
-    {"VARARG",   45, FMT_AB,   "dovararg({A},{B})", NULL},
+    {"SETLIST",  43, FMT_ABC,  "dosetlist({A},{B},{C}, {R}, {TOP})", NULL},
+    {"CLOSURE",  44, FMT_ABx,  "{REG:{A}} = makeclosure({Bx}, {PROTO}, {R}, {UV}, execute)", NULL},
+    {"VARARG",   45, FMT_AB,   "top = dovararg({A},{B}, {TOP}, {R}, vararg)", NULL},
     {"EXTRAARG", 46, FMT_Ax,   NULL, NULL},
     /* andlua extensions - stubs */
     {"TBC",      47, FMT_AB,   NULL, NULL},
@@ -72,7 +72,7 @@ static const VmOp op_table[] = {
     {"SECTION",  50, FMT_ABC,  NULL, NULL},
     {"IS",       51, FMT_ABC,  "{REG:{A}} = (type({REG:{B}}) == {C})", NULL},
     {"TRY",      52, FMT_ABC,  NULL, NULL},
-    {"TRYRETURN",53, FMT_AB,   "return doreturn({A},{B})", NULL},
+    {"TRYRETURN",53, FMT_AB,   "return doreturn({A},{B}, {TOP}, {R})", NULL},
 };
 
 #define OP_COUNT (sizeof(op_table)/sizeof(op_table[0]))
@@ -81,3 +81,5 @@ const VmOp *vm_op_table(int *count) {
     if (count) *count = (int)OP_COUNT;
     return op_table;
 }
+
+

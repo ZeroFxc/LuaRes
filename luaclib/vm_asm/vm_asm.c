@@ -72,6 +72,16 @@ int vm_assemble(VmAsmOpts *opts) {
     /* 2. opcode constants */
     p = vm_gen_opcodes(remap, opts->luajit_compat, &l); vmbuf_puts(&out, p); free(p);
 
+    /* 2b. dispatch mode: module-level cells + runtime copy + dispatch prelude */
+    if (opts->dispatch_mode) {
+        p = vm_gen_runtime(vR, vK, vUV, vPC, vTOP, vPROTO,
+                           opts->include_coroutine, opts->luajit_compat, &l);
+        vmbuf_puts(&out, p); free(p);
+        p = vm_gen_dispatch_prelude(ops, nops, remap, opts->dispatch_mode,
+                                    opts->luajit_compat, opts->seed ? opts->seed : 1, &l);
+        vmbuf_puts(&out, p); free(p);
+    }
+
     /* 3. execute function */
     vmbuf_printf(&out,
         "local execute\n"
@@ -97,6 +107,7 @@ int vm_assemble(VmAsmOpts *opts) {
         "  _va.n = _vac\n"
         "  vararg = _va\n",
         vPROTO, vR, vK, vPROTO, vPROTO, vUV, vUV, vUV, vUV, vPC, vTOP, vPROTO, vPROTO, vR, vPROTO);
+
 
     /* 4. runtime helpers */
     p = vm_gen_runtime(vR, vK, vUV, vPC, vTOP, vPROTO,
@@ -158,6 +169,16 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
     /* 2. opcode constants */
     p = vm_gen_opcodes(remap, opts->luajit_compat, &l); vmbuf_puts(&out, p); free(p);
 
+    /* 2b. dispatch mode: module-level cells + runtime copy + dispatch prelude */
+    if (opts->dispatch_mode) {
+        p = vm_gen_runtime(vR, vK, vUV, vPC, vTOP, vPROTO,
+                           opts->include_coroutine, opts->luajit_compat, &l);
+        vmbuf_puts(&out, p); free(p);
+        p = vm_gen_dispatch_prelude(ops, nops, remap, opts->dispatch_mode,
+                                    opts->luajit_compat, opts->seed ? opts->seed : 1, &l);
+        vmbuf_puts(&out, p); free(p);
+    }
+
     /* 3. execute function */
     vmbuf_printf(&out,
         "local execute\n"
@@ -183,6 +204,7 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
         "  _va.n = _vac\n"
         "  vararg = _va\n",
         vPROTO, vR, vK, vPROTO, vPROTO, vUV, vUV, vUV, vUV, vPC, vTOP, vPROTO, vPROTO, vR, vPROTO);
+
 
     /* 4. runtime helpers */
     p = vm_gen_runtime(vR, vK, vUV, vPC, vTOP, vPROTO,

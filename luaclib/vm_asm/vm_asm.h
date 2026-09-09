@@ -66,8 +66,9 @@ void vm_gen_id(char *buf, int len);
 /* Template substitution: replaces {A},{B},{C},{Bx},{sBx},{REG:x},{RK:x},{K:x},{JMP:x},{NEXT},{PC} */
 void vm_emit_body(VmBuf *b, const char *body,
                   const char *R, const char *K, const char *UV, const char *PC,
+                  const char *vCODE, const char *vTOP, const char *vPROTO,
                   const char *vA, const char *vB, const char *vC,
-                  const char *vBx, const char *vsBx);
+                  const char *vBx, const char *vsBx, int ret_mode);
 
 /* Component generators (each returns malloc'd Lua source) */
 char *vm_gen_header(size_t *len);
@@ -75,6 +76,8 @@ char *vm_gen_opcodes(const int *remap, int luajit_compat, size_t *len);
 char *vm_gen_runtime(const char *R, const char *K, const char *UV,
                      const char *PC, const char *TOP, const char *PROTO,
                      int include_coroutine, int luajit_compat, size_t *len);
+char *vm_gen_dispatch_prelude(const VmOp *ops, int nops, const int *remap, int mode,
+                              int luajit_compat, unsigned int seed, size_t *len);
 char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
                       const char *R, const char *K, const char *UV, const char *PC,
                       int luajit_compat, unsigned int seed, size_t *len);

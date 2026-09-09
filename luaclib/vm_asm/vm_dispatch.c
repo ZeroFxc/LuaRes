@@ -3,11 +3,20 @@
 **
 ** Randomizes the generated VM's opcode numbering and the shape of its
 ** main dispatch loop, so each round produces a different, less readable
-** instruction set. Three dispatch shapes:
+** instruction set. Four dispatch shapes:
 **   mode 0: ordered if/elseif chain (unchanged behavior)
 **   mode 1: if/elseif chain with shuffled branch order
-**   mode 2: table lookup   _dispatch[op](a,b,c,bx,sbx)
+**   mode 2: table lookup   _dispatch[op](a,b,c,bx,sbx,...)
 **   mode 3: arithmetic slot ((op*A+B)%nops)+1 -> table lookup
+**
+** Modes 2/3 emit a module-level dispatch table of handler closures bound
+** only to module-level runtime helpers (docall & friends); the VM state
+** (R/K/UV/pc/code/top/proto/vararg/execute) is passed to each handler as
+** parameters from execute()'s own locals. This keeps coroutine suspension
+** safe (state lives in the coroutine stack, not in shared cells) while
+** avoiding per-CALL closure rebuilding. RETURN/TAILCALL get sentinel
+** entries and are inlined in the main loop, so their "return" semantics
+** exit execute() itself.
 **
 ** Global state set by vm_dispatch_shuffle_c (Lua) / vm_dispatch_set (C),
 ** consumed by vm_embed_generate. vm_embed runs last, so the remap and
@@ -46,81 +55,157 @@ int *vm_dispatch_make_remap(unsigned int seed, int nops) {
     return map;
 }
 
+/* which ops carry RETURN / TAILCALL semantics (need sentinel inlining) */
+#define DS_OP_TAILCALL 37
+#define DS_OP_RETURN   38
+#define DS_OP_RETURN2  53   /* andlua TRYRETURN: same return semantics */
+
+
+/* does the template end with {NEXT} or a {JMP:...} token? (then it already
+   returns pc and no trailing `return pc, top` may be appended) */
+static int body_ends_ret(const char *body) {
+    size_t n = strlen(body);
+    while (n > 0 && (body[n-1] == ' ' || body[n-1] == '\t' ||
+                     body[n-1] == '\n' || body[n-1] == '\r')) n--;
+    if (n == 0) return 0;
+    if (n >= 6 && strncmp(body + n - 6, "{NEXT}", 6) == 0) return 1;
+    if (body[n-1] != '}') return 0;
+    {
+        const char *p = body + n - 1;  /* trailing '}' */
+        int depth = 1;                 /* consumed it */
+        while (p > body) {
+            p--;
+            if (*p == '}') depth++;
+            else if (*p == '{') {
+                depth--;
+                if (depth == 0) return strncmp(p, "{JMP:", 5) == 0;
+            }
+        }
+    }
+    return 0;
+}
+
+/* ---------- module-level prelude for table/arithmetic dispatch ----------
+   Emits RK (3-arg), sentinels, and the _dispatch table of handler closures.
+   Handlers receive the full VM state as parameters. */
+char *vm_gen_dispatch_prelude(const VmOp *ops, int nops, const int *remap, int mode,
+                              int luajit_compat, unsigned int seed, size_t *len) {
+    VmBuf b; vmbuf_init(&b);
+
+    vmbuf_puts(&b,
+        "  local function RK(x, R, K) if x < 256 then return R[x] end return K[x - 255] end\n"
+        "  local _RET = {}\n"
+        "  local _TAIL = {}\n"
+        "  local _dispatch = {\n");
+
+    if (mode == 3) {
+        vm_srand(seed);
+        int A;
+        do { A = (int)(vm_rand() % 10000) | 1; } while (A % 3 == 0);
+        int B = (int)(vm_rand() % nops);
+        for (int s = 1; s <= nops; s++) {
+            int found = -1;
+            for (int i = 0; i < nops; i++) {
+                const char *body = (luajit_compat && ops[i].body_compat) ? ops[i].body_compat : ops[i].body;
+                if (!body) continue;
+                int opcode = remap ? remap[ops[i].op] : ops[i].op;
+                if (((opcode * A + B) % nops) + 1 == s) { found = i; break; }
+            }
+            if (found >= 0) {
+                if (ops[found].op == DS_OP_RETURN || ops[found].op == DS_OP_RETURN2 ||
+                    ops[found].op == DS_OP_TAILCALL) {
+                    vmbuf_printf(&b, "    [%d] = %s,\n", s,
+                                 (ops[found].op == DS_OP_TAILCALL) ? "_TAIL" : "_RET");
+                } else {
+                    const char *fbody = (luajit_compat && ops[found].body_compat) ? ops[found].body_compat : ops[found].body;
+                    vmbuf_printf(&b, "    [%d] = function(a,b,c,bx,sbx, R,K,UV,pc,code,top,proto,vararg,execute) ", s);
+                    vm_emit_body(&b, fbody, "R", "K", "UV", "pc", "code",
+                                 "top", "proto",
+                                 "a", "b", "c", "bx", "sbx", 1);
+                    if (!body_ends_ret(fbody)) vmbuf_puts(&b, " return pc, top");
+                    vmbuf_puts(&b, " end,\n");
+                }
+            } else {
+                vmbuf_printf(&b, "    [%d] = nil,\n", s);
+            }
+        }
+    } else {
+        for (int i = 0; i < nops; i++) {
+            const char *body = (luajit_compat && ops[i].body_compat) ? ops[i].body_compat : ops[i].body;
+            if (!body) continue;
+            int opcode = remap ? remap[ops[i].op] : ops[i].op;
+            if (ops[i].op == DS_OP_RETURN || ops[i].op == DS_OP_RETURN2 ||
+                ops[i].op == DS_OP_TAILCALL) {
+                vmbuf_printf(&b, "    [%d] = %s,\n", opcode,
+                             (ops[i].op == DS_OP_TAILCALL) ? "_TAIL" : "_RET");
+            } else {
+                vmbuf_printf(&b, "    [%d] = function(a,b,c,bx,sbx, R,K,UV,pc,code,top,proto,vararg,execute) ", opcode);
+                vm_emit_body(&b, body, "R", "K", "UV", "pc", "code",
+                             "top", "proto",
+                             "a", "b", "c", "bx", "sbx", 1);
+                if (!body_ends_ret(body)) vmbuf_puts(&b, " return pc, top");
+                vmbuf_puts(&b, " end,\n");
+            }
+        }
+    }
+
+    vmbuf_puts(&b, "  }\n");
+    return vmbuf_detach(&b, len);
+}
+
 /* ---------- main dispatch loop generator ---------- */
 char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
                       const char *R, const char *K, const char *UV, const char *PC,
                       int luajit_compat, unsigned int seed, size_t *len) {
     VmBuf b; vmbuf_init(&b);
 
-    /* body helper macro: pick compat or normal body */
 #define BODY_OF(i) ((luajit_compat && ops[(i)].body_compat) ? ops[(i)].body_compat : ops[(i)].body)
 
-    vmbuf_printf(&b, "  local function RK(x) if x < 256 then return %s[x] end return %s[x - 255] end\n", R, K);
-
     if (mode == 2 || mode == 3) {
-        /* ---------- table dispatch ---------- */
-        vmbuf_puts(&b, "  local _dispatch = {\n");
+        /* ---------- table dispatch (state passed by parameter) ---------- */
+        vmbuf_printf(&b,
+            "  while %s <= #code do\n"
+            "    local ins = code[%s]\n"
+            "    local op = ins[1]\n"
+            "    local a = ins[2] or 0\n"
+            "    local b = ins[3] or 0\n"
+            "    local c = ins[4] or 0\n"
+            "    local bx = ins[5] or 0\n"
+            "    local sbx = bx - 131071\n", PC, PC);
         if (mode == 3) {
-            /* arithmetic slot: slot = (op*A + B) % nops + 1, gcd(A, nops) == 1
-               nops = 54 = 2*3^3, so A must be odd and not a multiple of 3. */
             vm_srand(seed);
             int A;
             do { A = (int)(vm_rand() % 10000) | 1; } while (A % 3 == 0);
             int B = (int)(vm_rand() % nops);
-            for (int s = 1; s <= nops; s++) {
-                int found = -1;
-                for (int i = 0; i < nops; i++) {
-                    if (!BODY_OF(i)) continue;
-                    int opcode = remap ? remap[ops[i].op] : ops[i].op;
-                    if (((opcode * A + B) % nops) + 1 == s) { found = i; break; }
-                }
-                if (found >= 0) {
-                    vmbuf_printf(&b, "    [%d] = function(a,b,c,bx,sbx) ", s);
-                    vm_emit_body(&b, BODY_OF(found), R, K, UV, PC, "a", "b", "c", "bx", "sbx");
-                    vmbuf_puts(&b, " end,\n");
-                } else {
-                    vmbuf_printf(&b, "    [%d] = nil,\n", s);
-                }
-            }
-            vmbuf_puts(&b, "  }\n");
-            vmbuf_printf(&b, "  while %s <= #code do\n", PC);
-            vmbuf_printf(&b, "    local ins = code[%s]\n", PC);
-            vmbuf_printf(&b, "    local op = ins[1]\n");
-            vmbuf_printf(&b, "    local a = ins[2] or 0\n");
-            vmbuf_printf(&b, "    local b = ins[3] or 0\n");
-            vmbuf_printf(&b, "    local c = ins[4] or 0\n");
-            vmbuf_printf(&b, "    local bx = ins[5] or 0\n");
-            vmbuf_printf(&b, "    local sbx = bx - 131071\n");
             vmbuf_printf(&b, "    local _h = _dispatch[((op * %d + %d) %% %d) + 1]\n", A, B, nops);
-            vmbuf_puts(&b, "    if _h then _h(a,b,c,bx,sbx) end\n");
-            vmbuf_puts(&b, "  end\n");
         } else {
-            /* mode 2: direct table keyed by opcode */
-            for (int i = 0; i < nops; i++) {
-                if (!BODY_OF(i)) continue;
-                int opcode = remap ? remap[ops[i].op] : ops[i].op;
-                vmbuf_printf(&b, "    [%d] = function(a,b,c,bx,sbx) ", opcode);
-                vm_emit_body(&b, BODY_OF(i), R, K, UV, PC, "a", "b", "c", "bx", "sbx");
-                vmbuf_puts(&b, " end,\n");
-            }
-            vmbuf_puts(&b, "  }\n");
-            vmbuf_printf(&b, "  while %s <= #code do\n", PC);
-            vmbuf_printf(&b, "    local ins = code[%s]\n", PC);
-            vmbuf_printf(&b, "    local op = ins[1]\n");
-            vmbuf_printf(&b, "    local a = ins[2] or 0\n");
-            vmbuf_printf(&b, "    local b = ins[3] or 0\n");
-            vmbuf_printf(&b, "    local c = ins[4] or 0\n");
-            vmbuf_printf(&b, "    local bx = ins[5] or 0\n");
-            vmbuf_printf(&b, "    local sbx = bx - 131071\n");
-            vmbuf_printf(&b, "    local _h = _dispatch[op]\n");
-            vmbuf_puts(&b, "    if _h then _h(a,b,c,bx,sbx) end\n");
-            vmbuf_puts(&b, "  end\n");
+            vmbuf_puts(&b, "    local _h = _dispatch[op]\n");
         }
-        vmbuf_printf(&b, "  closeuv(0)\n");
+        vmbuf_printf(&b,
+            "    if _h == _RET then\n"
+            "      local _t = {doreturn(a,b, top, %s)}\n"
+            "      return _unpack(_t, 1, _t.n)\n"
+            "    elseif _h == _TAIL then\n"
+            "      local _t = {dotailcall(a,b, %s, top, execute)}\n"
+            "      return _unpack(_t, 1, _t.n)\n"
+            "    elseif _h then\n"
+            "      local _p, _t = _h(a,b,c,bx,sbx, %s, %s, %s, %s, code, top, proto, vararg, execute)\n"
+            "      if _p then pc = _p end\n"
+            "      if _t then top = _t end\n"
+            "    end\n"
+            "    %s = %s + 1\n"
+            "  end\n"
+            "  closeuv(0)\n",
+            R,
+            R,
+            R, K, UV, PC,
+            PC, PC);
         return vmbuf_detach(&b, len);
     }
 
     /* ---------- if/elseif chain (mode 0 ordered, mode 1 shuffled) ---------- */
+    vmbuf_printf(&b, "  local function RK(x, R, K) if x < 256 then return R[x] end return K[x - 255] end\n");
+
     int order[64];
     int nused = 0;
     for (int i = 0; i < nops; i++) {
@@ -148,7 +233,8 @@ char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
         int opcode = remap ? remap[op->op] : op->op;
         vmbuf_printf(&b, "    elseif op == %d then\n", opcode);
         vmbuf_puts(&b, "      ");
-        vm_emit_body(&b, BODY_OF(order[i]), R, K, UV, PC, "a", "b", "c", "bx", "sbx");
+        vm_emit_body(&b, BODY_OF(order[i]), R, K, UV, PC, "code", "top", "proto",
+                     "a", "b", "c", "bx", "sbx", 0);
         vmbuf_putc(&b, '\n');
     }
     vmbuf_printf(&b, "    end\n");
@@ -157,6 +243,7 @@ char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
     vmbuf_printf(&b, "  closeuv(0)\n");
 
     return vmbuf_detach(&b, len);
+#undef BODY_OF
 }
 
 /* ---------- Lua entry: vm_dispatch_shuffle_c({seed=, mode=}) ---------- */

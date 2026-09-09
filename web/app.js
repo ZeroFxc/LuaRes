@@ -51,6 +51,7 @@ const MODULE_GROUPS = [
     { id: 'debug_mutate_c', label: '调试信息变异', desc: '伪造 locvar/upval 名和 lineinfo，不剥离' },
   ]},
   { name: '虚拟机组装', modules: [
+    { id: 'vm_dispatch_shuffle_c', label: 'VM分发重映射', desc: '随机重映射opcode编号，主循环分发三选一（switch乱序/查表/算术），每轮结果不同，最后执行' },
     { id: 'vm_embed_c', label: '自包含VM打包', desc: '成品式：把字节码转为纯Lua自包含解释器，零外部依赖，最后执行' },
   ]},
 ];
@@ -64,7 +65,7 @@ const EXEC_ORDER = [
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
   'flatten_enhance_c','debug_strip_c','debug_mutate_c','antidec_c','proto_shuffle_c',
-  'live_range_split_c','op48_junk_c','vm_embed_c'
+  'live_range_split_c','op48_junk_c','vm_dispatch_shuffle_c','vm_embed_c'
 ];
 const EXEC_ORDER_MAP = new Map(EXEC_ORDER.map((id,i) => [id, i]));
 function sortModulesForExecution(mods){

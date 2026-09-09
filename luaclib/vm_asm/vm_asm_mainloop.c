@@ -32,7 +32,7 @@ char *vm_gen_mainloop(const VmOp *ops, int nops, const int *remap,
         int opcode = remap ? remap[op->op] : op->op;
         vmbuf_printf(&b, "    elseif op == %d then\n", opcode, op->name);
         vmbuf_puts(&b, "      ");
-        vm_emit_body(&b, body, R, K, UV, PC, "a", "b", "c", "bx", "sbx");
+        vm_emit_body(&b, body, R, K, UV, PC, "code", "top", "proto", "a", "b", "c", "bx", "sbx", 0);
         vmbuf_putc(&b, '\n');
     }
 

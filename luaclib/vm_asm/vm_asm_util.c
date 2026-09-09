@@ -111,8 +111,9 @@ static void subst_ops(char *dst, size_t dstsz, const char *src,
 /* ---- template body emission ---- */
 void vm_emit_body(VmBuf *b, const char *body,
                   const char *R, const char *K, const char *UV, const char *PC,
+                  const char *vCODE, const char *vTOP, const char *vPROTO,
                   const char *vA, const char *vB, const char *vC,
-                  const char *vBx, const char *vsBx) {
+                  const char *vBx, const char *vsBx, int ret_mode) {
     const char *p = body;
     while (*p) {
         if (*p == '{') {
@@ -142,7 +143,7 @@ void vm_emit_body(VmBuf *b, const char *body,
             else if (strncmp(tag,"RK:",3)==0) {
                 char idx[64];
                 subst_ops(idx, sizeof(idx), tag+3, vA, vB, vC, vBx, vsBx);
-                vmbuf_printf(b, "RK(%s)", idx);
+                vmbuf_printf(b, "RK(%s, %s, %s)", idx, R, K);
             }
             else if (strncmp(tag,"K:",2)==0) {
                 char idx[64];
@@ -153,10 +154,20 @@ void vm_emit_body(VmBuf *b, const char *body,
             }
             else if (strcmp(tag,"PC")==0) vmbuf_puts(b, PC);
             else if (strncmp(tag,"JMP:",4)==0) {
-                vmbuf_printf(b, "%s=%s+(%s)", PC, PC, vsBx);
+                if (ret_mode) vmbuf_printf(b, "return %s+(%s), top", PC, vsBx);
+                else vmbuf_printf(b, "%s=%s+(%s)", PC, PC, vsBx);
             }
+            else if (strcmp(tag,"CODE")==0) {
+                vmbuf_puts(b, vCODE);
+            }
+            else if (strcmp(tag,"R")==0) vmbuf_puts(b, R);
+            else if (strcmp(tag,"K")==0) vmbuf_puts(b, K);
+            else if (strcmp(tag,"UV")==0) vmbuf_puts(b, UV);
+            else if (strcmp(tag,"TOP")==0) vmbuf_puts(b, vTOP);
+            else if (strcmp(tag,"PROTO")==0) vmbuf_puts(b, vPROTO);
             else if (strcmp(tag,"NEXT")==0) {
-                vmbuf_printf(b, "%s=%s+1", PC, PC);
+                if (ret_mode) vmbuf_printf(b, "return %s+1, top", PC);
+                else vmbuf_printf(b, "%s=%s+1", PC, PC);
             }
             else {
                 vmbuf_putc(b, '{');

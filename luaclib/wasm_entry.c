@@ -83,7 +83,8 @@ static const char *MODULE_LIST =
     "call_rewrite_c,"
     "upvalue_promote_c,"
     "block_clone_c,"
-    "cfg_shuffle_c";
+    "cfg_shuffle_c,"
+    "vm_dispatch_shuffle_c";
 
 /*===========================================================================
 ** Helpers
@@ -150,6 +151,16 @@ static int norm_writer(lua_State *L, const void *p, size_t sz, void *ud) {
     return 0;
 }
 
+/* Standard bytecode writer (0x1B, plaintext strings). Used instead of the
+   andlua shell path: the shell encrypts every string, and the heuristic
+   decryptor (is_valid_text) corrupts legitimate binary/control-char strings. */
+static int wasm_dump_writer (lua_State *L, const void *b, size_t size, void *ud) {
+    (void)L;
+    luaL_Buffer *buf = (luaL_Buffer *)ud;
+    luaL_addlstring(buf, (const char *)b, size);
+    return 0;
+}
+
 /* Normalize any input (raw bytecode / plain source / =andlua shell / 0x1C) to 0x1A bytecode.
    Returns malloc'd buffer or NULL on error. *out_len set to size. */
 static unsigned char *normalize_to_bytecode(const unsigned char *data, int len, size_t *out_len) {
@@ -162,8 +173,10 @@ static unsigned char *normalize_to_bytecode(const unsigned char *data, int len, 
         *out_len = len;
         return copy;
     }
-    /* Everything else: load (compiles source, decrypts =shell/0x1C), then
-       string.dump -> andlua shell, string.dec -> 0x1A bytecode */
+    /* Everything else: load (compiles source), then dump standard 0x1B
+       bytecode directly. Do NOT go through string.dump/string.dec (andlua
+       shell): that round-trip encrypts all strings and the heuristic decrypt
+       keeps binary/control-char strings in their encrypted (corrupted) form. */
     if (luaL_loadbufferx(g_L, (const char *)data, (size_t)len, "=input", NULL) != LUA_OK) {
         const char *err = lua_tostring(g_L, -1);
         set_error("load: %s", err ? err : "?");
@@ -171,31 +184,16 @@ static unsigned char *normalize_to_bytecode(const unsigned char *data, int len, 
         return NULL;
     }
     /* stack: func */
-    lua_getglobal(g_L, "string");
-    lua_getfield(g_L, -1, "dump");
-    lua_remove(g_L, -2); /* remove string table, keep dump func */
-    lua_pushvalue(g_L, -2); /* copy func */
-    lua_pushboolean(g_L, 0); /* keep debug info for debug_mutate; user can strip with debug_strip module */
-    if (lua_pcall(g_L, 2, 1, 0) != LUA_OK) {
+    luaL_Buffer b;
+    luaL_buffinit(g_L, &b);
+    if (lua_dump(g_L, wasm_dump_writer, &b, 0) != 0) {
         const char *err = lua_tostring(g_L, -1);
         set_error("string.dump: %s", err ? err : "?");
-        lua_pop(g_L, 2); /* err + func */
+        lua_pop(g_L, 1);
         return NULL;
     }
-    lua_remove(g_L, -2); /* remove func, keep shell string */
-    /* stack: shell (=... base64) */
-    lua_getglobal(g_L, "string");
-    lua_getfield(g_L, -1, "dec");
-    lua_remove(g_L, -2);
-    lua_pushvalue(g_L, -2); /* copy shell */
-    if (lua_pcall(g_L, 1, 1, 0) != LUA_OK) {
-        const char *err = lua_tostring(g_L, -1);
-        set_error("string.dec: %s", err ? err : "?");
-        lua_pop(g_L, 2);
-        return NULL;
-    }
-    lua_remove(g_L, -2); /* remove shell */
-    /* stack: 0x1A bytecode string */
+    luaL_pushresult(&b);
+    /* stack: 0x1B bytecode string */
     size_t raw_len = 0;
     const char *raw_str = lua_tolstring(g_L, -1, &raw_len);
     unsigned char *raw = malloc(raw_len);
@@ -223,7 +221,9 @@ int wasm_load(const unsigned char *data, int len) {
     lua_getfield(g_L, -1, "undump");
     lua_remove(g_L, -2);
     lua_pushlstring(g_L, (const char *)raw, raw_len);
-    lua_pushboolean(g_L, 0);
+    lua_pushboolean(g_L, 1); /* force_encrypted: plain-source path dumps via
+                                luasafe lua_dump which encrypts every string */
+    (void)0;
     free(raw);
     if (lua_pcall(g_L, 2, 1, 0) != LUA_OK) {
         const char *err = lua_tostring(g_L, -1);
