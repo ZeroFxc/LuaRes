@@ -10,7 +10,6 @@
 
 static int process_function(luac_Proto *p) {
     if (!p->code || p->sizecode < 4) return 0;
-    if (p->is_vararg) return 0;
 
     int old_max = p->maxstacksize;
     if (old_max + 1 > 250) return 0; /* avoid unsigned char overflow */
