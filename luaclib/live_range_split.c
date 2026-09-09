@@ -8,7 +8,7 @@
 */
 #include "obf_util.h"
 
-static int process_function(luac_Proto *p) {
+static int process_function(luac_Proto *p, int max_count) {
     if (!p->code || p->sizecode < 4) return 0;
 
     int old_max = p->maxstacksize;
@@ -39,7 +39,7 @@ static int process_function(luac_Proto *p) {
         new_code[ni++] = ins;
 
         /* split after LOADK if target register is within original frame */
-        if (op == LUAC_OP_LOADK && a < old_max && count < 8) {
+        if (op == LUAC_OP_LOADK && a < old_max && count < max_count) {
             int seq_len = 3;
             /* MOVE high_reg, a — save original value */
             new_code[ni++] = LUAC_ABC(LUAC_OP_MOVE, high_reg, a, 0);
@@ -92,9 +92,15 @@ int live_range_split_process(lua_State *L) {
     obf_invalidate_all_caches(L, p);
 
     int count = 0;
-    count += process_function(p);
+    int max_count = 16;
+    if (lua_gettop(L) >= 2 && lua_istable(L, 2)) {
+        lua_getfield(L, 2, "count");
+        if (lua_isnumber(L, -1)) max_count = (int)lua_tointeger(L, -1);
+        lua_pop(L, 1);
+    }
+    count += process_function(p, max_count);
     if (p->p) for (int i = 0; i < p->sizep; i++)
-        count += process_function(p->p[i]);
+        count += process_function(p->p[i], max_count > 4 ? max_count / 2 : 4);
 
     lua_pushinteger(L, count);
     return 1;
