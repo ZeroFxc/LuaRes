@@ -33,7 +33,12 @@ static void replace_at(luac_Proto *p, int pos, unsigned int *new_ins, int n) {
 
 static int inject_function(luac_Proto *p, int count) {
     if (!p->code || p->sizecode < 1 || count <= 0) return 0;
-
+    /* B=0 instructions read to stack top — expanding maxstack injects extra values */
+    for (int _si = 0; _si < p->sizecode; _si++) {
+        int _op = p->code[_si] & 0x3F;
+        if ((_op == 36 || _op == 37 || _op == 38 || _op == 45 || _op == 43) &&
+            ((p->code[_si] >> 23) & 0x1FF) == 0) return 0;
+    }
     /* 扩展 3 个临时寄存器 */
     int old_max = p->maxstacksize;
     int extra = 3;
