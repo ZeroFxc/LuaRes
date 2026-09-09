@@ -37,8 +37,6 @@ static void inject_function(luac_Proto *p, int count, int depth) {
         int pos = 1 + (int)(obf_rand() % (p->sizecode - 1));
         int prev_op = p->code[pos-1] & 0x3F;
         if (CONDITION_OPS(prev_op)) continue;
-        /* LOADBOOL C>0 skips next instruction — inserting here changes skip target */
-        if (prev_op == 3 && ((p->code[pos-1] >> 14) & 0x1FF) > 0) continue;
         /* SETLIST C==0 requires EXTRAARG next */
         if (prev_op == 43 && ((p->code[pos-1] >> 14) & 0x1FF) == 0) continue;
         int a = old_maxstack + (int)(obf_rand() % usable);
@@ -47,6 +45,13 @@ static void inject_function(luac_Proto *p, int count, int depth) {
         memmove(&p->code[pos+1], &p->code[pos], sizeof(unsigned int) * (p->sizecode - pos));
         p->code[pos] = LUAC_ABx(LUAC_OP_LOADK, a, bx);
         p->sizecode++;
+        /* Fix LOADBOOL C>0 before insertion: extend skip count by 1 */
+        if (prev_op == 3) {
+            int lc = (p->code[pos-1] >> 14) & 0x1FF;
+            if (lc > 0 && lc < 511) {
+                p->code[pos-1] = (p->code[pos-1] & 0xFFF83FFF) | ((unsigned int)(lc + 1) << 14);
+            }
+        }
         obf_adjust_jumps_insert(p->code, p->sizecode, pos + 1, 1);
         injected++;
     }
