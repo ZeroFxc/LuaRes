@@ -8,6 +8,17 @@
 
 static void inject_function(luac_Proto *p, int count, int depth) {
     if (!p->code || p->sizecode < 2 || count <= 0) return;
+    /* B=0 instructions (CALL/TAILCALL/RETURN/VARARG/SETLIST) use registers up to
+       stack top — expanding maxstack injects junk register values. Skip such functions. */
+    for (int _si = 0; _si < p->sizecode; _si++) {
+        int _op = p->code[_si] & 0x3F;
+        if ((_op == 36 || _op == 37 || _op == 38 || _op == 45 || _op == 43) &&
+            ((p->code[_si] >> 23) & 0x1FF) == 0) {
+            if (p->p) for (int i = 0; i < p->sizep; i++)
+                inject_function(p->p[i], count, depth > 0 ? depth-1 : 0);
+            return;
+        }
+    }
     int old_maxstack = p->maxstacksize;
     int extra = count < 20 ? count : 20;
     int new_max = old_maxstack + extra; if (new_max > 250) new_max = 250;
@@ -26,6 +37,8 @@ static void inject_function(luac_Proto *p, int count, int depth) {
         int pos = 1 + (int)(obf_rand() % (p->sizecode - 1));
         int prev_op = p->code[pos-1] & 0x3F;
         if (CONDITION_OPS(prev_op)) continue;
+        /* LOADBOOL C>0 skips next instruction — inserting here changes skip target */
+        if (prev_op == 3 && ((p->code[pos-1] >> 14) & 0x1FF) > 0) continue;
         /* SETLIST C==0 requires EXTRAARG next */
         if (prev_op == 43 && ((p->code[pos-1] >> 14) & 0x1FF) == 0) continue;
         int a = old_maxstack + (int)(obf_rand() % usable);
