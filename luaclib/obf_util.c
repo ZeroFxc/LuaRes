@@ -104,9 +104,21 @@ void obf_adjust_jumps_remove(unsigned int *code, int code_len, int pos, int n) {
     }
 }
 
-/* Insert n instructions at pos (1-based) into p->code, adjust jumps */
+/* Insert n instructions at pos (1-based) into p->code, adjust jumps.
+   Also fixes LOADBOOL C>0 skip count when inserting after such an instruction. */
 void obf_code_insert(luac_Proto *p, int pos, const unsigned int *ins, int n) {
     int pos0 = pos - 1;
+    /* Fix LOADBOOL C>0 before insertion point: it skips C instructions,
+       and we're adding n more in the skip region. */
+    if (pos0 > 0) {
+        unsigned int prev = p->code[pos0 - 1];
+        if ((prev & 0x3F) == 3) {  /* LOADBOOL */
+            int c = (prev >> 14) & 0x1FF;
+            if (c > 0 && c + n <= 511) {
+                p->code[pos0 - 1] = (prev & 0xFFF83FFF) | ((unsigned int)(c + n) << 14);
+            }
+        }
+    }
     p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + n));
     memmove(&p->code[pos0 + n], &p->code[pos0], sizeof(unsigned int) * (p->sizecode - pos0));
     memcpy(&p->code[pos0], ins, sizeof(unsigned int) * n);
