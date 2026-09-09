@@ -32,6 +32,7 @@ typedef struct {
 /* Assembly options */
 typedef struct {
     int remap;            /* randomize opcode numbering */
+    int dispatch_mode;    /* 0=ordered chain, 1=shuffled chain, 2=table, 3=arithmetic */
     int obfuscate_names;  /* randomize local variable names */
     int include_coroutine;/* include coroutine support */
     int include_debug;    /* include debug library */
@@ -70,13 +71,17 @@ void vm_emit_body(VmBuf *b, const char *body,
 
 /* Component generators (each returns malloc'd Lua source) */
 char *vm_gen_header(size_t *len);
-char *vm_gen_opcodes(const int *remap, size_t *len);
+char *vm_gen_opcodes(const int *remap, int luajit_compat, size_t *len);
 char *vm_gen_runtime(const char *R, const char *K, const char *UV,
                      const char *PC, const char *TOP, const char *PROTO,
                      int include_coroutine, int luajit_compat, size_t *len);
-char *vm_gen_mainloop(const VmOp *ops, int nops, const int *remap,
-                      const char *R, const char *K, const char *UV,
-                      const char *PC, int luajit_compat, size_t *len);
+char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
+                      const char *R, const char *K, const char *UV, const char *PC,
+                      int luajit_compat, unsigned int seed, size_t *len);
+int *vm_dispatch_make_remap(unsigned int seed, int nops);
+void vm_dispatch_set(unsigned int seed, int mode);
+unsigned int vm_dispatch_get_seed(void);
+int vm_dispatch_get_mode(void);
 char *vm_gen_loader(size_t *len);
 char *vm_gen_stdlib(int include_debug, size_t *len);
 char *vm_gen_api(size_t *len);

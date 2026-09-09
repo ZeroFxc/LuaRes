@@ -25,34 +25,20 @@ char *vm_gen_header(size_t *len) {
 }
 
 /* ---- opcode constants ---- */
-char *vm_gen_opcodes(const int *remap, size_t *len) {
+char *vm_gen_opcodes(const int *remap, int luajit_compat, size_t *len) {
     VmBuf b; vmbuf_init(&b);
     int nops;
     const VmOp *ops = vm_op_table(&nops);
     for (int i = 0; i < nops; i++) {
+        const char *body = (luajit_compat && ops[i].body_compat) ? ops[i].body_compat : ops[i].body;
         int opcode = remap ? remap[ops[i].op] : ops[i].op;
-        vmbuf_printf(&b, "local OP_%s = %d\n", ops[i].name, opcode);
+        if (body)
+            vmbuf_printf(&b, "local OP_%s = %d\n", ops[i].name, opcode);
+        else
+            vmbuf_printf(&b, "-- local OP_%s = %d  (no handler)\n", ops[i].name, opcode);
     }
     vmbuf_putc(&b, '\n');
     return vmbuf_detach(&b, len);
-}
-
-/* ---- generate remap table ---- */
-static int *gen_remap(unsigned int seed) {
-    int nops;
-    vm_op_table(&nops);
-    int *map = malloc(nops * sizeof(int));
-    int *inv = malloc(nops * sizeof(int));
-    for (int i = 0; i < nops; i++) inv[i] = i;
-    vm_srand(seed);
-    /* Fisher-Yates shuffle */
-    for (int i = nops - 1; i > 0; i--) {
-        int j = vm_rand() % (i + 1);
-        int t = inv[i]; inv[i] = inv[j]; inv[j] = t;
-    }
-    for (int i = 0; i < nops; i++) map[inv[i]] = i;
-    free(inv);
-    return map;
 }
 
 /* ---- main entry ---- */
@@ -74,7 +60,8 @@ int vm_assemble(VmAsmOpts *opts) {
 
     /* remap */
     int *remap = NULL;
-    if (opts->remap) remap = gen_remap(opts->seed ? opts->seed : 1);
+    if (opts->remap || opts->dispatch_mode)
+        remap = vm_dispatch_make_remap(opts->seed ? opts->seed : 1, nops);
 
     VmBuf out; vmbuf_init(&out);
 
@@ -83,7 +70,7 @@ int vm_assemble(VmAsmOpts *opts) {
     p = vm_gen_header(&l); vmbuf_puts(&out, p); free(p);
 
     /* 2. opcode constants */
-    p = vm_gen_opcodes(remap, &l); vmbuf_puts(&out, p); free(p);
+    p = vm_gen_opcodes(remap, opts->luajit_compat, &l); vmbuf_puts(&out, p); free(p);
 
     /* 3. execute function */
     vmbuf_printf(&out,
@@ -117,7 +104,8 @@ int vm_assemble(VmAsmOpts *opts) {
     vmbuf_puts(&out, p); free(p);
 
     /* 5. main loop */
-    p = vm_gen_mainloop(ops, nops, remap, vR, vK, vUV, vPC, opts->luajit_compat, &l);
+    p = vm_gen_dispatch(ops, nops, remap, opts->dispatch_mode, vR, vK, vUV, vPC,
+                        opts->luajit_compat, opts->seed ? opts->seed : 1, &l);
     vmbuf_puts(&out, p); free(p);
 
     /* 6. end execute */
@@ -158,7 +146,8 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
     }
 
     int *remap = NULL;
-    if (opts->remap) remap = gen_remap(opts->seed ? opts->seed : 1);
+    if (opts->remap || opts->dispatch_mode)
+        remap = vm_dispatch_make_remap(opts->seed ? opts->seed : 1, nops);
 
     VmBuf out; vmbuf_init(&out);
 
@@ -167,7 +156,7 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
     p = vm_gen_header(&l); vmbuf_puts(&out, p); free(p);
 
     /* 2. opcode constants */
-    p = vm_gen_opcodes(remap, &l); vmbuf_puts(&out, p); free(p);
+    p = vm_gen_opcodes(remap, opts->luajit_compat, &l); vmbuf_puts(&out, p); free(p);
 
     /* 3. execute function */
     vmbuf_printf(&out,
@@ -201,7 +190,8 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
     vmbuf_puts(&out, p); free(p);
 
     /* 5. main loop */
-    p = vm_gen_mainloop(ops, nops, remap, vR, vK, vUV, vPC, opts->luajit_compat, &l);
+    p = vm_gen_dispatch(ops, nops, remap, opts->dispatch_mode, vR, vK, vUV, vPC,
+                        opts->luajit_compat, opts->seed ? opts->seed : 1, &l);
     vmbuf_puts(&out, p); free(p);
 
     /* 6. end execute */
