@@ -75,12 +75,13 @@ void obf_adjust_jumps_insert(unsigned int *code, int code_len, int pos, int n) {
         if (i >= pos0 && i < pos0 + n) continue;
         if (is_jump_op(code[i] & 0x3F)) {
             int sbx = (int)(code[i] >> 14) - 131071;
-            /* compute OLD index: jumps at/after insertion point shifted by n */
-            int old_i = (i >= pos0) ? i - n : i;
-            int target_old = old_i + sbx + 1;
+            /* current jump target (0-based): pc + 1 + sbx */
+            int target = i + 1 + sbx;
             int delta = 0;
-            if (old_i < pos0 && target_old >= pos0) delta = n;
-            else if (old_i >= pos0 && target_old < pos0) delta = -n;
+            /* jump before insertion point, target at/after insertion point -> target shifts +n */
+            if (i < pos0 && target >= pos0) delta = n;
+            /* jump after insertion point, target before insertion point -> jump shifted +n, sbx needs -n */
+            else if (i >= pos0 + n && target < pos0) delta = -n;
             if (delta) code[i] = (code[i] & 0x3FFF) | ((unsigned int)(sbx + delta + 131071) << 14);
         }
     }
@@ -91,12 +92,13 @@ void obf_adjust_jumps_remove(unsigned int *code, int code_len, int pos, int n) {
     for (int i = 0; i < code_len; i++) {
         if (is_jump_op(code[i] & 0x3F)) {
             int sbx = (int)(code[i] >> 14) - 131071;
-            /* compute OLD index before removal: jumps at/after pos0 were at i+n */
-            int old_i = (i >= pos0) ? i + n : i;
-            int target_old = old_i + sbx + 1;
+            /* current jump target (0-based): pc + 1 + sbx */
+            int target = i + 1 + sbx;
             int delta = 0;
-            if (old_i < pos0 && target_old > pos0) delta = -n;
-            else if (old_i > pos0 && target_old < pos0) delta = n;
+            /* jump before removal point, target at/after removed region -> target shifts -n */
+            if (i < pos0 && target >= pos0 + n) delta = -n;
+            /* jump after removal point, target before removal point -> jump shifted -n, sbx needs +n */
+            else if (i >= pos0 && target < pos0) delta = n;
             if (delta) code[i] = (code[i] & 0x3FFF) | ((unsigned int)(sbx + delta + 131071) << 14);
         }
     }
