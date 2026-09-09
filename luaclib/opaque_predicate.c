@@ -249,6 +249,17 @@ static int is_safe_pos(luac_Proto *p, int pos) {
 static void inject_function(luac_Proto *p, int count) {
     if (!p->code || p->sizecode < 4 || count <= 0) return;
 
+    /* Skip functions with B=0 (VARARG/CALL/TAILCALL/RETURN/SETLIST) or C=0 CALL/TAILCALL:
+       their dynamic output range R(A)..top can overlap the high registers r1/r2/r3
+       used by opaque predicates, causing predicate values to be overwritten and dead code executed. */
+    for (int _si = 0; _si < p->sizecode; _si++) {
+        int _op = p->code[_si] & 0x3F;
+        int _b = (p->code[_si] >> 23) & 0x1FF;
+        int _c = (p->code[_si] >> 14) & 0x1FF;
+        if ((_op == 36 || _op == 37 || _op == 38 || _op == 45 || _op == 43) && _b == 0) return;
+        if ((_op == 36 || _op == 37) && _c == 0) return;
+    }
+
     int injected = 0;
     int attempts = 0;
     while (injected < count && attempts < count * 15) {
@@ -282,6 +293,7 @@ int opaque_predicate_process(lua_State *L) {
 
     if (p->p) {
         for (int i = 0; i < p->sizep; i++) {
+            if (obf_is_decrypt_proto(p->p[i])) continue;  /* skip str_encrypt decryptor */
             inject_function(p->p[i], count > 4 ? count / 2 : 2);
         }
     }
