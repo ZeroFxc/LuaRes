@@ -22,6 +22,14 @@ static int choose_segments(int len) {
     return 4;
 }
 
+/* 找到 >= pos 的最近 UTF-8 字符边界（跳过续字节 0x80-0xBF） */
+static int utf8_next_boundary(const char *s, int len, int pos) {
+    if (pos <= 0) return 0;
+    if (pos >= len) return len;
+    while (pos < len && ((unsigned char)s[pos] & 0xC0) == 0x80) pos++;
+    return pos;
+}
+
 static int is_string_const(luac_Proto *p, int idx) {
     if (idx < 0 || idx >= p->sizek) return 0;
     return (p->k_tag[idx] == LUA_TSHRSTR || p->k_tag[idx] == LUA_TLNGSTR) && p->k_str[idx] != NULL;
@@ -67,20 +75,35 @@ static int process_function(luac_Proto *p) {
         int seg = len / n;
         if (seg < 1) seg = 1;
 
-        /* split into parts */
+        /* 预计算每个拆分点的 UTF-8 边界位置 */
+        int bounds[8];
+        for (int i = 0; i < n - 1; i++) {
+            int raw = (i + 1) * seg;
+            bounds[i] = utf8_next_boundary(s, len, raw);
+        }
+        bounds[n - 1] = len;
+
+        /* split into parts (按 UTF-8 边界切分，避免截断多字节字符) */
         char *parts[8];
         int part_lens[8];
         int pos = 0;
+        int actual_n = 0;
         for (int i = 0; i < n; i++) {
-            int this_seg = (i == n - 1) ? (len - pos) : seg;
-            if (this_seg < 1) this_seg = 1;
+            int end = bounds[i];
+            int this_seg = end - pos;
+            if (this_seg < 1) continue;  /* 边界重合，跳过空片段 */
             if (pos + this_seg > len) this_seg = len - pos;
-            if (this_seg < 0) this_seg = 0;
-            parts[i] = (char *)malloc(this_seg + 1);
-            if (this_seg > 0) memcpy(parts[i], s + pos, this_seg);
-            parts[i][this_seg] = '\0';
-            part_lens[i] = this_seg;
+            parts[actual_n] = (char *)malloc(this_seg + 1);
+            if (this_seg > 0) memcpy(parts[actual_n], s + pos, this_seg);
+            parts[actual_n][this_seg] = '\0';
+            part_lens[actual_n] = this_seg;
             pos += this_seg;
+            actual_n++;
+        }
+        n = actual_n;
+        if (n < 2) {  /* 无法拆成 >=2 个有效片段，跳过此字符串 */
+            for (int i = 0; i < actual_n; i++) free(parts[i]);
+            continue;
         }
 
         /* Fisher-Yates shuffle of add order */
@@ -260,6 +283,44 @@ static int process_function(luac_Proto *p) {
                 if (sg->n >= 2)
                     new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, kr, kr, kr + sg->n - 1);
                 new_code[ni++] = LUAC_ABC(LUAC_OP_GETTABLE, a, b, kr);
+                handled = 1;
+            }
+        } else if (op == LUAC_OP_EQ) {
+            /* EQ A B C: B=寄存器, C=RK。若 C 是已拆分的字符串，先拼接到临时寄存器 */
+            if (c >= BITRK && (c - BITRK) < orig_k && seg_map[c - BITRK].n > 0) {
+                SegInfo *sg = &seg_map[c - BITRK];
+                int kr = tmp_base;
+                for (int j = 0; j < sg->n; j++)
+                    new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, kr + j, sg->seg_idx[j]);
+                if (sg->n >= 2)
+                    new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, kr, kr, kr + sg->n - 1);
+                new_code[ni++] = LUAC_ABC(LUAC_OP_EQ, a, b, kr);
+                handled = 1;
+            }
+        } else if (op == LUAC_OP_LT || op == LUAC_OP_LE) {
+            /* LT/LE A B C: B 和 C 都是 RK */
+            int b_sp = (b >= BITRK && (b - BITRK) < orig_k && seg_map[b - BITRK].n > 0);
+            int c_sp = (c >= BITRK && (c - BITRK) < orig_k && seg_map[c - BITRK].n > 0);
+            if (b_sp || c_sp) {
+                int kr1 = tmp_base, kr2 = tmp_base + 8;
+                int nb = b, nc = c;
+                if (b_sp) {
+                    SegInfo *sg = &seg_map[b - BITRK];
+                    for (int j = 0; j < sg->n; j++)
+                        new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, kr1 + j, sg->seg_idx[j]);
+                    if (sg->n >= 2)
+                        new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, kr1, kr1, kr1 + sg->n - 1);
+                    nb = kr1;
+                }
+                if (c_sp) {
+                    SegInfo *sg = &seg_map[c - BITRK];
+                    for (int j = 0; j < sg->n; j++)
+                        new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, kr2 + j, sg->seg_idx[j]);
+                    if (sg->n >= 2)
+                        new_code[ni++] = LUAC_ABC(LUAC_OP_CONCAT, kr2, kr2, kr2 + sg->n - 1);
+                    nc = kr2;
+                }
+                new_code[ni++] = LUAC_ABC(op, a, nb, nc);
                 handled = 1;
             }
         }
