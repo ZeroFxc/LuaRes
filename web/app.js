@@ -75,6 +75,11 @@ function sortModulesForExecution(mods){
     return ia - ib;
   });
 }
+let _dsSeedInit = 0;
+function dsFreshSeed(){
+  if(!_dsSeedInit){ _dsSeedInit = Math.floor(Math.random() * 0x7FFFFFFF) + 1; }
+  return _dsSeedInit;
+}
 const STORAGE_KEY = 'luac_obf_config_v2';
 const CUSTOM_STORAGE_KEY = 'luac_obf_custom_modules_v2';
 const JS_CUSTOM_STORAGE_KEY = 'luac_obf_js_modules_v2';
@@ -194,7 +199,7 @@ function renderModules(){
                 <option value="2">查表</option>
                 <option value="3">算术槽</option>
               </select></span>
-              <span>seed <input id="ds_seed" type="number" min="0" value="0" style="width:64px;font-size:11px;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:4px" title="0=每轮随机"></span>
+              <span>seed <input id="ds_seed" type="number" min="0" value="${dsFreshSeed()}" style="width:64px;font-size:11px;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:4px" title="0=每轮随机；打开页面自动刷新"></span>
             </div>` : ''}
           </div>
         `).join('')}
