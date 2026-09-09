@@ -52,6 +52,8 @@ const MODULE_GROUPS = [
   ]},
   { name: '虚拟机组装', modules: [
     { id: 'vm_dispatch_shuffle_c', label: 'VM分发重映射', desc: '随机重映射opcode编号，主循环分发三选一（switch乱序/查表/算术），每轮结果不同，最后执行' },
+    { id: 'vm_reg_shuffle_c', label: 'VM寄存器槽打乱', desc: 'VM内部寄存器槽重命名：载荷寄存器编号与解释器寄存器表访问下标同步remap，跟分发重映射共用seed派生' },
+    { id: 'vm_const_shuffle_c', label: 'VM常量池打乱', desc: '生成的VM常量池表顺序打乱+载荷常量索引同步remap，字符串/数字/表交错排列，跟opcode remap对称' },
     { id: 'vm_embed_c', label: '自包含VM打包', desc: '成品式：把字节码转为纯Lua自包含解释器，零外部依赖，最后执行' },
   ]},
 ];
@@ -65,7 +67,7 @@ const EXEC_ORDER = [
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
   'flatten_enhance_c','debug_strip_c','debug_mutate_c','antidec_c','proto_shuffle_c',
-  'live_range_split_c','op48_junk_c','vm_dispatch_shuffle_c','vm_embed_c'
+  'live_range_split_c','op48_junk_c','vm_dispatch_shuffle_c','vm_reg_shuffle_c','vm_const_shuffle_c','vm_embed_c'
 ];
 const EXEC_ORDER_MAP = new Map(EXEC_ORDER.map((id,i) => [id, i]));
 function sortModulesForExecution(mods){
@@ -200,6 +202,10 @@ function renderModules(){
                 <option value="3">算术槽</option>
               </select></span>
               <span>seed <input id="ds_seed" type="number" min="0" value="${dsFreshSeed()}" style="width:64px;font-size:11px;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:4px" title="0=每轮随机；打开页面自动刷新"></span>
+            </div>` : ''}
+            ${m.id === 'vm_reg_shuffle_c' || m.id === 'vm_const_shuffle_c' ? `
+            <div class="ds-opts" style="margin-top:3px;font-size:11px;color:#8b949e;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <span>seed <input id="${m.id === 'vm_reg_shuffle_c' ? 'rs_seed' : 'cs_seed'}" type="number" min="0" value="${dsFreshSeed()}" style="width:64px;font-size:11px;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:4px" title="0=每轮随机；打开页面自动刷新"></span>
             </div>` : ''}
           </div>
         `).join('')}
@@ -466,6 +472,14 @@ async function runObfuscation(){
         const s = seedEl ? (parseInt(seedEl.value, 10) || 0) : 0;
         Module.ccall('wasm_dispatch_opts', null, ['number','number'], [m, s]);
         log('  VM分发参数: mode=' + m + ' seed=' + (s > 0 ? s : '随机'), 'info');
+      }
+      if(mod === 'vm_reg_shuffle_c' || mod === 'vm_const_shuffle_c'){
+        const rsEl = document.getElementById('rs_seed');
+        const csEl = document.getElementById('cs_seed');
+        const rs = rsEl ? (parseInt(rsEl.value, 10) || 0) : 0;
+        const cs = csEl ? (parseInt(csEl.value, 10) || 0) : 0;
+        Module.ccall('wasm_vm_shuffle_opts', null, ['number','number'], [rs, cs]);
+        log('  VM shuffle参数: reg_seed=' + (rs > 0 ? rs : '随机/关') + ' const_seed=' + (cs > 0 ? cs : '随机/关'), 'info');
       }
 
       if(isJs){
