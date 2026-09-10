@@ -35,6 +35,14 @@ static int get_loadk_const(luac_Proto *p, int pos, int reg) {
     return (ins >> 14) & 0x3FFFF;  /* Bx */
 }
 
+/* 获取数字常量的值 */
+static double get_k_number(luac_Proto *p, int kidx) {
+    if (kidx < 0 || kidx >= p->sizek) return 0.0;
+    int tag = p->k_tag[kidx];
+    if (tag == 3 || tag == 19) return p->k_num[kidx];
+    return 0.0;
+}
+
 /* 检查常量是否为正数 */
 static int is_k_positive(luac_Proto *p, int kidx) {
     if (kidx < 0 || kidx >= p->sizek) return 0;
@@ -120,6 +128,23 @@ static int unroll_function(luac_Proto *p) {
                         if (kidx >= 0) { step_kidx = kidx; break; }
                     }
                     if (step_kidx >= 0 && is_k_positive(p, step_kidx)) {
+                        /* 检查 start > limit (正 step 时循环不执行，展开后与 cfg_shuffle 交互有问题) */
+                        int start_kidx = -1, limit_kidx = -1;
+                        for (int j = i - 1; j >= 0 && j >= i - 10; j--) {
+                            int sa = get_loadk_const(p, j, A);
+                            int la = get_loadk_const(p, j, A + 1);
+                            if (sa >= 0) start_kidx = sa;
+                            if (la >= 0) limit_kidx = la;
+                            if (start_kidx >= 0 && limit_kidx >= 0) break;
+                        }
+                        if (start_kidx >= 0 && limit_kidx >= 0) {
+                            double sv = get_k_number(p, start_kidx);
+                            double lv = get_k_number(p, limit_kidx);
+                            if (sv > lv) {
+                                i++;
+                                continue;  /* start > limit, skip unroll */
+                            }
+                        }
                         int n = unroll_one(p, i, forloop_pos);
                         changes += n;
                         /* 展开后 i 位置的指令已改变，跳过展开的区域 */
