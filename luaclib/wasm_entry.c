@@ -85,6 +85,7 @@ static const char *MODULE_LIST =
     "for_loop_unroll_c,"
     "tforcall_to_call_c,"
     "tforloop_as_jump_c,"
+    "fake_forloop_c,"
     "operator_substitute_c,"
     "debug_mutate_c,"
     "call_rewrite_c,"

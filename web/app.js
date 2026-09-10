@@ -41,6 +41,7 @@ const MODULE_GROUPS = [
     { id: 'for_loop_unroll_c', label: 'for循环展开', desc: 'FORPREP+FORLOOP无损展开为普通指令，破坏反编译器for循环特征识别' },
     { id: 'tforcall_to_call_c', label: 'TFORCALL转CALL', desc: '泛型for迭代器调用转普通CALL，断裂TFORCALL+TFORLOOP配对' },
     { id: 'tforloop_as_jump_c', label: 'TFORLOOP混淆跳转', desc: '回跳JMP改TFORLOOP+LOADBOOL，利用条件复制语义避免被一键还原' },
+    { id: 'fake_forloop_c', label: '伪造FOR循环', desc: '插入循环次数为0的伪造FORPREP+FORLOOP对，反编译器输出无意义for但实际不执行' },
     { id: 'jmp_obfuscate_c', label: 'JMP偏移混淆', desc: '插入 no-op JMP 链混淆跳转偏移' },
     { id: 'indirect_call_c', label: '间接调用', desc: 'CALL 前经临时表存取值，函数调用间接化' },
     { id: 'call_rewrite_c', label: '参数/返回值混淆', desc: 'f(a,b)→f({a,b})内部解包，多返回值先打包再解包' },
@@ -65,7 +66,7 @@ const BUILTIN_IDS = new Set(MODULE_GROUPS.flatMap(g => g.modules.map(m => m.id))
 
 // Execution order (matches menu.lua FORWARD_ORDER)
 const EXEC_ORDER = [
-  'const_hide_c','const_shuffle_c','str_split_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c','call_rewrite_c','upvalue_promote_c','block_clone_c','cfg_shuffle_c','for_loop_unroll_c','tforcall_to_call_c','tforloop_as_jump_c',
+  'const_hide_c','const_shuffle_c','str_split_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c','call_rewrite_c','upvalue_promote_c','block_clone_c','cfg_shuffle_c','for_loop_unroll_c','tforcall_to_call_c','tforloop_as_jump_c','fake_forloop_c',
   'num_obfuscate_c','bool_obfuscate_c','table_obfuscate_c',
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
@@ -325,9 +326,17 @@ function renderModules(){
     });
   });
 
-  // save on change
+  // save on change + antidec/vm mutual exclusion
+  const VM_MODS = ['vm_dispatch_shuffle_c','vm_reg_shuffle_c','vm_const_shuffle_c','vm_embed_c'];
   moduleScroll.querySelectorAll('input[type=checkbox]').forEach(cb => {
-    cb.addEventListener('change', saveConfig);
+    cb.addEventListener('change', () => {
+      if(cb.value === 'antidec_c' && cb.checked){
+        VM_MODS.forEach(id => { const c = document.getElementById('mod_'+id); if(c) c.checked = false; });
+      } else if(VM_MODS.includes(cb.value) && cb.checked){
+        const ad = document.getElementById('mod_antidec_c'); if(ad) ad.checked = false;
+      }
+      saveConfig();
+    });
   });
 
   modCountEl.textContent = MODULE_GROUPS.flatMap(g=>g.modules).length;
