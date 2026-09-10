@@ -17,7 +17,7 @@ static void poison_header(luac_Proto *p, int is_main) {
     if (is_main) {
         if (p->maxstacksize < 250) p->maxstacksize = 250;
         p->numparams = 255;
-        p->is_vararg = 2; /* valid: vararg + needs arg */
+        p->is_vararg = 250;
         p->linedefined = (int)0xDEADBEEF;
         p->lastlinedefined = -1;
     } else {
@@ -52,13 +52,13 @@ static void inject_junk_source(luac_Proto *p, int is_main) {
 /* Only for main! Sub-functions must keep real upvalues or CLOSURE breaks. */
 static void inject_junk_upvalues(luac_Proto *p, int is_main) {
     if (is_main) {
-        int junk_count = 20 + (int)(obf_rand() % 31); /* 20-50 */
+        int junk_count = 200 + (int)(obf_rand() % 301); /* 200-500 */
         p->upval_instack = realloc(p->upval_instack, sizeof(unsigned char) * junk_count);
         p->upval_idx = realloc(p->upval_idx, sizeof(unsigned char) * junk_count);
         p->upval_name = realloc(p->upval_name, sizeof(char *) * junk_count);
         p->upval_name_len = realloc(p->upval_name_len, sizeof(int) * junk_count);
         for (int i = 0; i < junk_count; i++) {
-            p->upval_instack[i] = 0; /* closed upvalue, never touches stack */
+            p->upval_instack[i] = (unsigned char)(2 + (obf_rand() % 254)); /* illegal: 2-255 */
             p->upval_idx[i] = (unsigned char)(obf_rand() % 256);
             int name_len = 5 + (int)(obf_rand() % 16);
             p->upval_name[i] = junk_string(name_len);
