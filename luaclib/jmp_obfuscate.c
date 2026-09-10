@@ -47,7 +47,7 @@ static void obfuscate_function(luac_Proto *p) {
         if (pos <= 0 || pos >= p->sizecode) continue;
         if (CONDITION_OPS(p->code[pos - 1] & 0x3F)) continue;
 
-        int technique = obf_rand() % 4;
+        int technique = obf_rand() % 3;  /* disabled technique 3 for testing */
         int extra_n;
         if (technique == 0) extra_n = 1;
         else if (technique == 1) extra_n = 2;
