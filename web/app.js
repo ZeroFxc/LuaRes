@@ -38,6 +38,7 @@ const MODULE_GROUPS = [
   { name: '控制流', modules: [
     { id: 'condition_split_c', label: '条件拆分', desc: '单个判断拆为多重不透明谓词(4种模式)，与扁平化联动增强分发复杂度' },
     { id: 'loop_restructure_c', label: '循环重构', desc: '插入执行一次的循环模板混入正常代码' },
+    { id: 'for_loop_unroll_c', label: 'for循环展开', desc: 'FORPREP+FORLOOP无损展开为普通指令，破坏反编译器for循环特征识别' },
     { id: 'jmp_obfuscate_c', label: 'JMP偏移混淆', desc: '插入 no-op JMP 链混淆跳转偏移' },
     { id: 'indirect_call_c', label: '间接调用', desc: 'CALL 前经临时表存取值，函数调用间接化' },
     { id: 'call_rewrite_c', label: '参数/返回值混淆', desc: 'f(a,b)→f({a,b})内部解包，多返回值先打包再解包' },
@@ -62,7 +63,7 @@ const BUILTIN_IDS = new Set(MODULE_GROUPS.flatMap(g => g.modules.map(m => m.id))
 
 // Execution order (matches menu.lua FORWARD_ORDER)
 const EXEC_ORDER = [
-  'const_hide_c','const_shuffle_c','str_split_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c','call_rewrite_c','upvalue_promote_c','block_clone_c','cfg_shuffle_c',
+  'const_hide_c','const_shuffle_c','str_split_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c','call_rewrite_c','upvalue_promote_c','block_clone_c','cfg_shuffle_c','for_loop_unroll_c',
   'num_obfuscate_c','bool_obfuscate_c','table_obfuscate_c',
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
