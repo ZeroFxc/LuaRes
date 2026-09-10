@@ -29,6 +29,7 @@ char *vm_gen_opcodes(const int *remap, int luajit_compat, size_t *len) {
     VmBuf b; vmbuf_init(&b);
     int nops;
     const VmOp *ops = vm_op_table(&nops);
+#if VM_ASM_DEBUG
     for (int i = 0; i < nops; i++) {
         const char *body = (luajit_compat && ops[i].body_compat) ? ops[i].body_compat : ops[i].body;
         int opcode = remap ? remap[ops[i].op] : ops[i].op;
@@ -38,6 +39,7 @@ char *vm_gen_opcodes(const int *remap, int luajit_compat, size_t *len) {
             vmbuf_printf(&b, "-- local OP_%s = %d  (no handler)\n", ops[i].name, opcode);
     }
     vmbuf_putc(&b, '\n');
+#endif
     return vmbuf_detach(&b, len);
 }
 
