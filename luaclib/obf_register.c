@@ -28,6 +28,7 @@ int luac_flatten_process(lua_State *L);
 int condition_split_process(lua_State *L);
 int loop_restructure_process(lua_State *L);
 int for_loop_unroll_process(lua_State *L);
+int tforcall_to_call_process(lua_State *L);
 int junk_process(lua_State *L);
 int jmp_obfuscate_process(lua_State *L);
 int indirect_call_process(lua_State *L);
@@ -77,6 +78,7 @@ static const luaL_Reg obf_funcs[] = {
     {"condition_split_c", condition_split_process},
     {"loop_restructure_c", loop_restructure_process},
     {"for_loop_unroll_c", for_loop_unroll_process},
+    {"tforcall_to_call_c", tforcall_to_call_process},
     {"junk_c", junk_process},
     {"jmp_obfuscate_c", jmp_obfuscate_process},
     {"indirect_call_c", indirect_call_process},
