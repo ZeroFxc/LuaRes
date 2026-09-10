@@ -1,2 +1,0 @@
-TOTAL=223
-PASS

@@ -1,6 +1,0 @@
-1
-
-..\obfuscator\hello.lua
-
-
-0

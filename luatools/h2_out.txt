@@ -1,4 +1,0 @@
-no_luac_obfuscate ... PASS: TOTAL=285
-only_flatten ... PASS: TOTAL=285
-obf+flatten ... PASS: TOTAL=285
-all ... 

@@ -1,2 +1,0 @@
-TOTAL=270
-seed=2 PASS

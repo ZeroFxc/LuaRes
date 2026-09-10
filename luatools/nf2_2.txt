@@ -1,2 +1,0 @@
-2funcs ... TOTAL=133
-PASS

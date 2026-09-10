@@ -1,3 +1,0 @@
-﻿obf ok
-dump ok len=12211
-load ok

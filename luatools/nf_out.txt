@@ -1,5 +1,0 @@
-5 funcs ... PASS: 174
-6 funcs ... PASS: 229
-7 funcs ... PASS: 248
-8 funcs ... PASS: 261
-DONE

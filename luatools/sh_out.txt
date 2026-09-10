@@ -1,1 +1,0 @@
-seed=1 ... main: code=10722 k=167 stack=250 protos=8

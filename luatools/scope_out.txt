@@ -1,2 +1,0 @@
-TOTAL=154
-PASS (p out of scope)

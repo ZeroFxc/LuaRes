@@ -1,2 +1,0 @@
-first7+obf ... TOTAL=285
-PASS

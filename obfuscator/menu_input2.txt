@@ -1,6 +1,0 @@
-1
-
-..\obfuscator\packed.luac
-..\obfuscator\packed_out.luac
-
-0

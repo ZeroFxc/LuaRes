@@ -1,8 +1,0 @@
-local f = load('print("hello")')
-local enc = string.dump(f)
-print('dump first bytes:', string.byte(enc,1,5))
-local dec = string.dec(enc)
-print('dec first bytes:', string.byte(dec,1,5))
-local f2 = load(dec)
-f2()
-print('OK')

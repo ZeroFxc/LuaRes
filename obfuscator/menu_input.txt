@@ -1,6 +1,0 @@
-1
-
-..\obfuscator\hello.lua
-..\obfuscator\hello_out.luac
-
-0
