@@ -1381,6 +1381,18 @@ btnNone.addEventListener('click', () => {
 btnClearLog.addEventListener('click', () => { logArea.innerHTML = ''; });
 
 // ---- Debug Locate: find which module causes error by disabling one by one ----
+function isOutputOk(output) {
+  if(!output || output.length === 0) return false;
+  if(output.indexOf('test error') >= 0) return false;
+  if(output.indexOf('测试失败') >= 0) return false;
+  if(output.indexOf('attempt to') >= 0) return false;
+  if(output.indexOf('execution timeout') >= 0) return false;
+  if(output.indexOf('stack overflow') >= 0) return false;
+  if(output.indexOf('not enough memory') >= 0) return false;
+  /* must contain success marker */
+  return output.indexOf('测试通过了') >= 0;
+}
+
 async function runObfuscationWithModules(modIds) {
   // Temporarily set checkboxes to match modIds, run, then restore
   const allCbs = moduleScroll.querySelectorAll('input[type=checkbox]');
@@ -1428,7 +1440,7 @@ btnDebugLocate.addEventListener('click', async () => {
   log('[0/0] 基准测试 (全部模块)...', 'info');
   const baseline = await runObfuscationWithModules(allMods);
   const baselineOutput = baseline.output;
-  const baselineOk = baseline.ok && !baseline.error;
+  const baselineOk = isOutputOk(baselineOutput);
   log('  基准输出: ' + (baselineOutput.substring(0, 100).replace(/\n/g, ' | ') || '(无输出)') + (baseline.error ? ' ERROR: ' + baseline.error : ''), baselineOk ? 'ok' : 'err');
 
   // Step 2: disable one module at a time (reverse order) and run
@@ -1441,7 +1453,7 @@ btnDebugLocate.addEventListener('click', async () => {
     log('[' + stepNum + '/' + allMods.length + '] (' + progress + '%) 关闭: ' + getModuleLabel(disabled) + ' ...', 'info');
     btnDebugLocate.textContent = '定位中 ' + progress + '%';
     const r = await runObfuscationWithModules(remaining);
-    const outputMatch = r.ok && r.output === baselineOutput;
+    const outputMatch = isOutputOk(r.output);
     results.push({
       disabled: disabled,
       disabledLabel: getModuleLabel(disabled),
@@ -1451,8 +1463,9 @@ btnDebugLocate.addEventListener('click', async () => {
       output: r.output,
       outputMatch: outputMatch
     });
-    const status = outputMatch ? '输出一致' : (r.ok ? '输出变化' : '错误: ' + r.error);
-    log('  结果: ' + status + (r.output && !outputMatch ? ' | 输出: ' + r.output.substring(0, 80).replace(/\n/g, ' | ') : ''), outputMatch ? 'ok' : 'warn');
+    const rOk = isOutputOk(r.output);
+    const status = rOk ? '正常' : (r.error ? '错误: ' + r.error : '异常输出');
+    log('  结果: ' + status + (r.output && !rOk ? ' | 输出: ' + r.output.substring(0, 80).replace(/\n/g, ' | ') : ''), rOk ? 'ok' : 'warn');
   }
 
   // Step 3: show summary table
@@ -1462,7 +1475,7 @@ btnDebugLocate.addEventListener('click', async () => {
 
   // Find culprit: module whose removal makes output match baseline (if baseline was broken)
   // Or module whose removal breaks output (if baseline was ok)
-  const culpritCandidates = results.filter(r => r.outputMatch !== baselineOk);
+  const culpritCandidates = results.filter(r => isOutputOk(r.output) !== baselineOk);
   if(culpritCandidates.length > 0){
     log('\n*** 可疑模块 (关闭后状态反转) ***', 'err');
     culpritCandidates.forEach(r => {
@@ -1474,8 +1487,9 @@ btnDebugLocate.addEventListener('click', async () => {
 
   log('\n完整矩阵:', 'info');
   results.forEach(r => {
-    const mark = r.outputMatch ? '[一致]' : (r.ok ? '[变化]' : '[错误]');
-    log('  ' + mark + ' 关闭 ' + r.disabledLabel + ' -> ' + (r.remaining.length + ' 模块') + (r.error ? ' ERR: ' + r.error : ''), r.outputMatch ? 'ok' : 'warn');
+    const rOk = isOutputOk(r.output);
+    const mark = rOk ? '[正常]' : (r.error ? '[错误]' : '[异常]');
+    log('  ' + mark + ' 关闭 ' + r.disabledLabel + ' -> ' + (r.remaining.length + ' 模块') + (r.error ? ' ERR: ' + r.error : ''), rOk ? 'ok' : 'warn');
   });
 
   btnDebugLocate.disabled = false;
@@ -1498,7 +1512,7 @@ btnDebugLocateCum.addEventListener('click', async () => {
   log('[0/' + allMods.length + '] 基准测试 (全部模块)...', 'info');
   const baseline = await runObfuscationWithModules(allMods);
   const baselineOutput = baseline.output;
-  const baselineOk = baseline.ok && !baseline.error;
+  const baselineOk = isOutputOk(baselineOutput);
   log('  基准输出: ' + (baselineOutput.substring(0, 100).replace(/\n/g, ' | ') || '(无输出)') + (baseline.error ? ' ERROR: ' + baseline.error : ''), baselineOk ? 'ok' : 'err');
 
   // Step 2: cumulatively disable modules (reverse order), do NOT restore
@@ -1514,7 +1528,7 @@ btnDebugLocateCum.addEventListener('click', async () => {
     btnDebugLocateCum.textContent = '定位中 ' + progress + '%';
 
     const r = await runObfuscationWithModules(remaining);
-    const outputMatch = r.ok && r.output === baselineOutput;
+    const outputMatch = isOutputOk(r.output);
     results.push({
       disabled: disabled,
       disabledLabel: getModuleLabel(disabled),
@@ -1525,8 +1539,9 @@ btnDebugLocateCum.addEventListener('click', async () => {
       output: r.output,
       outputMatch: outputMatch
     });
-    const status = outputMatch ? '输出一致' : (r.ok ? '输出变化' : '错误: ' + r.error);
-    log('  结果: ' + status + (r.output && !outputMatch ? ' | 输出: ' + r.output.substring(0, 80).replace(/\n/g, ' | ') : ''), outputMatch ? 'ok' : 'warn');
+    const rOk = isOutputOk(r.output);
+    const status = rOk ? '正常' : (r.error ? '错误: ' + r.error : '异常输出');
+    log('  结果: ' + status + (r.output && !rOk ? ' | 输出: ' + r.output.substring(0, 80).replace(/\n/g, ' | ') : ''), rOk ? 'ok' : 'warn');
   }
 
   // Step 3: summary
@@ -1534,7 +1549,7 @@ btnDebugLocateCum.addEventListener('click', async () => {
   log('基准输出 (' + baselineOutput.length + ' 字节): ' + baselineOutput.substring(0, 120).replace(/\n/g, ' | '), 'info');
 
   // Find first point where output state changed relative to baseline
-  const firstChange = results.find(r => r.outputMatch !== baselineOk);
+  const firstChange = results.find(r => isOutputOk(r.output) !== baselineOk);
   if(firstChange){
     log('\n*** 关键转折点 (关闭到此处状态首次反转) ***', 'err');
     log('  触发模块: ' + firstChange.disabledLabel + ' (' + firstChange.disabled + ')', 'err');
@@ -1547,8 +1562,9 @@ btnDebugLocateCum.addEventListener('click', async () => {
 
   log('\n完整矩阵:', 'info');
   results.forEach(r => {
-    const mark = r.outputMatch ? '[一致]' : (r.ok ? '[变化]' : '[错误]');
-    log('  ' + mark + ' 关闭 ' + r.disabledLabel + ' (累计' + r.disabledCount + '个) -> 剩余' + (allMods.length - r.disabledCount) + '模块' + (r.error ? ' ERR: ' + r.error : ''), r.outputMatch ? 'ok' : 'warn');
+    const rOk = isOutputOk(r.output);
+    const mark = rOk ? '[正常]' : (r.error ? '[错误]' : '[异常]');
+    log('  ' + mark + ' 关闭 ' + r.disabledLabel + ' (累计' + r.disabledCount + '个) -> 剩余' + (allMods.length - r.disabledCount) + '模块' + (r.error ? ' ERR: ' + r.error : ''), rOk ? 'ok' : 'warn');
   });
 
   btnDebugLocateCum.disabled = false;

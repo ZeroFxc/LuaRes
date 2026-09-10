@@ -70,6 +70,50 @@ static int find_block_containing(Block *blocks, int nblocks, int target) {
     return -1;
 }
 
+/* Protect inseparable instruction pairs: clear block starts that fall
+   in the middle of CLOSURE+upvalues, conditional+JMP, LOADKX+EXTRAARG,
+   SETLIST C=0+EXTRAARG, TFORCALL+TFORLOOP. */
+static void protect_inseparable_regions(int *is_start, unsigned int *code, int sizecode) {
+    for (int i = 0; i < sizecode; i++) {
+        int op = code[i] & 0x3F;
+        if (op == 44) {  /* CLOSURE: skip following upvalue setup (MOVE/GETUPVAL/GETTABUP) */
+            int j = i + 1;
+            while (j < sizecode) {
+                int uop = code[j] & 0x3F;
+                if (uop == 0 || uop == 5 || uop == 6) {  /* MOVE, GETUPVAL, GETTABUP */
+                    is_start[j] = 0;
+                    j++;
+                } else {
+                    break;
+                }
+            }
+        } else if (op == 31 || op == 32 || op == 33 || op == 34 || op == 35) {
+            /* EQ/LT/LE/TEST/TESTSET: must be followed by JMP */
+            if (i + 1 < sizecode && (code[i+1] & 0x3F) == 30) {
+                is_start[i + 1] = 0;
+            }
+        } else if (op == 2) {  /* LOADKX: must be followed by EXTRAARG */
+            if (i + 1 < sizecode && (code[i+1] & 0x3F) == 46) {
+                is_start[i + 1] = 0;
+            }
+        } else if (op == 43) {  /* SETLIST: C=0 must be followed by EXTRAARG */
+            int c = (code[i] >> 14) & 0x1FF;
+            if (c == 0 && i + 1 < sizecode && (code[i+1] & 0x3F) == 46) {
+                is_start[i + 1] = 0;
+            }
+        } else if (op == 3) {  /* LOADBOOL: C=1 skips next instruction (PC+=1) */
+            int c = (code[i] >> 14) & 0x1FF;
+            if (c == 1 && i + 1 < sizecode) {
+                is_start[i + 1] = 0;
+            }
+        } else if (op == 41) {  /* TFORCALL: must be followed by TFORLOOP */
+            if (i + 1 < sizecode && (code[i+1] & 0x3F) == 42) {
+                is_start[i + 1] = 0;
+            }
+        }
+    }
+}
+
 static int cfg_shuffle_process_sub(luac_Proto *p);
 
 int cfg_shuffle_process(lua_State *L) {
@@ -101,13 +145,8 @@ int cfg_shuffle_process(lua_State *L) {
         }
     }
 
-    /* CLOSURE(44) 之后必须紧跟 upvalue 设置；TFORCALL(41) 之后必须紧跟 TFORLOOP——不能作为块起始 */
-    for (int i = 1; i < p->sizecode; i++) {
-        if (is_start[i]) {
-            int prev_op = p->code[i - 1] & 0x3F;
-            if (prev_op == 44 || prev_op == 41) is_start[i] = 0;
-        }
-    }
+    /* Protect all inseparable instruction pairs from being split across blocks */
+    protect_inseparable_regions(is_start, p->code, p->sizecode);
 
     /* === 步骤2: 构建块列表 === */
     int nblocks = 0;
@@ -262,12 +301,16 @@ int cfg_shuffle_process(lua_State *L) {
     fprintf(stderr, "[cfg_shuffle] new_size=%d (original %d)\n", new_size, p->sizecode);
 #endif
 
-    /* === 步骤6: 构建新指令数组 === */
+    /* === 步骤6: 构建新指令数组 + 建立原始位置->新位置映射 === */
     unsigned int *new_code = (unsigned int *)malloc(sizeof(unsigned int) * new_size);
+    int *orig_to_new = (int *)malloc(sizeof(int) * p->sizecode);
     pos = 0;
     for (int i = 0; i < nblocks; i++) {
         int b = order[i];
         int len = blocks[b].end - blocks[b].start;
+        for (int j = 0; j < len; j++) {
+            orig_to_new[blocks[b].start + j] = pos + j;
+        }
         memcpy(new_code + pos, p->code + blocks[b].start, sizeof(unsigned int) * len);
         pos += len;
 
@@ -280,47 +323,32 @@ int cfg_shuffle_process(lua_State *L) {
                 int sbx = target_pos - (pos + 1);
                 new_code[pos] = set_sbx(LUAC_ABC(30, 0, 0, 0), sbx);  /* JMP A=0 */
                 pos += 1;
-#if CFG_SHUFFLE_DEBUG
-                fprintf(stderr, "  inserted JMP at new pos %d, target block %d (pos %d), sbx=%d\n",
-                        pos - 1, blocks[b].fall_succ, target_pos, sbx);
-#endif
             }
         }
     }
 
-    /* === 步骤7: 修正所有JMP的sBx === */
+    /* === 步骤7: 修正所有JMP的sBx (用原始位置->新位置映射) === */
     for (int i = 0; i < new_size; i++) {
         int op = new_code[i] & 0x3F;
         if (op == 30 || op == 39 || op == 40 || op == 42) {
-            /* 这条指令在原始代码中的位置 */
-            /* 我们需要找到它属于哪个块, 以及它的原始目标块 */
-            /* 简化: 遍历块找到包含这条新指令的块 */
-            int found_block = -1;
-            int instr_offset = -1;
-            for (int b = 0; b < nblocks; b++) {
-                int bstart = new_start[b];
-                int blen = blocks[b].end - blocks[b].start;
-                if (i >= bstart && i < bstart + blen) {
-                    found_block = b;
-                    instr_offset = i - bstart;
-                    break;
+            /* 找到这条指令在原始代码中的位置 (反向查找 orig_to_new) */
+            int orig_pos = -1;
+            for (int j = 0; j < p->sizecode; j++) {
+                if (orig_to_new[j] == i) { orig_pos = j; break; }
+            }
+            if (orig_pos >= 0) {
+                int orig_sbx = get_sbx(p->code[orig_pos]);
+                int orig_target = orig_pos + 1 + orig_sbx;
+                if (orig_target >= 0 && orig_target < p->sizecode) {
+                    int new_target = orig_to_new[orig_target];
+                    int new_sbx = new_target - (i + 1);
+                    new_code[i] = set_sbx(new_code[i], new_sbx);
                 }
             }
-
-            if (found_block >= 0 && blocks[found_block].jmp_target >= 0) {
-                int target_block = blocks[found_block].jmp_target;
-                int target_pos = new_start[target_block];
-                int new_sbx = target_pos - (i + 1);
-                new_code[i] = set_sbx(new_code[i], new_sbx);
-#if CFG_SHUFFLE_DEBUG
-                if (instr_offset == 0 || op != 30) {
-                    fprintf(stderr, "  fix JMP at new pos %d (block %d), target block %d (pos %d), new_sbx=%d\n",
-                            i, found_block, target_block, target_pos, new_sbx);
-                }
-#endif
-            }
+            /* 如果 orig_pos < 0, 这是插入的 JMP, 已在步骤6设置正确 sbx */
         }
     }
+    free(orig_to_new);
 
     /* === 步骤8: 替换proto的code === */
     free(p->code);
@@ -361,13 +389,8 @@ static int cfg_shuffle_process_sub(luac_Proto *p) {
         }
     }
 
-    /* CLOSURE(44) 之后必须紧跟 upvalue 设置；TFORCALL(41) 之后必须紧跟 TFORLOOP——不能作为块起始 */
-    for (int i = 1; i < p->sizecode; i++) {
-        if (is_start[i]) {
-            int prev_op = p->code[i - 1] & 0x3F;
-            if (prev_op == 44 || prev_op == 41) is_start[i] = 0;
-        }
-    }
+    /* Protect all inseparable instruction pairs from being split across blocks */
+    protect_inseparable_regions(is_start, p->code, p->sizecode);
 
     int nblocks = 0;
     for (int i = 0; i < p->sizecode; i++) if (is_start[i]) nblocks++;
@@ -464,10 +487,14 @@ static int cfg_shuffle_process_sub(luac_Proto *p) {
     int new_size = pos;
 
     unsigned int *new_code = (unsigned int *)malloc(sizeof(unsigned int) * new_size);
+    int *orig_to_new = (int *)malloc(sizeof(int) * p->sizecode);
     pos = 0;
     for (int i = 0; i < nblocks; i++) {
         int b = order[i];
         int len = blocks[b].end - blocks[b].start;
+        for (int j = 0; j < len; j++) {
+            orig_to_new[blocks[b].start + j] = pos + j;
+        }
         memcpy(new_code + pos, p->code + blocks[b].start, sizeof(unsigned int) * len);
         pos += len;
         if (blocks[b].fall_succ >= 0) {
@@ -484,18 +511,21 @@ static int cfg_shuffle_process_sub(luac_Proto *p) {
     for (int i = 0; i < new_size; i++) {
         int op = new_code[i] & 0x3F;
         if (op == 30 || op == 39 || op == 40 || op == 42) {
-            int found_block = -1;
-            for (int b = 0; b < nblocks; b++) {
-                int bstart = new_start[b];
-                int blen = blocks[b].end - blocks[b].start;
-                if (i >= bstart && i < bstart + blen) { found_block = b; break; }
+            int orig_pos = -1;
+            for (int j = 0; j < p->sizecode; j++) {
+                if (orig_to_new[j] == i) { orig_pos = j; break; }
             }
-            if (found_block >= 0 && blocks[found_block].jmp_target >= 0) {
-                int target_pos = new_start[blocks[found_block].jmp_target];
-                new_code[i] = set_sbx(new_code[i], target_pos - (i + 1));
+            if (orig_pos >= 0) {
+                int orig_sbx = get_sbx(p->code[orig_pos]);
+                int orig_target = orig_pos + 1 + orig_sbx;
+                if (orig_target >= 0 && orig_target < p->sizecode) {
+                    int new_target = orig_to_new[orig_target];
+                    new_code[i] = set_sbx(new_code[i], new_target - (i + 1));
+                }
             }
         }
     }
+    free(orig_to_new);
 
     free(p->code);
     p->code = new_code;
