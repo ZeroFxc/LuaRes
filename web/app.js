@@ -138,6 +138,8 @@ function saveConfig(){
   try {
     const selected = getSelectedModules();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(selected));
+    const lc = document.getElementById('luajit_compat');
+    if (lc) localStorage.setItem('luajit_compat', lc.checked ? '1' : '0');
   } catch(e){}
 }
 function loadConfig(){
@@ -296,6 +298,16 @@ function renderModules(){
   saveConfig = function(){
     origSaveConfig();
     updateGroupCheckboxes();
+
+  // load luajit_compat persisted state
+  try {
+    const lcSaved = localStorage.getItem('luajit_compat');
+    const lcEl = document.getElementById('luajit_compat');
+    if (lcEl && lcSaved !== null) {
+      lcEl.checked = (lcSaved === '1');
+      vmLuajitCompat = lcEl.checked;
+    }
+  } catch(e){}
   };
   updateGroupCheckboxes();
 
