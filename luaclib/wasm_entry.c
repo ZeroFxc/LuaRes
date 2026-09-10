@@ -83,6 +83,8 @@ static const char *MODULE_LIST =
     "condition_split_c,"
     "loop_restructure_c,"
     "for_loop_unroll_c,"
+    "tforcall_to_call_c,"
+    "tforloop_as_jump_c,"
     "operator_substitute_c,"
     "debug_mutate_c,"
     "call_rewrite_c,"
