@@ -53,6 +53,8 @@ static int is_safe_pos(luac_Proto *p, int pos) {
             int sop = p->code[scan] & 0x3F;
             if (sop == 36 || sop == 37 || sop == 38 || sop == 43) break; /* consumed */
             if (sop == 45 && (((p->code[scan] >> 23) & 0x1FF) == 0)) return 0; /* VARARG B==0 */
+            if (sop == 36 && (((p->code[scan] >> 23) & 0x1FF) == 0) &&
+                             (((p->code[scan] >> 14) & 0x1FF) == 0)) return 0; /* CALL B==0,C==0 */
             scan--;
         }
     }

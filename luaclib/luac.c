@@ -213,22 +213,11 @@ static char *LoadString(UndumpState *S, size_t *out_len) {
         unsigned char *tmp = luac_alloc(len);
         memcpy(tmp, s, len);
         andlua_decrypt_string(tmp, len);
-        int valid = (len == 1) || andlua_is_valid_text(tmp, len);
-#if LUACLIB_DEBUG
-        fprintf(stderr, "[luac]   decrypt: valid=%d decrypted=", valid);
-        for (size_t i = 0; i < len && i < 16; i++) fprintf(stderr, "%02x ", (unsigned char)tmp[i]);
-        fprintf(stderr, "\n");
-#endif
-#if LUACLIB_DEBUG
-        if (len == 1 && (unsigned char)s[0] >= 0x80) {
-            FILE *df = fopen("_luac_dbg.txt", "a");
-            fprintf(df, "LoadString: len=%zu orig=%d dec=%d valid=%d encrypted=%d\n", len, (unsigned char)s[0], (unsigned char)tmp[0], valid, S->encrypted);
-            fclose(df);
-        }
-#endif
-        if (valid) {
-            memcpy(s, tmp, len);
-        }
+        /* encrypted format: ALWAYS decrypt. The old is_valid_text heuristic
+           rejected legitimate binary/control-char strings (e.g. json gsub
+           patterns containing \1/\31), leaving them encrypted -> corrupted
+           output and cascading runtime errors. */
+        memcpy(s, tmp, len);
         free(tmp);
     }
 #endif

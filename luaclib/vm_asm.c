@@ -105,7 +105,7 @@ static const OpDesc op_table[] = {
     {"NOT",      27, FMT_AB,   "{REG:{A}} = not {REG:{B}}"},
     {"LEN",      28, FMT_AB,   "{REG:{A}} = #{REG:{B}}"},
     {"CONCAT",   29, FMT_ABC,  "local _s={}; for _i={B},{C} do _s[#_s+1]=tostring({REG:_i}) end; {REG:{A}}=table.concat(_s)"},
-    {"JMP",      30, FMT_AsBx, "if {A}~=0 then closeuv({A}-1) end; {JMP:{sBx}}"},
+    {"JMP",      30, FMT_AsBx, "if {A}~=0 then closeuv({A}-1, R) end; {JMP:{sBx}}"},
     {"EQ",       31, FMT_ABC,  "if ({RK:{B}}=={RK:{C}}) ~= ({A}~=0) then {NEXT} end"},
     {"LT",       32, FMT_ABC,  "if ({RK:{B}}<{RK:{C}}) ~= ({A}~=0) then {NEXT} end"},
     {"LE",       33, FMT_ABC,  "if ({RK:{B}}<={RK:{C}}) ~= ({A}~=0) then {NEXT} end"},
@@ -336,7 +336,7 @@ int vm_assemble(VmAsmOpts *opts) {
         "  local cells = {}  -- shared upvalue cells per register\n"
         "  local function getuv(i) local u=%s[i]; if not u then return nil end; if u.cell then return u.cell.reg and u.cell.reg[u.cell.idx] or u.cell.val end; return u.val end\n"
         "  local function setuv(i,v) local u=%s[i]; if not u then u={val=v}; %s[i]=u; return end; if u.cell then if u.cell.reg then u.cell.reg[u.cell.idx]=v else u.cell.val=v end else u.val=v end end\n"
-        "  local function closeuv(lvl) for idx,cell in pairs(cells) do if idx>=lvl and cell.reg then cell.val=cell.reg[cell.idx]; cell.reg=nil end end end\n",
+        "  local function closeuv(lvl) local _cs=cells[R] or {} for idx,cell in pairs(_cs) do if idx>=lvl and cell.reg then cell.val=cell.reg[cell.idx]; cell.reg=nil end end end\n",
         vUV, vUV, vUV);
 
     /* RK helper */
@@ -412,8 +412,10 @@ int vm_assemble(VmAsmOpts *opts) {
         "    for i=0,#uv_defs-1 do\n"
         "      local d=uv_defs[i+1]\n"
         "      if d.instack~=0 then\n"
-        "        if not cells[d.idx] then cells[d.idx]={reg=%s,idx=d.idx} end\n"
-        "        uv[i]={cell=cells[d.idx]}\n"
+        "        local _cs=cells[R]\n"
+        "        if not _cs then _cs={}; cells[R]=_cs end\n"
+        "        if not _cs[d.idx] then _cs[d.idx]={reg=%s,idx=d.idx} end\n"
+        "        uv[i]={cell=_cs[d.idx]}\n"
         "      else\n"
         "        uv[i]={val=getuv(d.idx)}\n"
         "      end\n"

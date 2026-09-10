@@ -14,6 +14,25 @@
 
 #define CONDITION_OPS(op) ((op)==LUAC_OP_EQ||(op)==LUAC_OP_LT||(op)==LUAC_OP_LE||(op)==LUAC_OP_TEST||(op)==LUAC_OP_TESTSET||(op)==LUAC_OP_LOADKX||(op)==LUAC_OP_TFORCALL)
 
+/* Check if pos is inside a B=0 live window (after VARARG B=0 or CALL B=0,C=0).
+   B=0 instructions fill registers R[A..top-1] which may extend into high registers
+   used by junk instructions. Junk inserted here clobbers live vararg/return slots. */
+static int is_in_b0_window(luac_Proto *p, int pos) {
+    int scan = pos - 1;
+    while (scan >= 0) {
+        int sop = p->code[scan] & 0x3F;
+        /* window consumed by these instructions */
+        if (sop == 36 || sop == 37 || sop == 38 || sop == 43) break;
+        /* VARARG B==0: fills R[A..top-1] */
+        if (sop == 45 && (((p->code[scan] >> 23) & 0x1FF) == 0)) return 1;
+        /* CALL B==0,C==0: fills R[A..top-1] with all return values */
+        if (sop == 36 && (((p->code[scan] >> 23) & 0x1FF) == 0) &&
+                         (((p->code[scan] >> 14) & 0x1FF) == 0)) return 1;
+        scan--;
+    }
+    return 0;
+}
+
 static unsigned int make_junk_inst(luac_Proto *p, int high_reg, int extra) {
     int r = obf_rand() % 16;
     int reg = high_reg + (int)(obf_rand() % (extra > 0 ? extra : 1));
@@ -74,6 +93,8 @@ static int inject_function(luac_Proto *p, int count) {
         /* avoid CLOSURE + upvalue setup region */
         if (op == LUAC_OP_CLOSURE) continue;
         if (pos > 0 && (p->code[pos - 1] & 0x3F) == LUAC_OP_CLOSURE) continue;
+        /* B=0 live window: VARARG B=0 / CALL B=0,C=0 fill high registers */
+        if (is_in_b0_window(p, pos)) continue;
 
         int junk_size = 4 + (int)(obf_rand() % 8); /* 4-11 */
         int branch_len = 1 + junk_size; /* JMP + junk */
