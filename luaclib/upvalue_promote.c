@@ -271,6 +271,15 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         }
         DBG("[UPVAL] obf_compile_subproto OK, child code size=%d maxstack=%d\n",child->sizecode,child->maxstacksize);
 
+        /* 立即深拷贝 source：obf_compile_subproto 中 main_p 可能被 GC，source 会被释放 */
+        if(child->source && child->source_len>0){
+            char *ns=malloc(child->source_len+1);
+            memcpy(ns,child->source,child->source_len);
+            ns[child->source_len]='\0';
+            child->source=ns;
+        }else{child->source=NULL;child->source_len=0;}
+        child->linedefined=0; child->lastlinedefined=0;
+
         /* 复制常量池 */
         if(p->sizek>0){
             free(child->k_tag);free(child->k_str);free(child->k_str_len);
@@ -288,7 +297,7 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             if(p->k_int) memcpy(child->k_int,p->k_int,sizeof(int64_t)*p->sizek);
             else memset(child->k_int,0,sizeof(int64_t)*p->sizek);
             for(int ci=0;ci<p->sizek;ci++){
-                if(p->k_tag[ci]==4&&p->k_str[ci]){
+                if((p->k_tag[ci]==4||p->k_tag[ci]==20)&&p->k_str[ci]){
                     child->k_str[ci]=malloc(p->k_str_len[ci]+1);
                     memcpy(child->k_str[ci],p->k_str[ci],p->k_str_len[ci]);
                     child->k_str[ci][p->k_str_len[ci]]='\0';
@@ -328,6 +337,15 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         memcpy(&child->code[next],&p->code[start],sizeof(unsigned int)*block_len);
         child->code[next+block_len]=LUAC_ABC(LUAC_OP_RETURN,0,1,0);
 
+        /* 剥离调试信息：code 长度已变，旧 lineinfo/locvars 不匹配会导致 dump 越界崩溃 */
+        free(child->lineinfo); child->lineinfo=NULL; child->sizelineinfo=0;
+        free(child->locvar_name); child->locvar_name=NULL;
+        free(child->locvar_name_len); child->locvar_name_len=NULL;
+        free(child->locvar_startpc); child->locvar_startpc=NULL;
+        free(child->locvar_endpc); child->locvar_endpc=NULL;
+        child->sizelocvars=0;
+        child->lineinfo_tbl=LUA_NOREF; child->locvars_tbl=LUA_NOREF;
+
         /* maxstacksize */
         int mr=2;
         for(int i=start;i<end;i++){
@@ -339,7 +357,8 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         for(int i=0;i<next;i++)if(ext_regs[i]+1>mr)mr=ext_regs[i]+1;
         child->maxstacksize=mr;
 
-        int proto_idx=add_sub_proto(p,child);
+        int proto_idx=obf_add_subproto(L,p,child);
+        child=p->p[proto_idx];  /* raw 指针可能已被 luac_push_proto 转移所有权，改用 userdata 指针 */
         int old_max=p->maxstacksize;
         if(old_max+1>250){DBG("[UPVAL] skip: old_max+1>250 at %d\n",start);pos=end+1;continue;}
         int Rtmp=old_max;
