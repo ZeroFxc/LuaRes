@@ -35,14 +35,26 @@ static const VmOp op_table[] = {
 #else
     {"BAND",     20, FMT_ABC,  "{REG:{A}} = {RK:{B}} & {RK:{C}}", "{REG:{A}} = _band({RK:{B}}, {RK:{C}})"},
 #endif
+#if VM_ASM_DEBUG
     {"BOR",      21, FMT_ABC,  "local _b={RK:{B}}; local _c={RK:{C}}; if _b==nil or _c==nil then io.stderr:write('BITOP nil pc='..{PC}..' op=21 a='..{A}..' b='..{B}..' c='..{C}..' Rb='..tostring(_b)..' Rc='..tostring(_c)..'\\n'); io.stderr:flush() end; {REG:{A}} = _b | _c", "{REG:{A}} = _bor({RK:{B}}, {RK:{C}})"},
+#else
+    {"BOR",      21, FMT_ABC,  "{REG:{A}} = {RK:{B}} | {RK:{C}}", "{REG:{A}} = _bor({RK:{B}}, {RK:{C}})"},
+#endif
 #if VM_ASM_DEBUG
     {"BXOR",     22, FMT_ABC,  "local _b={RK:{B}}; local _c={RK:{C}}; if _b==nil or _c==nil then io.stderr:write('BITOP nil pc='..{PC}..' op=22 a='..{A}..' b='..{B}..' c='..{C}..' Rb='..tostring(_b)..' Rc='..tostring(_c)..'\\n'); io.stderr:flush() end; {REG:{A}} = _b ~ _c", "{REG:{A}} = _bxor({RK:{B}}, {RK:{C}})"},
 #else
     {"BXOR",     22, FMT_ABC,  "{REG:{A}} = {RK:{B}} ~ {RK:{C}}", "{REG:{A}} = _bxor({RK:{B}}, {RK:{C}})"},
 #endif
+#if VM_ASM_DEBUG
     {"SHL",      23, FMT_ABC,  "local _b={RK:{B}}; local _c={RK:{C}}; if _b==nil or _c==nil then io.stderr:write('BITOP nil pc='..{PC}..' op=23 a='..{A}..' b='..{B}..' c='..{C}..' Rb='..tostring(_b)..' Rc='..tostring(_c)..'\\n'); io.stderr:flush() end; {REG:{A}} = _b << _c", "{REG:{A}} = _shl({RK:{B}}, {RK:{C}})"},
+#else
+    {"SHL",      23, FMT_ABC,  "{REG:{A}} = {RK:{B}} << {RK:{C}}", "{REG:{A}} = _shl({RK:{B}}, {RK:{C}})"},
+#endif
+#if VM_ASM_DEBUG
     {"SHR",      24, FMT_ABC,  "local _b={RK:{B}}; local _c={RK:{C}}; if _b==nil or _c==nil then io.stderr:write('BITOP nil pc='..{PC}..' op=24 a='..{A}..' b='..{B}..' c='..{C}..' Rb='..tostring(_b)..' Rc='..tostring(_c)..'\\n'); io.stderr:flush() end; {REG:{A}} = _b >> _c", "{REG:{A}} = _shr({RK:{B}}, {RK:{C}})"},
+#else
+    {"SHR",      24, FMT_ABC,  "{REG:{A}} = {RK:{B}} >> {RK:{C}}", "{REG:{A}} = _shr({RK:{B}}, {RK:{C}})"},
+#endif
     {"UNM",      25, FMT_AB,   "{REG:{A}} = -{REG:{B}}", NULL},
     {"BNOT",     26, FMT_AB,   "{REG:{A}} = ~{REG:{B}}", "{REG:{A}} = _bnot({REG:{B}})"},
     {"NOT",      27, FMT_AB,   "{REG:{A}} = not {REG:{B}}", NULL},
