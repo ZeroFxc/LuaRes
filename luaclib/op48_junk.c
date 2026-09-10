@@ -16,16 +16,12 @@ static unsigned int make_op48(int multi) {
 
 static void inject_function(luac_Proto *p, int count, int multi) {
     if (!p->code) return;
-    /* find last RETURN/TAILCALL */
-    int last_ret = -1;
-    for (int i = p->sizecode - 1; i >= 0; i--) {
-        int op = p->code[i] & 0x3F;
-        if (op == LUAC_OP_RETURN || op == LUAC_OP_TAILCALL) { last_ret = i; break; }
-    }
-    int insert_pos = (last_ret >= 0) ? last_ret + 1 : p->sizecode;
+    /* Insert at the very end of the function (after all instructions).
+       Guarantees junk is unreachable regardless of control-flow
+       transformations (flatten/cfg_shuffle may place reachable code
+       after the last RETURN). */
+    int insert_pos = p->sizecode;
     p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + count));
-    memmove(&p->code[insert_pos + count], &p->code[insert_pos],
-            sizeof(unsigned int) * (p->sizecode - insert_pos));
     for (int i = 0; i < count; i++) p->code[insert_pos + i] = make_op48(multi);
     p->sizecode += count;
     /* clear lineinfo to avoid mismatch */
