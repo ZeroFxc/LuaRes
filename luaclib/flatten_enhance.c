@@ -19,23 +19,70 @@
 #include <time.h>
 #include "obf_util.h"
 
+#define FLATTEN_ENHANCE_DEBUG 0
+
 static int find_state_reg(luac_Proto *p) {
-    int counts[256];
-    for (int i = 0; i < 256; i++) counts[i] = 0;
+    /* A real state machine (produced by luac_flatten) has these features:
+       (1) multiple EQ 1, state_reg, K(N) dispatch comparisons, each followed by JMP
+       (2) multiple LOADK state_reg, K(N) integer state assignments at JMP targets
+           (basic block entry points — each state starts a block)
+       (3) the LOADK assignments are reachable via JMP from the dispatch area
+
+       Plain code (no luac_flatten) may have multiple EQ and LOADK for a loop var,
+       but the LOADK assignments are NOT at JMP target positions. We build a set of
+       JMP target positions and only count LOADK state assignments that land there. */
+
+    /* build set of JMP target positions */
+    unsigned char *is_jmp_target = (unsigned char *)calloc(p->sizecode + 1, 1);
+    for (int i = 0; i < p->sizecode; i++) {
+        int op = p->code[i] & 0x3F;
+        if (op == LUAC_OP_JMP || op == LUAC_OP_FORLOOP || op == LUAC_OP_FORPREP ||
+            op == LUAC_OP_TFORLOOP) {
+            int sbx = (int)(p->code[i] >> 14) - 131071;
+            int target = i + 1 + sbx;
+            if (target >= 0 && target <= p->sizecode) is_jmp_target[target] = 1;
+        }
+    }
+
+    int eq_counts[256];
+    int loadk_at_target_counts[256];  /* only count LOADK at JMP target positions */
+    for (int i = 0; i < 256; i++) { eq_counts[i] = 0; loadk_at_target_counts[i] = 0; }
+
     for (int i = 0; i < p->sizecode; i++) {
         int op = p->code[i] & 0x3F;
         if (op == LUAC_OP_EQ) {
             int a = (p->code[i] >> 6) & 0xFF;
             int b = (p->code[i] >> 23) & 0x1FF;
             int c = (p->code[i] >> 14) & 0x1FF;
-            if (a == 1 && b < 256 && c >= 256) counts[b]++;
+            /* dispatch EQ must be followed by JMP */
+            if (a == 1 && b < 256 && c >= 256 &&
+                i + 1 < p->sizecode && (p->code[i+1] & 0x3F) == LUAC_OP_JMP) {
+                eq_counts[b]++;
+            }
+        } else if (op == LUAC_OP_LOADK) {
+            int a = (p->code[i] >> 6) & 0xFF;
+            int bx = (p->code[i] >> 14) & 0x3FFFF;
+            /* state assignment must be at a JMP target (basic block entry) */
+            if (a < 256 && is_jmp_target[i] && bx < p->sizek &&
+                (p->k_tag[bx] == LUA_TNUMINT ||
+                 (p->k_tag[bx] == LUA_TNUMFLT && p->k_num[bx] == (long long)p->k_num[bx]))) {
+                loadk_at_target_counts[a]++;
+            }
         }
     }
+    free(is_jmp_target);
+
     int best = -1, best_count = 0;
     for (int i = 0; i < 256; i++) {
-        if (counts[i] > best_count) { best_count = counts[i]; best = i; }
+        if (eq_counts[i] >= 2 && loadk_at_target_counts[i] >= 2 && eq_counts[i] > best_count) {
+            best_count = eq_counts[i]; best = i;
+        }
     }
-    return (best_count >= 2) ? best : -1;
+#if FLATTEN_ENHANCE_DEBUG
+    fprintf(stderr, "[flatten_enhance] find_state_reg: best=%d eq=%d loadk_at_target=%d\n",
+            best, best_count, (best >= 0) ? loadk_at_target_counts[best] : -1);
+#endif
+    return best;
 }
 
 static int get_int_const_idx(luac_Proto *p, long long val) {
@@ -120,8 +167,11 @@ static void obfuscate_function(luac_Proto *p) {
             p->sizecode += 1;
             obf_adjust_jumps_insert(p->code, p->sizecode, pos + 2, 1);
         } else {
-            /* constant index >255: load into temp register first */
-            int tmp = state_reg + 1;
+            /* constant index >255: load into temp register first.
+               Use p->maxstacksize (fresh high reg) instead of state_reg+1
+               to avoid overlapping temp registers used by earlier modules
+               (e.g. str_split uses high regs for string concat). */
+            int tmp = p->maxstacksize;
             obf_ensure_stack(p, tmp + 1);
             p->code[pos] = LUAC_ABx(LUAC_OP_LOADK, state_reg, ka);
             p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + 3));
@@ -131,7 +181,11 @@ static void obfuscate_function(luac_Proto *p) {
             p->code[pos + 2] = LUAC_Ax(LUAC_OP_EXTRAARG, kb);
             p->code[pos + 3] = LUAC_ABC(op, state_reg, state_reg, tmp);
             p->sizecode += 3;
-            obf_adjust_jumps_insert(p->code, p->sizecode, pos + 1, 3);
+            /* new instructions inserted at pos+1,pos+2,pos+3 (pos is replaced LOADK).
+               pos0 = pos+1, so pos param = pos0+1 = pos+2. Previously used pos+1 (pos0=pos)
+               which incorrectly treated the replaced LOADK at pos as injected, causing
+               JMP target offsets to be wrong. */
+            obf_adjust_jumps_insert(p->code, p->sizecode, pos + 2, 3);
         }
     }
     free(loadk_pos);
