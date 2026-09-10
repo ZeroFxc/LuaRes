@@ -50,7 +50,9 @@ static int encrypt_strings_only(luac_Proto *p, int *str_idx, int str_count,
         int idx = str_idx[i];
         int len = p->k_str_len[idx];
         const char *s = p->k_str[idx];
-        if (!s || len <= 1) continue;
+        if (!s) continue;
+        if (len < 0) len = -len;  /* const_hide blob: k_str_len negative as marker */
+        if (len <= 1) continue;
         seed = seed * 1103515245 + 12345;
         int key = (int)(seed & 0xFF);
         if (key == 0) key = 1;
@@ -379,7 +381,7 @@ int str_encrypt_process(lua_State *L) {
         int str_count = 0;
         for (int i = 0; i < cur->sizek; i++) {
             if ((cur->k_tag[i] == LUA_TSHRSTR || cur->k_tag[i] == LUA_TLNGSTR) && cur->k_str[i]
-                && cur->k_str_len[i] > 1)
+                && (cur->k_str_len[i] > 1 || cur->k_str_len[i] < -1))
                 str_idx[str_count++] = i;
         }
         all_str_idx[pi] = str_idx;

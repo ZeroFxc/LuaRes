@@ -170,16 +170,18 @@ static int process_function(lua_State *L, luac_Proto *p) {
 #endif
 
     /* register allocation for inline string.sub call (base_reg computed early) */
-    int ENV_REG = base_reg;
-    int STR_REG = base_reg + 1;
-    int SUB_REG = base_reg + 2;
-    /* TMP/KEY/VAL must sit beyond sub_r+4 (base_reg+6): emit_sub_call
-       uses base_reg+6 as its own temporary (LOADK sub_r+4), so aliasing
-       TMP_REG with it would clobber a GETUPVAL-loaded upvalue in the
-       GETTABUP/SETTABUP rewrites. */
-    int TMP_REG = base_reg + 7;
-    int KEY_REG = base_reg + 8;
-    int VAL_REG = base_reg + 9;
+    /* ENV/STR/SUB shifted to base_reg+10 to avoid colliding with
+       str_encrypt's EMIT_DECRYPT which uses func=base, enc=base+1,
+       key=base+2. If blob is encrypted by str_encrypt, the LOADK
+       loading blob is rewritten to a decrypt call that clobbers
+       base/base+1/base+2; const_hide's own env/str/sub must survive. */
+    int ENV_REG = base_reg + 10;
+    int STR_REG = base_reg + 11;
+    int SUB_REG = base_reg + 12;
+    /* sub_r+4 = base_reg+16 used as LOADK temp inside emit_sub_call */
+    int TMP_REG = base_reg + 17;
+    int KEY_REG = base_reg + 18;
+    int VAL_REG = base_reg + 19;
 #if defined(CONST_HIDE_DEBUG)
     fprintf(stderr, "const_hide: base=%d env=%d str=%d sub=%d tmp=%d key=%d val=%d\n", base_reg, ENV_REG, STR_REG, SUB_REG, TMP_REG, KEY_REG, VAL_REG);
 #endif
