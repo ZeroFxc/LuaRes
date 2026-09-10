@@ -164,6 +164,31 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
 
     uint32_t nk = rd_int(r);
 
+    /* read all constants into memory (needed before reg_map for upvalue anchoring) */
+    typedef struct { int t; char *s; size_t sl; double f; int64_t iv; int bv; } KVal;
+    KVal *kvs = nk ? malloc(nk * sizeof(KVal)) : NULL;
+    for (uint32_t i = 0; i < nk; i++) {
+        KVal *kv = &kvs[i];
+        kv->t = rd_byte(r); kv->s = NULL; kv->sl = 0; kv->f = 0; kv->iv = 0; kv->bv = 0;
+        switch (kv->t) {
+            case 0: break;
+            case 1: kv->bv = rd_byte(r); break;
+            case 3: kv->f = rd_float(r); break;
+            case 19: kv->iv = rd_integer(r); break;
+            case 4: case 20: kv->s = rd_string(r, &kv->sl); break;
+            default: break; /* poison/unknown: no payload */
+        }
+    }
+
+    /* read upvalues early (needed for reg_map anchor scan) */
+    uint32_t nuv = rd_int(r);
+    uint8_t *uv_instack = nuv ? malloc(nuv) : NULL;
+    uint8_t *uv_idx = nuv ? malloc(nuv) : NULL;
+    for (uint32_t i = 0; i < nuv; i++) {
+        uv_instack[i] = rd_byte(r);
+        uv_idx[i] = rd_byte(r);
+    }
+
     /* per-proto deterministic seeds derived from base seed + proto index */
     int pidx = (*ctx->idxp)++;
     unsigned int rseed = ctx->reg_seed ^ (unsigned int)(pidx * 2654435761u);
@@ -175,9 +200,15 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     if (ctx->reg_on && maxstacksize > 0) {
         unsigned char *anchored = malloc(maxstacksize);
         vm_reg_anchor_scan(ins_arr, (int)ncode, anchored, maxstacksize, numparams);
+        /* anchor all registers referenced by instack=1 upvalues (prevents remap from
+           moving an upvalue-referenced register into/out of JMP close range) */
+        for (uint32_t i = 0; i < nuv; i++) {
+            if (uv_instack[i] && uv_idx[i] < maxstacksize) {
+                anchored[uv_idx[i]] = 1;
+            }
+        }
         reg_map = vm_make_regmap(rseed, anchored, maxstacksize);
         free(anchored);
-
     }
     int *k_map = NULL;
     if (ctx->const_on && nk > 0) k_map = vm_make_kmap(cseed, (int)nk);
@@ -207,21 +238,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     buf_str(b, "},\n");
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
-    /* read all constants (stream advances past const area), emit in shuffled order */
-    typedef struct { int t; char *s; size_t sl; double f; int64_t iv; int bv; } KVal;
-    KVal *kvs = nk ? malloc(nk * sizeof(KVal)) : NULL;
-    for (uint32_t i = 0; i < nk; i++) {
-        KVal *kv = &kvs[i];
-        kv->t = rd_byte(r); kv->s = NULL; kv->sl = 0; kv->f = 0; kv->iv = 0; kv->bv = 0;
-        switch (kv->t) {
-            case 0: break;
-            case 1: kv->bv = rd_byte(r); break;
-            case 3: kv->f = rd_float(r); break;
-            case 19: kv->iv = rd_integer(r); break;
-            case 4: case 20: kv->s = rd_string(r, &kv->sl); break;
-            default: break; /* poison/unknown: no payload */
-        }
-    }
+    /* emit constants in shuffled order (kvs already read) */
     buf_str(b, "k={");
     if (k_map) {
         /* 新表位置 k_map[old] = 原表 old（指令 new=k_map[old] 取新表[k_map[old]]=原表[old] 一致） */
@@ -279,17 +296,19 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     for (uint32_t i = 0; i < nk; i++) free(kvs[i].s);
     free(kvs);
 
-    uint32_t nuv = rd_int(r);
+    /* emit upvalues (already read into uv_instack/uv_idx) */
     buf_str(b, "upvalues={");
     for (uint32_t i = 0; i < nuv; i++) {
-        uint8_t instack = rd_byte(r);
-        uint8_t idx = rd_byte(r);
+        uint8_t instack = uv_instack[i];
+        uint8_t idx = uv_idx[i];
         if (instack && ctx->parent_reg) idx = (uint8_t)ctx->parent_reg[idx];
         char tmp[64];
         snprintf(tmp, sizeof(tmp), "%s{instack=%d,idx=%d}", i ? "," : "", instack, idx);
         buf_str(b, tmp);
     }
     buf_str(b, "},\n");
+    free(uv_instack);
+    free(uv_idx);
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
     uint32_t np = rd_int(r);
