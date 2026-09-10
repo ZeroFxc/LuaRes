@@ -53,6 +53,9 @@ static int is_safe_insert(luac_Proto *p, int pos) {
     /* 不能在 CLOSURE 之后（可能紧跟 upvalue 设置） */
     if (prev_op == 44) return 0;
 
+    /* 不能在 JMP 之后（JMP之后通常是跳转目标，插入可能破坏跳转语义） */
+    if (prev_op == 30) return 0;
+
     /* 不能插入在 JMP/RETURN/TAILCALL 位置 */
     if (cur_op == 30 || cur_op == 38 || cur_op == 37) return 0;
 
@@ -100,7 +103,7 @@ static int inject_fake_forloop(luac_Proto *p, int pos, int base_reg) {
     return 1;
 }
 
-static int process_function(luac_Proto *p, int count) {
+static int process_function(lua_State *L, luac_Proto *p, int count) {
     int changes = 0;
     int old_max = p->maxstacksize;
     int base_reg = old_max;  /* 用 old_max 开始的寄存器（不算几百） */
@@ -129,16 +132,16 @@ int fake_forloop_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
 
-    int count = 5;  /* 默认 5 个，>5 时某些位置可能破坏 upvalue close 时序，待调试 */
+    int count = 10;
     if (lua_gettop(L) >= 2 && lua_istable(L, 2)) {
         lua_getfield(L, 2, "count");
         if (lua_isnumber(L, -1)) count = (int)lua_tointeger(L, -1);
         lua_pop(L, 1);
     }
 
-    int n = process_function(p, count);
+    int n = process_function(L, p, count);
     if (p->p) for (int i = 0; i < p->sizep; i++)
-        n += process_function(p->p[i], count / 2);
+        n += process_function(L, p->p[i], 2);  /* 子proto限2个，>2可能破坏upvalue close时序 */
 
     lua_pushinteger(L, n);
     return 1;
