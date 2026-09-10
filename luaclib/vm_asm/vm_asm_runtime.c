@@ -27,6 +27,16 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
     if (luajit_compat) {
         vmbuf_puts(&b,
             "  local _bit = bit or bit32 or (function() local ok,m=pcall(require,'bit'); return ok and m end)()\n"
+            "  if not _bit then\n"
+            "    local function _to32(x) x = math.floor(x % 4294967296); return x end\n"
+            "    _bit = {}\n"
+            "    function _bit.band(a,b) a=_to32(a); b=_to32(b); local r=0; local p=1; while a>0 or b>0 do if a%2==1 and b%2==1 then r=r+p end; a=math.floor(a/2); b=math.floor(b/2); p=p*2 end; return r end\n"
+            "    function _bit.bor(a,b) a=_to32(a); b=_to32(b); local r=0; local p=1; while a>0 or b>0 do if a%2==1 or b%2==1 then r=r+p end; a=math.floor(a/2); b=math.floor(b/2); p=p*2 end; return r end\n"
+            "    function _bit.bxor(a,b) a=_to32(a); b=_to32(b); local r=0; local p=1; while a>0 or b>0 do if (a%2)~=(b%2) then r=r+p end; a=math.floor(a/2); b=math.floor(b/2); p=p*2 end; return r end\n"
+            "    function _bit.lshift(a,b) a=_to32(a); b=math.floor(b); return _to32(a * (2^b)) end\n"
+            "    function _bit.rshift(a,b) a=_to32(a); b=math.floor(b); return math.floor(a / (2^b)) end\n"
+            "    function _bit.bnot(a) a=_to32(a); return _to32(4294967295 - a) end\n"
+            "  end\n"
             "  local function _band(a,b) return _bit.band(a,b) end\n"
             "  local function _bor(a,b) return _bit.bor(a,b) end\n"
             "  local function _bxor(a,b) return _bit.bxor(a,b) end\n"

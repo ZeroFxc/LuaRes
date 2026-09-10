@@ -21,10 +21,10 @@ int vm_embed_process(lua_State *L) {
     obf_invalidate_all_caches(L, p);
 
     /* optional options table */
-    int luajit_compat = 0;
+    int luajit_compat = 1;  /* default on: bit32 handles float operands on luajvm */
     if (lua_istable(L, 2)) {
         lua_getfield(L, 2, "luajit_compat");
-        if (lua_toboolean(L, -1)) luajit_compat = 1;
+        if (lua_isboolean(L, -1)) luajit_compat = lua_toboolean(L, -1) ? 1 : 0;
         lua_pop(L, 1);
     }
 

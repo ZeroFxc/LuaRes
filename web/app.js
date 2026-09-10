@@ -208,11 +208,24 @@ function renderModules(){
             <div class="ds-opts" style="margin-top:3px;font-size:11px;color:#8b949e;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <span>seed <input id="${m.id === 'vm_reg_shuffle_c' ? 'rs_seed' : 'cs_seed'}" type="number" min="0" value="${dsFreshSeed()}" style="width:64px;font-size:11px;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:4px" title="0=每轮随机；打开页面自动刷新"></span>
             </div>` : ''}
+            ${m.id === 'vm_embed_c' ? `
+            <div class="ds-opts" style="margin-top:3px;font-size:11px;color:#8b949e;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+                <input type="checkbox" id="luajit_compat" checked title="用 bit32 库代替直接位运算，兼容 luajvm/Android 等不支持浮点位运算的环境">
+                <span>luajvm兼容</span>
+              </label>
+            </div>` : ''}
           </div>
         `).join('')}
       </div>`;
     moduleScroll.appendChild(grpEl);
   });
+
+  // luajit_compat checkbox event
+  const lcEl = document.getElementById('luajit_compat');
+  if (lcEl) {
+    lcEl.addEventListener('change', () => { vmLuajitCompat = lcEl.checked; });
+  }
 
   // Custom modules group (Lua + JS)
   const allCustom = [
