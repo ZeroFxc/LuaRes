@@ -116,8 +116,8 @@ void vm_reg_anchor_scan(const unsigned int *code, int ncode,
                            A 是 upvalue 列表索引不是寄存器编号，不能用 lo=a-1 标记寄存器范围。
                            instack=1 upvalue 引用的寄存器已由调用方（vm_embed.c）单独锚定。 */
                 break;
-            case 4: /* LOADNIL A B: R[A..B]=nil; B<A 时 Lua 语义只 R[A]=nil */
-                lo = a; hi = ((int)b >= (int)a) ? (b + 1) : (a + 1); scan = 1; break;
+            case 4: /* LOADNIL A B: writes R(A)..R(A+B); B is count-1 (relative), not an end register */
+                lo = a; hi = a + b + 1; scan = 1; break;
             case 29: /* CONCAT A B C: 读 R[B..C] */
                 lo = b; hi = c + 1; scan = 1; break;
             case 12: /* SELF A B C: 写 R[A], R[A+1] */

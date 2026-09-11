@@ -114,7 +114,7 @@ static void flatten_function(luac_Proto *p) {
 
     free(is_start);
 
-    if (nblocks <= 2 || has_loop) {
+    if (nblocks <= 2 || has_loop || nblocks > 200) {
 #if FLATTEN_DEBUG
         FDBG("[flatten] SKIP: nblocks=%d has_loop=%d code_size=%d\n", nblocks, has_loop, n);
         for (int _di = 0; _di < n; _di++) {
@@ -133,6 +133,7 @@ static void flatten_function(luac_Proto *p) {
 
     int state_reg = p->maxstacksize;
     int cmp_reg = state_reg + 1; /* temp register for large-constant comparison */
+    if (cmp_reg + 1 > 250) return; /* need state_reg+cmp_reg above used range; skip if no room */
 
     /* build new code */
     int max_new = n * 8 + nblocks * 6 + 64;

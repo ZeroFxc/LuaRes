@@ -1,0 +1,1 @@
+{"stage":"run","gen_ok":true,"gen_err":"","kind":"bc","run_ok":false,"run_err":"?:-1: attempt to perform arithmetic on a nil value","run_timeout":false,"output":"","size_in":93,"size_out":239,"module_changes":{"operator_substitute_c":1}}

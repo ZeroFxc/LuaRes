@@ -118,6 +118,7 @@ static int rewrite_decrypt_sites(lua_State *L, luac_Proto *p,
     int res1_reg = base + 20;
     int res2_reg = base + 21;
     int table_reg = base + 22;
+    if (base + 23 > 250) return 0; /* decryptor needs 23 contiguous regs above used range; skip if no room */
     obf_ensure_stack(p, base + 23);
 #if STR_DEBUG
     fprintf(stderr, "[REGS] base=%d func=%d enc=%d key=%d res1=%d res2=%d table=%d maxstack=%d\n",
@@ -366,6 +367,27 @@ int str_encrypt_process(lua_State *L) {
         if (cur->p) {
             for (int j = cur->sizep - 1; j >= 0; j--)
                 stk[sp++] = cur->p[j];
+        }
+    }
+
+    /* re-entry guard: an installed shared decryptor is recognizable as a sub-proto
+       whose constants contain both "byte" and "char". On a nested/2nd pass the strings
+       are already ciphertext; re-encrypting would double-encrypt with one decryptor. */
+    {
+        int already = 0;
+        for (int qi = 0; qi < list_count && !already; qi++) {
+            luac_Proto *q = list[qi]; int has_byte = 0, has_char = 0;
+            for (int ki = 0; ki < q->sizek; ki++) {
+                if (!q->k_str || !q->k_str[ki]) continue;
+                if (strcmp(q->k_str[ki], "byte") == 0) has_byte = 1;
+                if (strcmp(q->k_str[ki], "char") == 0) has_char = 1;
+            }
+            if (has_byte && has_char) already = 1;
+        }
+        if (already) {
+            free(list); free(stk);
+            lua_pushinteger(L, 0);
+            return 1;
         }
     }
 

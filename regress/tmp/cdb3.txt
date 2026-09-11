@@ -1,0 +1,74 @@
+﻿
+************* Preparing the environment for Debugger Extensions Gallery repositories **************
+   ExtensionRepository : Implicit
+   UseExperimentalFeatureForNugetShare : true
+   AllowNugetExeUpdate : true
+   NonInteractiveNuget : true
+   AllowNugetMSCredentialProviderInstall : true
+   AllowParallelInitializationOfLocalRepositories : true
+
+   EnableRedirectToV8JsProvider : false
+
+   -- Configuring repositories
+      ----> Repository : LocalInstalled, Enabled: true
+      ----> Repository : UserExtensions, Enabled: true
+
+>>>>>>>>>>>>> Preparing the environment for Debugger Extensions Gallery repositories completed, duration 0.000 seconds
+
+************* Waiting for Debugger Extensions Gallery to Initialize **************
+
+>>>>>>>>>>>>> Waiting for Debugger Extensions Gallery to Initialize completed, duration 0.016 seconds
+   ----> Repository : UserExtensions, Enabled: true, Packages count: 0
+   ----> Repository : LocalInstalled, Enabled: true, Packages count: 29
+
+Microsoft (R) Windows Debugger Version 10.0.26100.6584 AMD64
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+CommandLine: luasafe\obf_test.exe regress\harness.lua regress\cases\bc_full.lua const_hide_c,const_shuffle_c,str_split_c,instruction_mutate_c,operator_substitute_c,upvalue_promote_c,block_clone_c,cfg_shuffle_c,for_loop_unroll_c,tforcall_to_call_c,num_obfuscate_c,bool_obfuscate_c,table_obfuscate_c,opaque_predicate_c,opaque_junk_c,junk_jmp_c,junk_loadk_c,junk_move_c,luac_obfuscate_c {\"seed\":13} regress\tmp\cdb3.json
+
+************* Path validation summary **************
+Response                         Time (ms)     Location
+Deferred                                       srv*
+Symbol search path is: srv*
+Executable search path is: 
+
++------------------------------------------------------------------------+
+| This target supports Hardware-enforced Stack Protection. A HW based    |
+| "Shadow Stack" may be available to assist in debugging and analysis.   |
+| See aka.ms/userhsp for more info.                                      |
+|                                                                        |
+| dps @ssp                                                               |
+|                                                                        |
++------------------------------------------------------------------------+
+
+ModLoad: 00007ff7`a0d60000 00007ff7`a0e64000   .exe    
+ModLoad: 00007ffe`566c0000 00007ffe`56926000   ntdll.dll
+ModLoad: 00007ffd`f9e70000 00007ffd`f9ee2000   C:\Windows\System32\verifier.dll
+Page heap: pid 0x2CB8: page heap enabled with flags 0x3.
+ModLoad: 00007ffe`556c0000 00007ffe`55789000   C:\Windows\System32\KERNEL32.DLL
+ModLoad: 00007ffe`53d10000 00007ffe`5410f000   C:\Windows\System32\KERNELBASE.dll
+ModLoad: 00007ffe`53bb0000 00007ffe`53cfc000   C:\Windows\System32\ucrtbase.dll
+(2cb8.4e4c): Access violation - code c0000005 (first chance)
+First chance exceptions are reported before any exception handling.
+This exception may be expected and handled.
+*** WARNING: Unable to verify checksum for .exe
++0x3e7c0:
+00007ff7`a0d9e7c0 488910          mov     qword ptr [rax],rdx ds:00000000`0621f000=????????????????
+0:000> sxe -c "r; .ecxr; kb 50; ub @rip L4; u @rip L3; q" c0000005
+0:000> g
+(2cb8.4e4c): Access violation - code c0000005 (!!! second chance !!!)
++0x3e7c0:
+00007ff7`a0d9e7c0 488910          mov     qword ptr [rax],rdx ds:00000000`0621f000=????????????????
+0:000> q
+quit:
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\atlmfc.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\ObjectiveC.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\concurrency.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\cpp_rest.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\stl.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Data.Json.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Devices.Geolocation.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Devices.Sensors.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Media.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\windows.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\winrt.natvis'

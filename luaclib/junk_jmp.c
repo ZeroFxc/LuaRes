@@ -44,6 +44,7 @@ static int is_safe_pos(luac_Proto *p, int pos) {
        Inserting here would let the junk body execute after the skip. */
     if (prev_op == LUAC_OP_LOADBOOL && (((p->code[pos-1] >> 14) & 0x1FF) != 0)) return 0;
     if (prev_op == 43 && ((p->code[pos-1] >> 14) & 0x1FF) == 0) return 0;
+    if (obf_in_closure_run(p, pos)) return 0;
     /* Open-vararg live window: after VARARG with B==0, slots R[a..top-1] are live
        (top can exceed maxstacksize) until consumed by CALL/TAILCALL/RETURN/SETLIST.
        Junk inside the window clobbers live vararg slots. */

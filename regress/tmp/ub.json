@@ -1,0 +1,1 @@
+{"stage":"run","gen_ok":true,"gen_err":"","kind":"bc","run_ok":true,"run_err":"","run_timeout":false,"output":"a\t3\nb\t5\nc\t18\t22\nd\t103","size_in":698,"size_out":1055,"module_changes":{}}

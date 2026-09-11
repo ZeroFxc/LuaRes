@@ -235,6 +235,9 @@ int wasm_load(const unsigned char *data, int len) {
         return LUA_NOREF;
     }
     size_t raw_len = 0;
+    vm_dispatch_reset();
+    vm_reg_shuffle_reset();
+    vm_const_shuffle_reset();
     unsigned char *raw = normalize_to_bytecode(data, len, &raw_len);
     if (!raw) return LUA_NOREF;
     lua_getglobal(g_L, "luac");

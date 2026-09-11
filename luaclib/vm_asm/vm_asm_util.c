@@ -54,6 +54,7 @@ char *vmbuf_detach(VmBuf *b, size_t *out_len) {
     if (out_len) *out_len = b->len;
     char *r = b->buf;
     b->buf = NULL; b->len = 0; b->cap = 0;
+    if (!r) { r = (char *)malloc(1); r[0] = '\0'; } /* never return NULL: callers feed it to strlen/free */
     return r;
 }
 

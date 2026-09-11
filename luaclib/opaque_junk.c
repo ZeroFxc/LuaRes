@@ -93,6 +93,7 @@ static int inject_function(luac_Proto *p, int count) {
         /* avoid CLOSURE + upvalue setup region */
         if (op == LUAC_OP_CLOSURE) continue;
         if (pos > 0 && (p->code[pos - 1] & 0x3F) == LUAC_OP_CLOSURE) continue;
+        if (obf_in_closure_run(p, pos)) continue;
         /* B=0 live window: VARARG B=0 / CALL B=0,C=0 fill high registers */
         if (is_in_b0_window(p, pos)) continue;
 

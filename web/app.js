@@ -344,7 +344,9 @@ function renderModules(){
 }
 
 function getSelectedModules(){
-  return Array.from(moduleScroll.querySelectorAll('input[type=checkbox]:checked:not(.group-check):not(.vm-opt)')).map(cb => cb.value);
+  return Array.from(moduleScroll.querySelectorAll('input[type=checkbox]:checked:not(.group-check):not(.vm-opt)'))
+    .map(cb => cb.value)
+    .filter(v => v && v !== 'on' && (BUILTIN_IDS.has(v) || customModules.some(m=>m.name===v) || jsModules.some(m=>m.name===v)));
 }
 
 // ---- Custom modules ----
@@ -1432,9 +1434,9 @@ function isOutputOk(output) {
 
 async function runObfuscationWithModules(modIds) {
   // Temporarily set checkboxes to match modIds, run, then restore
-  const allCbs = moduleScroll.querySelectorAll('input[type=checkbox]');
-  const prevStates = {};
-  allCbs.forEach(cb => { prevStates[cb.value] = cb.checked; cb.checked = modIds.includes(cb.value); });
+  const allCbs = moduleScroll.querySelectorAll('input[type=checkbox]:not(.group-check):not(.vm-opt)');
+  const prevStates = new Map();
+  allCbs.forEach(cb => { prevStates.set(cb, cb.checked); cb.checked = modIds.includes(cb.value); });
   try {
     const ok = await runObfuscation();
     if(!ok || !resultBytes) return { ok:false, output:'', error:'obfuscation failed' };
@@ -1455,7 +1457,7 @@ async function runObfuscationWithModules(modIds) {
   } catch(e) {
     return { ok:false, output:'', error:e.message };
   } finally {
-    allCbs.forEach(cb => { cb.checked = prevStates[cb.value]; });
+    allCbs.forEach(cb => { cb.checked = prevStates.get(cb); });
   }
 }
 

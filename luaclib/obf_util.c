@@ -2,6 +2,9 @@
 ** obf_util.c - Obfuscation module utilities implementation
 */
 #include "obf_util.h"
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 /*===========================================================================
 ** Random (xorshift32)
@@ -104,6 +107,17 @@ void obf_adjust_jumps_remove(unsigned int *code, int code_len, int pos, int n) {
             if (delta) code[i] = (code[i] & 0x3FFF) | ((unsigned int)(sbx + delta + 131071) << 14);
         }
     }
+}
+
+int obf_in_closure_run(luac_Proto *p, int pos) {
+    int q = pos - 1, guard = 0;
+    while (q >= 0 && guard < 6) {
+        int o = p->code[q] & 0x3F;
+        if (o == LUAC_OP_CLOSURE) return 1;
+        if (o == LUAC_OP_MOVE || o == LUAC_OP_GETUPVAL || o == LUAC_OP_GETTABUP) { q--; guard++; }
+        else return 0;
+    }
+    return 0;
 }
 
 /* Insert n instructions at pos (1-based) into p->code, adjust jumps.
@@ -371,4 +385,15 @@ void obf_invalidate_all_caches(lua_State *L, luac_Proto *p) {
 
 luac_Proto *obf_check_proto(lua_State *L) {
     return (luac_Proto *)luaL_checkudata(L, 1, "luac.Proto");
+}
+
+/* Debug helper: validate process heap (corruption localization) */
+int obf_heapcheck_process(lua_State *L) {
+#if defined(_WIN32)
+    int ok = HeapValidate(GetProcessHeap(), 0, NULL) ? 1 : 0;
+    lua_pushboolean(L, ok);
+#else
+    lua_pushboolean(L, 1);
+#endif
+    return 1;
 }

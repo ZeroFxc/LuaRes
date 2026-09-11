@@ -155,7 +155,7 @@ static int obfuscate_proto(luac_Proto *p) {
 
     int tmp_k = p->maxstacksize;
     int tmp_v = p->maxstacksize + 1;
-    int mat = obf_table_fields(p, tmp_k, tmp_v);
+    int mat = (tmp_v + 1 > 250) ? 0 : obf_table_fields(p, tmp_k, tmp_v);
     if (mat > 0) {
         int ns = tmp_v + 1;
         if (ns > 250) ns = 250;

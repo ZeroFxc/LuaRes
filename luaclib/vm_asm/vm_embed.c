@@ -28,13 +28,13 @@ typedef struct {
 
 static uint8_t  rd_byte(Reader *r) { return r->buf[r->pos++]; }
 static uint32_t rd_int(Reader *r) {
-    uint32_t v = *(uint32_t*)(r->buf + r->pos); r->pos += 4; return v;
+    uint32_t v; memcpy(&v, r->buf + r->pos, 4); r->pos += 4; return v;
 }
 static double rd_float(Reader *r) {
-    double v = *(double*)(r->buf + r->pos); r->pos += 8; return v;
+    double v; memcpy(&v, r->buf + r->pos, 8); r->pos += 8; return v;
 }
 static int64_t rd_integer(Reader *r) {
-    int64_t v = *(int64_t*)(r->buf + r->pos); r->pos += 8; return v;
+    int64_t v; memcpy(&v, r->buf + r->pos, 8); r->pos += 8; return v;
 }
 
 static int is_valid_text(const unsigned char *p, size_t len) {

@@ -1,0 +1,88 @@
+﻿=== main sizecode=21 sizek=9 maxstack=65
+  K[0]=string(����)
+  K[1]=number(3)
+  K[2]=number(10)
+  K[3]=string(���)
+  K[4]=string(r)
+  K[5]=string(p)
+  K[6]=number(182)
+  K[7]=number(183)
+  K[8]=string(�[�ԁ�w)�A5�)
+  [000] CLOSURE   A=34 B=0 C=1
+  [001] SETTABUP  A=0 B=264 C=34
+  [002] GETUPVAL  A=0 B=0 C=0
+  [003] CLOSURE   A=1 B=0 C=0
+  [004] LOADK     Bx=5
+  [005] LOADK     Bx=4
+  [006] GETTABUP  A=35 B=0 C=264
+  [007] LOADK     Bx=3
+  [008] LOADK     Bx=7
+  [009] CALL      A=35 B=3 C=2
+  [010] MOVE      A=12 B=35 C=0
+  [011] CONCAT    A=10 B=10 C=12
+  [012] GETTABLE  A=2 B=0 C=10
+  [013] MOVE      A=3 B=1 C=0
+  [014] LOADK     Bx=1
+  [015] CALL      A=3 B=2 C=2
+  [016] MOVE      A=4 B=1 C=0
+  [017] LOADK     Bx=2
+  [018] CLOSURE   A=58 B=0 C=2
+  [019] CALL      A=58 B=1 C=1
+  [020] RETURN    A=0 B=1 C=0
+  === child1 sizecode=10 sizek=2 maxstack=4
+    K[0]=number(0)
+    K[1]=number(1)
+    [000] GETUPVAL  A=1 B=0 C=0
+    [001] LOADK     Bx=0
+    [002] LOADK     Bx=1
+    [003] LE        A=0 B=3 C=0
+    [004] JMP       A=0 sBx=3 ->8
+    [005] ADD       A=2 B=2 C=3
+    [006] ADD       A=3 B=3 C=257
+    [007] JMP       A=0 sBx=-5 ->3
+    [008] RETURN    A=2 B=2 C=0
+    [009] RETURN    A=0 B=1 C=0
+  === child2 sizecode=22 sizek=5 maxstack=10
+    K[0]=string()
+    K[1]=number(1)
+    K[2]=string(string)
+    K[3]=string(byte)
+    K[4]=string(char)
+    [000] GETUPVAL  A=2 B=0 C=0
+    [001] LOADK     Bx=0
+    [002] LOADK     Bx=1
+    [003] LEN       A=5 B=0 C=0
+    [004] LE        A=0 B=4 C=5
+    [005] JMP       A=0 sBx=14 ->20
+    [006] GETTABLE  A=6 B=2 C=258
+    [007] GETTABLE  A=6 B=6 C=259
+    [008] MOVE      A=7 B=0 C=0
+    [009] MOVE      A=8 B=4 C=0
+    [010] CALL      A=6 B=3 C=2
+    [011] BXOR      A=6 B=6 C=1
+    [012] MOVE      A=7 B=3 C=0
+    [013] GETTABLE  A=8 B=2 C=258
+    [014] GETTABLE  A=8 B=8 C=260
+    [015] MOVE      A=9 B=6 C=0
+    [016] CALL      A=8 B=2 C=2
+    [017] CONCAT    A=3 B=7 C=8
+    [018] ADD       A=4 B=4 C=257
+    [019] JMP       A=0 sBx=-16 ->4
+    [020] RETURN    A=3 B=2 C=0
+    [021] RETURN    A=0 B=1 C=0
+  === child3 sizecode=6 sizek=9 maxstack=6
+    K[0]=string(����)
+    K[1]=number(3)
+    K[2]=number(10)
+    K[3]=string(���)
+    K[4]=string(r)
+    K[5]=string(p)
+    K[6]=number(182)
+    K[7]=number(183)
+    K[8]=string(�[�ԁ�w)�A5�)
+    [000] GETUPVAL  A=2 B=1 C=0
+    [001] GETUPVAL  A=4 B=2 C=0
+    [002] GETUPVAL  A=5 B=3 C=0
+    [003] CALL      A=4 B=2 C=0
+    [004] CALL      A=2 B=0 C=1
+    [005] RETURN    A=0 B=1 C=0

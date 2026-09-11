@@ -37,12 +37,14 @@ static int ensure_int_const(luac_Proto *p, long long val) {
 static void mutate_function(luac_Proto *p) {
     if (!p->code || p->sizecode == 0) return;
 
+    int need_tmp = 0;
+
     int k0 = ensure_int_const(p, 0);
     int k1 = ensure_int_const(p, 1);
     int km1 = ensure_int_const(p, -1);
 
-    int tmp = p->maxstacksize;
-    if (tmp > 248) tmp = 248;
+    int tmp = p->maxstacksize; /* first free slot, strictly above used range; do NOT clamp down */
+    /* (no clamp: tmp stays the first free slot; guarded by tmp<250 at use) */
 
     unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (p->sizecode * 4 + 64));
     int *new_pos = luac_alloc(sizeof(int) * (p->sizecode + 1));
@@ -112,7 +114,7 @@ static void mutate_function(luac_Proto *p) {
         /* 7. SUB → UNM(tmp,C) + ADD(A,B,tmp)（35%） */
         if (!transformed && op == LUAC_OP_SUB && (obf_rand() % 100) < 35 &&
             b < 255 && c < 255 && tmp < 250 && !is_loadkx) {
-            new_code[ni++] = LUAC_ABC(LUAC_OP_UNM, tmp, c, 0);
+            need_tmp = 1; new_code[ni++] = LUAC_ABC(LUAC_OP_UNM, tmp, c, 0);
             new_code[ni++] = LUAC_ABC(LUAC_OP_ADD, a, b, tmp);
             transformed = 1;
         }
@@ -157,7 +159,11 @@ static void mutate_function(luac_Proto *p) {
     free(p->code);
     p->code = new_code;
     p->sizecode = ni;
-    if (tmp + 1 > p->maxstacksize) obf_ensure_stack(p, tmp + 1);
+    /* Only grow the frame when a SUB expansion actually uses the scratch
+       register tmp; never bump maxstacksize unconditionally, since later
+       modules allocate temporaries at >=maxstacksize and a phantom slot
+       shifts their high-register allocation. */
+    if (need_tmp && tmp + 1 > p->maxstacksize) obf_ensure_stack(p, tmp + 1);
     if (p->lineinfo) { free(p->lineinfo); p->lineinfo = NULL; }
     p->sizelineinfo = 0;
     free(new_pos);

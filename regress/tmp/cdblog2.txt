@@ -1,0 +1,112 @@
+Opened log file 'regress\tmp\cdblog2.txt'
+
+************* Preparing the environment for Debugger Extensions Gallery repositories **************
+   ExtensionRepository : Implicit
+   UseExperimentalFeatureForNugetShare : true
+   AllowNugetExeUpdate : true
+   NonInteractiveNuget : true
+   AllowNugetMSCredentialProviderInstall : true
+   AllowParallelInitializationOfLocalRepositories : true
+
+   EnableRedirectToV8JsProvider : false
+
+   -- Configuring repositories
+      ----> Repository : LocalInstalled, Enabled: true
+      ----> Repository : UserExtensions, Enabled: true
+
+>>>>>>>>>>>>> Preparing the environment for Debugger Extensions Gallery repositories completed, duration 0.000 seconds
+
+************* Waiting for Debugger Extensions Gallery to Initialize **************
+
+>>>>>>>>>>>>> Waiting for Debugger Extensions Gallery to Initialize completed, duration 0.015 seconds
+   ----> Repository : UserExtensions, Enabled: true, Packages count: 0
+   ----> Repository : LocalInstalled, Enabled: true, Packages count: 29
+
+Microsoft (R) Windows Debugger Version 10.0.26100.6584 AMD64
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+CommandLine: luasafe\obf_test.exe regress\harness.lua regress\cases\bc_full.lua const_hide_c,const_shuffle_c,str_split_c,instruction_mutate_c,operator_substitute_c,upvalue_promote_c,block_clone_c,cfg_shuffle_c,for_loop_unroll_c,tforcall_to_call_c,num_obfuscate_c,bool_obfuscate_c,table_obfuscate_c,opaque_predicate_c,opaque_junk_c,junk_jmp_c,junk_loadk_c,junk_move_c,luac_obfuscate_c {\"seed\":13} regress\tmp\cdb6.json
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\atlmfc.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\ObjectiveC.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\concurrency.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\cpp_rest.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\stl.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Data.Json.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Devices.Geolocation.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Devices.Sensors.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Media.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\windows.natvis'
+NatVis script successfully loaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\winrt.natvis'
+
+************* Path validation summary **************
+Response                         Time (ms)     Location
+Deferred                                       srv*
+Symbol search path is: srv*
+Executable search path is: 
+
++------------------------------------------------------------------------+
+| This target supports Hardware-enforced Stack Protection. A HW based    |
+| "Shadow Stack" may be available to assist in debugging and analysis.   |
+| See aka.ms/userhsp for more info.                                      |
+|                                                                        |
+| dps @ssp                                                               |
+|                                                                        |
++------------------------------------------------------------------------+
+
+ModLoad: 00007ff7`a0d60000 00007ff7`a0e64000   .exe    
+ModLoad: 00007ffe`566c0000 00007ffe`56926000   ntdll.dll
+ModLoad: 00007ffd`f9e70000 00007ffd`f9ee2000   C:\Windows\System32\verifier.dll
+Page heap: pid 0x2514: page heap enabled with flags 0x3.
+ModLoad: 00007ffe`556c0000 00007ffe`55789000   C:\Windows\System32\KERNEL32.DLL
+ModLoad: 00007ffe`53d10000 00007ffe`5410f000   C:\Windows\System32\KERNELBASE.dll
+ModLoad: 00007ffe`53bb0000 00007ffe`53cfc000   C:\Windows\System32\ucrtbase.dll
+(2514.9ee0): Break instruction exception - code 80000003 (first chance)
+ntdll!LdrpDoDebuggerBreak+0x35:
+00007ffe`567dd78d cc              int     3
+0:000> sxe -c "kb 70; q" av
+0:000> g
+(2514.9ee0): Access violation - code c0000005 (first chance)
+*** WARNING: Unable to verify checksum for .exe
+RetAddr               : Args to Child                                                           : Call Site
+00007ff7`a0d72d01     : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : 0x3e7c0
+00007ff7`a0d72dbe     : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : 0x12d01
+00007ff7`a0d64323     : 00020000`00000000 00000000`00000000 00007ff7`a0d75e40 00000000`020c49f8 : 0x12dbe
+00007ff7`a0d71ab0     : 00000000`000004c6 00000000`020c4ac8 00000000`00000000 00000000`00000040 : 0x4323
+00007ff7`a0d73427     : 00007ff7`a0dfd3c0 00000000`020d6fe0 00000000`062b3fe0 00000000`0620bc00 : 0x11ab0
+00007ff7`a0d641bb     : 00000000`0620bbb0 00000000`0620bbc0 00000000`020c49f8 00007ff7`a0d618a4 : 0x13427
+00007ff7`a0d69acd     : 00007ff7`00000000 00007ff7`a0d71ddf 00000000`027b9ff8 00000000`022baff8 : 0x41bb
+00007ff7`a0d72349     : 00000000`06203fe0 00000000`06207ff0 00000000`061ffe60 00000000`020c49f8 : 0x9acd
+00007ff7`a0da22cb     : 00000000`0015f300 000004ff`00000000 00000000`00000023 00000000`00000001 : 0x12349
+00007ff7`a0d72d01     : 00000000`0257ffd0 00000000`0015f710 00000000`0015fc90 00007ffe`53c11222 : 0x422cb
+00007ff7`a0d72dbe     : 00000000`00000000 00000000`00000020 00000000`01c00000 00000000`00000002 : 0x12d01
+00007ff7`a0d64323     : 00000000`00000018 00000000`00000020 00000000`00000000 00000000`0015f790 : 0x12dbe
+00007ff7`a0d71ab0     : 00000000`020b2e30 00007ff7`a0d93460 00000000`00000000 00000000`00000000 : 0x4323
+00007ff7`a0d73427     : 203d2074`6e697270 0000daea`9c3ff4bf 00000000`00000006 00000000`00000000 : 0x11ab0
+00007ff7`a0d641bb     : 00000000`00000002 00007ffe`53c34c42 00000000`00000006 00000000`00000000 : 0x13427
+00007ff7`a0d93335     : 00007ff7`a0e20f60 00000000`01fc2c80 00000000`00000016 20292261`756c220a : 0x41bb
+00007ff7`a0d930c5     : 00000000`020c49f8 00007ff7`a0d77a01 00000000`020c49f8 00000001`00000001 : 0x33335
+00007ff7`a0d9290b     : 00000000`020c49f8 00007ff7`a0d87cf1 00000000`020c49f8 00007ff7`a0d74eed : 0x330c5
+00007ff7`a0d72349     : 00000004`5440273b 00000000`00000005 00000000`020c49f8 00007ff7`a0d8914d : 0x3290b
+00007ff7`a0d72cf2     : 3b1fdeba`00000000 00000000`00000005 00007ff7`a0dfc6f5 00000000`020c49f8 : 0x12349
+00007ff7`a0d72dbe     : 00000000`020d0fd0 00007ff7`a0d88ddf 00000000`020c49f8 00007ff7`a0dfc6f5 : 0x12cf2
+00007ff7`a0d64323     : 00000000`020c49f8 00007ff7`a0d79da1 00000000`020c49f8 00007ff7`a0d91f5b : 0x12dbe
+00007ff7`a0d71ab0     : 00000000`02102fe0 00000000`00000000 00007ff7`a0dfa218 00007ff7`a0d8871a : 0x4323
+00007ff7`a0d73427     : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : 0x11ab0
+00007ff7`a0d641bb     : 00000000`00000000 00000000`00000000 00000000`020c49f0 00000000`020c4ac8 : 0x13427
+00007ff7`a0d926a2     : 00000000`0015fee0 00000000`0015fee0 00007ffe`53ce98c0 00000000`0015fee0 : 0x41bb
+00007ff7`a0d610fe     : 00007ff7`00000002 00000000`00000002 00007ffe`53ce9e20 00007ff7`a0def160 : 0x326a2
+00007ffe`556eccb7     : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : 0x10fe
+00007ffe`5676ad6c     : 00000000`00000000 00000000`00000000 000004f0`fffffb30 000004d0`fffffb30 : KERNEL32!BaseThreadInitThunk+0x17
+00000000`00000000     : 00000000`00000000 00000000`00000000 00000000`00000000 00000000`00000000 : ntdll!RtlUserThreadStart+0x2c
+quit:
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\atlmfc.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\ObjectiveC.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\concurrency.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\cpp_rest.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\stl.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Data.Json.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Devices.Geolocation.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Devices.Sensors.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\Windows.Media.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\windows.natvis'
+NatVis script unloaded from 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\Visualizers\winrt.natvis'

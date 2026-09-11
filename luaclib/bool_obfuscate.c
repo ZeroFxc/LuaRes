@@ -167,7 +167,7 @@ static int obf_test(luac_Proto *p) {
     int count = 0;
     int orig_code = p->sizecode;
     int high_reg = calc_max_reg(p) + 2;
-    if (high_reg > 248) high_reg = 248;
+    if (high_reg > 249) return 0; /* scratch must stay above used range and <=249; skip if no room */
     unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (orig_code * 2 + 8));
     int *insert_pos = (int *)calloc(orig_code + 1, sizeof(int));
     int ni = 0;

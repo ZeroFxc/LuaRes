@@ -1,0 +1,1 @@
+{"stage":"run","gen_ok":true,"gen_err":"","kind":"bc","run_ok":true,"run_err":"","run_timeout":false,"output":"fn|6#lmat|ab|2#n|4#fn|15","size_in":427,"size_out":831,"module_changes":{"operator_substitute_c":2,"instruction_mutate_c":1}}

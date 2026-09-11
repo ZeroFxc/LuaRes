@@ -1,0 +1,3 @@
+sxe -c "dp @rsp+840 L8; .formats poi(@rsp+84c); kb 20; q" av
+g
+q

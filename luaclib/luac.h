@@ -76,10 +76,10 @@ typedef struct luac_Proto {
 #define LUAC_BITRK 0x100
 
 /* instruction constructors */
-#define LUAC_ABC(op,a,b,c)  ((unsigned int)((op) | ((a)<<6) | ((c)<<14) | ((b)<<23)))
-#define LUAC_ABx(op,a,bx)   ((unsigned int)((op) | ((a)<<6) | ((bx)<<14)))
-#define LUAC_AsBx(op,a,sbx) ((unsigned int)((op) | ((a)<<6) | (((sbx)+131071)<<14)))
-#define LUAC_Ax(op,ax)      ((unsigned int)((op) | ((ax)<<6)))
+#define LUAC_ABC(op,a,b,c)  ((unsigned int)((op) | ((unsigned)(a)<<6) | ((unsigned)(c)<<14) | ((unsigned)(b)<<23)))
+#define LUAC_ABx(op,a,bx)   ((unsigned int)((op) | ((unsigned)(a)<<6) | ((unsigned)(bx)<<14)))
+#define LUAC_AsBx(op,a,sbx) ((unsigned int)((op) | ((unsigned)(a)<<6) | ((unsigned)((sbx)+131071)<<14)))
+#define LUAC_Ax(op,ax)      ((unsigned int)((op) | ((unsigned)(ax)<<6)))
 
 /* opcodes (Lua 5.3) */
 enum {

@@ -93,7 +93,7 @@ static int inject_fake_forloop(luac_Proto *p, int pos, int base_reg) {
     ins[1] = LUAC_ABx(1, A + 1, k_limit);      /* LOADK */
     ins[2] = LUAC_ABx(1, A + 2, k_step);       /* LOADK */
     ins[3] = LUAC_AsBx(40, A, 1);              /* FORPREP A, +1 (跳转到 ins[5]) */
-    ins[4] = LUAC_ABC(4, A + 3, A + 3, 0);     /* LOADNIL A+3, A+3 (循环体占位) */
+    ins[4] = LUAC_ABC(4, A + 3, 0, 0);         /* LOADNIL R(A+3) only: B is count-1, must be 0 */
     ins[5] = LUAC_AsBx(39, A, -2);             /* FORLOOP A, -2 (跳回 ins[4]) */
 
     /* 插入到 pos 位置（1-based） */
@@ -112,6 +112,7 @@ static int process_function(lua_State *L, luac_Proto *p, int count) {
     int base_reg = old_max;  /* 用 old_max 开始的寄存器 */
 
     /* 扩展 maxstacksize，需要 4 个寄存器 (A, A+1, A+2, A+3) */
+    if (base_reg + 4 > 250) return 0; /* need 4 scratch regs strictly above used range; skip if no room */
     obf_ensure_stack(p, base_reg + 4);
 
     int i = 0;
@@ -144,7 +145,7 @@ int fake_forloop_process(lua_State *L) {
 
     int n = process_function(L, p, count);
     if (p->p) for (int i = 0; i < p->sizep; i++)
-        n += process_function(L, p->p[i], 2);  /* 子proto限2个 */
+        n += process_function(L, p->p[i], 10);  /* sub-proto fake loops */
 
     lua_pushinteger(L, n);
     return 1;

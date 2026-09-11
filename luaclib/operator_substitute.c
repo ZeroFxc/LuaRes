@@ -14,7 +14,14 @@
 
 #define OPSUB_DEBUG 0
 
-/* 在 pos 处替换 1 条指令为 n 条新指令，修正 JMP */
+/* jump opcode: JMP/FORLOOP/FORPREP/TFORLOOP */
+static int opsub_is_jump(int op) { return op == 30 || op == 39 || op == 40 || op == 42; }
+
+/* 在 pos 处把 1 条算术指令替换为 n 条等价序列(净增 delta=n-1)。
+** 关键: 若某跳转的目标原本就是 pos(如 FORLOOP 回跳到循环体首条),
+** 替换后必须仍跳到新序列的第一条 pos(前置指令 UNM/LOADK 必须先执行),
+** 而通用插入修正会错误地跳到序列末尾、跳过前置指令。这里做感知替换点
+** 的专用跳转修正, 并顺带修正 pos 前 LOADBOOL 的 skip 计数。 */
 static void replace_at(luac_Proto *p, int pos, unsigned int *new_ins, int n) {
     int delta = n - 1; /* 净增加指令数 */
     if (delta > 0) {
@@ -27,8 +34,30 @@ static void replace_at(luac_Proto *p, int pos, unsigned int *new_ins, int n) {
     }
     memcpy(&p->code[pos], new_ins, sizeof(unsigned int) * n);
     p->sizecode += delta;
-    if (delta != 0)
-        obf_adjust_jumps_insert(p->code, p->sizecode, pos + 1, delta);
+
+    if (delta != 0) {
+        for (int j = 0; j < p->sizecode; j++) {
+            int op = p->code[j] & 0x3F;
+            if (!opsub_is_jump(op)) continue;
+            /* 反推该 jump 在旧布局的位置: 替换点之后的指令后移了 delta */
+            int oj = (j > pos) ? j - delta : j;
+            int sbx = (int)(p->code[j] >> 14) - 131071;
+            int ot = oj + 1 + sbx;              /* 旧目标 */
+            int nt;                             /* 新目标 */
+            if (ot < pos) nt = ot;              /* 目标在替换点前, 不动 */
+            else if (ot == pos) nt = pos;       /* 目标=被展开指令: 跳到新序列首条 */
+            else nt = ot + delta;               /* 目标在替换点后, 跟随后移 */
+            int ns = nt - j - 1;
+            p->code[j] = (p->code[j] & 0x3FFF) | ((unsigned int)(ns + 131071) << 14);
+        }
+        /* pos 前一条是 LOADBOOL 且 C>0(跳过后续 C 条), 替换增加 delta 条需同步 */
+        if (pos > 0 && (p->code[pos - 1] & 0x3F) == LUAC_OP_LOADBOOL) {
+            int c = (p->code[pos - 1] >> 14) & 0x1FF;
+            if (c > 0)
+                p->code[pos - 1] = (p->code[pos - 1] & ~(0x1FFu << 14)) |
+                                   ((unsigned int)(c + delta) << 14);
+        }
+    }
 }
 
 static int inject_function(luac_Proto *p, int count) {
@@ -50,9 +79,9 @@ static int inject_function(luac_Proto *p, int count) {
     /* 确保常量池有 2.0（MUL 替换用） */
     int k2 = -1;
     for (int i = 0; i < p->sizek; i++) {
-        if ((p->k_tag[i] == 3 || p->k_tag[i] == 19) && p->k_num[i] == 2.0) { k2 = i; break; }
+        if (p->k_tag[i] == LUA_TNUMINT && p->k_int[i] == 2) { k2 = i; break; }
     }
-    if (k2 < 0) { obf_add_k_number(p, 2.0); k2 = p->sizek - 1; }
+    if (k2 < 0) { k2 = obf_add_k_integer(p, 2); }
     unsigned int rk2 = k2 + LUAC_BITRK;
 
     int changed = 0;
@@ -128,7 +157,7 @@ static int inject_function(luac_Proto *p, int count) {
                 LUAC_ABC(LUAC_OP_MUL, t2, C, C),
                 LUAC_ABC(LUAC_OP_SUB, t0, t0, t1),
                 LUAC_ABC(LUAC_OP_SUB, t0, t0, t2),
-                LUAC_ABC(LUAC_OP_DIV, A, t0, rk2)
+                LUAC_ABC(LUAC_OP_IDIV, A, t0, rk2)
             };
             replace_at(p, i, seq, 7);
             i += 7;

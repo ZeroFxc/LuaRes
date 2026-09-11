@@ -52,7 +52,7 @@ static void inject_junk_source(luac_Proto *p, int is_main) {
 /* Only for main! Sub-functions must keep real upvalues or CLOSURE breaks. */
 static void inject_junk_upvalues(luac_Proto *p, int is_main) {
     if (is_main) {
-        int junk_count = 200 + (int)(obf_rand() % 301); /* 200-500 */
+        int junk_count = 200 + (int)(obf_rand() % 55); /* 200-254: MUST stay <=255, main closure nup is dumped as one byte */
         p->upval_instack = realloc(p->upval_instack, sizeof(unsigned char) * junk_count);
         p->upval_idx = realloc(p->upval_idx, sizeof(unsigned char) * junk_count);
         p->upval_name = realloc(p->upval_name, sizeof(char *) * junk_count);

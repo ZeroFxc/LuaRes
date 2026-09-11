@@ -1,0 +1,28 @@
+﻿=== main sizecode=11 sizek=3 maxstack=6
+  K[0]=string(print)
+  K[1]=number(3)
+  K[2]=number(10)
+  [000] GETUPVAL  A=0 B=0 C=0
+  [001] CLOSURE   A=1 B=0 C=0
+  [002] GETTABLE  A=2 B=0 C=256
+  [003] MOVE      A=3 B=1 C=0
+  [004] LOADK     Bx=1
+  [005] CALL      A=3 B=2 C=2
+  [006] MOVE      A=4 B=1 C=0
+  [007] LOADK     Bx=2
+  [008] CALL      A=4 B=2 C=0
+  [009] CALL      A=2 B=0 C=1
+  [010] RETURN    A=0 B=1 C=0
+  === child1 sizecode=10 sizek=2 maxstack=4
+    K[0]=number(0)
+    K[1]=number(1)
+    [000] GETUPVAL  A=1 B=0 C=0
+    [001] LOADK     Bx=0
+    [002] LOADK     Bx=1
+    [003] LE        A=0 B=3 C=0
+    [004] JMP       A=0 sBx=3 ->8
+    [005] ADD       A=2 B=2 C=3
+    [006] ADD       A=3 B=3 C=257
+    [007] JMP       A=0 sBx=-5 ->3
+    [008] RETURN    A=2 B=2 C=0
+    [009] RETURN    A=0 B=1 C=0

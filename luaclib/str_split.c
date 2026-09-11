@@ -35,6 +35,29 @@ static int is_string_const(luac_Proto *p, int idx) {
     return (p->k_tag[idx] == LUA_TSHRSTR || p->k_tag[idx] == LUA_TLNGSTR) && p->k_str[idx] != NULL;
 }
 
+/* Valid UTF-8 check. On a nested/2nd pass, string constants left by str_encrypt are
+   XOR random bytes (almost never valid UTF-8); splitting them by UTF-8 boundaries corrupts
+   the ciphertext. Legit source string constants are always valid UTF-8. */
+static int is_valid_utf8(const char *pp, int len) {
+    const unsigned char *s = (const unsigned char *)pp; int i = 0;
+    while (i < len) {
+        unsigned char c = s[i];
+        if (c < 0x80) { i++; }
+        else if (c >= 0xC2 && c <= 0xDF) {
+            if (i+1 >= len || (s[i+1] & 0xC0) != 0x80) return 0; i += 2;
+        } else if (c >= 0xE0 && c <= 0xEF) {
+            if (i+2 >= len || (s[i+1]&0xC0)!=0x80 || (s[i+2]&0xC0)!=0x80) return 0;
+            if (c==0xE0 && s[i+1]<0xA0) return 0;
+            if (c==0xED && s[i+1]>=0xA0) return 0; i += 3;
+        } else if (c >= 0xF0 && c <= 0xF4) {
+            if (i+3 >= len || (s[i+1]&0xC0)!=0x80 || (s[i+2]&0xC0)!=0x80 || (s[i+3]&0xC0)!=0x80) return 0;
+            if (c==0xF0 && s[i+1]<0x90) return 0;
+            if (c==0xF4 && s[i+1]>=0x90) return 0; i += 4;
+        } else return 0;
+    }
+    return 1;
+}
+
 static int process_function(luac_Proto *p) {
     if (!p->code || !p->k_str || p->sizek == 0) return 0;
     int orig_code = p->sizecode;
@@ -71,6 +94,7 @@ static int process_function(luac_Proto *p) {
         if (len < min_len) continue;
         const char *s = p->k_str[idx];
 
+        if (!is_valid_utf8(s, len)) continue; /* ciphertext/raw bytes from a prior pass: do not split */
         int n = choose_segments(len);
         int seg = len / n;
         if (seg < 1) seg = 1;
@@ -157,7 +181,7 @@ static int process_function(luac_Proto *p) {
         }
     }
     int tmp_base = max_r + 5;
-    if (tmp_base > 240) tmp_base = 240;
+    if (tmp_base + 24 > 250) { free(seg_map); free(str_set); return 0; } /* need 24 contiguous scratch regs strictly above used range */
 
     /* build new code */
     int max_new = orig_code * 16 + 256;

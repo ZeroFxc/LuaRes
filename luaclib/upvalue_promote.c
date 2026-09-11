@@ -37,11 +37,11 @@ static int ins_reads_reg(unsigned int ins, int reg) {
         case LUAC_OP_TESTSET: return B==reg;
         case LUAC_OP_CALL:case LUAC_OP_TAILCALL:
             if(A==reg)return 1;
-            if(B<=1)return 0;
+            if(B==1)return 0; if(B==0)return reg>A;
             for(int i=0;i<B-1;i++)if(A+1+i==reg)return 1;
             return 0;
         case LUAC_OP_RETURN:
-            if(B<=1)return 0;
+            if(B==1)return 0; if(B==0)return reg>=A;
             for(int i=0;i<B-1;i++)if(A+i==reg)return 1;
             return 0;
         case LUAC_OP_FORLOOP:case LUAC_OP_FORPREP:
@@ -72,7 +72,7 @@ static int ins_modifies_reg(unsigned int ins, int reg) {
         case LUAC_OP_CONCAT:
             return A==reg; /* 既读又写也算修改了值 */
         case LUAC_OP_VARARG:
-            if(B<=1)return 0;
+            if(B==1)return 0; if(B==0)return reg>=A;
             for(int i=0;i<B-1;i++)if(A+i==reg)return 1;
             return 0;
         case LUAC_OP_SELF: return A==reg||A+1==reg;
@@ -80,7 +80,7 @@ static int ins_modifies_reg(unsigned int ins, int reg) {
             for(int i=0;i<=B;i++)if(A+i==reg)return 1;
             return 0;
         case LUAC_OP_CALL:
-            if(C<=1)return 0;
+            if(C==1)return 0; if(C==0)return reg>=A;
             for(int i=0;i<C-1;i++)if(A+i==reg)return 1;
             return 0;
         default: return 0;
@@ -109,7 +109,7 @@ static int ins_writes_reg(unsigned int ins, int reg) {
             if(reg==A && A>=B && A<=C)return 0;
             return A==reg;
         case LUAC_OP_VARARG:
-            if(B<=1)return 0;
+            if(B==1)return 0; if(B==0)return reg>=A;
             for(int i=0;i<B-1;i++)if(A+i==reg)return 1;
             return 0;
         case LUAC_OP_SELF: return A==reg||A+1==reg;
@@ -117,7 +117,7 @@ static int ins_writes_reg(unsigned int ins, int reg) {
             for(int i=0;i<=B;i++)if(A+i==reg)return 1;
             return 0;
         case LUAC_OP_CALL:
-            if(C<=1)return 0;
+            if(C==1)return 0; if(C==0)return reg>=A;
             for(int i=0;i<C-1;i++)if(A+i==reg)return 1;
             return 0;
         default: return 0;
@@ -182,6 +182,22 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             if(end-start>12)break;
         }
         if(end-start<2){DBG("[UPVAL] block too short at %d len=%d\n",pos,end-start);pos=end+1;continue;}
+        {
+            int in_loop=0;
+            for(int lj=0;lj<p->sizecode;lj++){
+                int lop=p->code[lj]&0x3F;
+                if(lop==LUAC_OP_JMP||lop==LUAC_OP_FORLOOP||
+                   lop==LUAC_OP_FORPREP||lop==LUAC_OP_TFORLOOP){
+                    int lsbx=((p->code[lj]>>14)&0x3FFFF)-131071;
+                    if(1){
+                        int ltarget=lj+1+lsbx;
+                        if((lj<start&&ltarget>=end)||(lj>=end&&ltarget<=start)||
+                           (ltarget>start&&ltarget<end)){in_loop=1;break;}
+                    }
+                }
+            }
+            if(in_loop){pos=end+1;continue;}
+        }
         int has_call_ret=0;
         for(int i=start;i<end;i++){
             int op=p->code[i]&0x3F;
@@ -233,7 +249,7 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
                 if(first_read<0 && ins_reads_reg(p->code[i],r))first_read=i;
                 if(first_write<0 && ins_writes_reg(p->code[i],r))first_write=i;
             }
-            if(first_read>=0 && (first_write<0 || first_read<first_write)){
+            if(first_read>=0 && (first_write<0 || first_read<=first_write)){
                 if(next<32)ext_regs[next++]=r;
             }
         }

@@ -25,13 +25,22 @@
 
 
 /* 判断是否是可以安全替换的回跳 JMP */
+static int tfj_jump_target(unsigned int ins, int pc) {
+    int op = ins & 0x3F;
+    if (op == 30 || op == 39 || op == 40 || op == 42) {
+        int sbx = (int)((ins >> 14) & 0x3FFFF) - 131071;
+        return pc + 1 + sbx;
+    }
+    return -1000000;
+}
+
 static int is_safe_jmp(luac_Proto *p, int pos) {
     unsigned int ins = p->code[pos];
     if ((ins & 0x3F) != 30) return 0;  /* OP_JMP */
     int A = (ins >> 6) & 0xFF;
-    if (A != 0) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: A=%d\n", pos, A); return 0; }
+    if (A != 0) return 0;
     int sbx = (int)((ins >> 14) & 0x3FFFF) - 131071;
-    if (sbx >= 0) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: sbx=%d>=0\n", pos, sbx); return 0; }
+    if (sbx >= 0) return 0;
 
     /* TFORLOOP 的跳转条件是 R(A+1) ~= nil，与条件指令（EQ/LT/LE/TEST/TESTSET）的结果无关。
        所以只能替换无条件 JMP（前面不是条件指令的 JMP）。条件跳转后的 JMP 不能替换，
@@ -51,16 +60,26 @@ static int is_safe_jmp(luac_Proto *p, int pos) {
     }
 
     /* 跳转目标不能是 EXTRAARG */
+    /* After inserting LOADBOOL at pos, the new TFORLOOP sits at pos+1.
+       Reject if any other jump edge lands directly on pos+1 (it would skip
+       the LOADBOOL that primes R(A+1), making TFORLOOP's test nondeterministic). */
+    for (int _j = 0; _j < p->sizecode; _j++) {
+        int t = tfj_jump_target(p->code[_j], _j);
+        if (t <= -100000) continue;
+        if (t >= pos) t++;  /* account for the inserted instruction */
+        if (t == pos + 1) return 0;
+    }
+
     int target = pos + 1 + sbx;
-    if (target < 0 || target >= p->sizecode) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: target=%d out of range\n", pos, target); return 0; }
+    if (target < 0 || target >= p->sizecode) return 0;
     int target_op = p->code[target] & 0x3F;
-    if (target_op == 46) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: target_op=46 (EXTRAARG)\n", pos); return 0; }
+    if (target_op == 46) return 0;
 
     /* 跳转目标不能是跳转类或终止类指令（cfg_shuffle/for_loop_unroll 可能产生中间 JMP） */
     if (target_op == 30 || target_op == 39 || target_op == 40 || target_op == 42 ||
-        target_op == 38 || target_op == 37) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: target_op=%d (jump/terminator)\n", pos, target_op); return 0; }
+        target_op == 38 || target_op == 37) return 0;
 
-    fprintf(stderr, "[TFJ_DBG] pos=%d ACCEPT: sbx=%d target=%d target_op=%d\n", pos, sbx, target, target_op);
+    /* candidate accepted */
     return 1;
 }
 
@@ -88,6 +107,7 @@ static int convert_function(lua_State *L, luac_Proto *p) {
     int changes = 0;
     int old_max = p->maxstacksize;
     int high_reg = old_max + 2;  /* 用高寄存器，留 2 个位置给 R(A) 和 R(A+1) */
+    if (high_reg + 2 > 250) return 0;  /* no room for R(A),R(A+1) under register cap */
 
     /* 扩展 maxstacksize */
     obf_ensure_stack(p, high_reg + 2);

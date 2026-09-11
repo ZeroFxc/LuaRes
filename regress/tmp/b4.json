@@ -1,0 +1,1 @@
+{"stage":"run","gen_ok":true,"gen_err":"","kind":"bc","run_ok":false,"run_err":"?:-1: attempt to call a nil value (field 'concat')","run_timeout":false,"output":"","size_in":776,"size_out":1478,"module_changes":{"upvalue_promote_c":2}}

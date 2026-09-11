@@ -44,6 +44,23 @@ static int is_number_const(luac_Proto *p, int idx) {
     return (p->k_tag[idx] == LUA_TNUMINT || p->k_tag[idx] == LUA_TNUMFLT);
 }
 
+/* Detect a proto already transformed by this module (re-entry / nested obfuscation).
+   Signature: LOADK t; LOADK t+1; <binop> A,t,t+1 with A<t (injected scratch temps sit
+   strictly above every original register; compiler-generated const+const does not). */
+static int looks_num_processed(luac_Proto *p) {
+    for (int i = 0; i + 2 < p->sizecode; i++) {
+        unsigned int i0 = p->code[i], i1 = p->code[i+1], i2 = p->code[i+2];
+        if ((i0 & 0x3F) != LUAC_OP_LOADK || (i1 & 0x3F) != LUAC_OP_LOADK) continue;
+        int op2 = i2 & 0x3F;
+        if (op2 != LUAC_OP_ADD && op2 != LUAC_OP_SUB &&
+            op2 != LUAC_OP_BXOR && op2 != LUAC_OP_MUL) continue;
+        int t1 = (i0 >> 6) & 0xFF, t2 = (i1 >> 6) & 0xFF;
+        int A = (i2 >> 6) & 0xFF, B = (i2 >> 23) & 0x1FF, C = (i2 >> 14) & 0x1FF;
+        if (t2 == t1 + 1 && B == t1 && C == t2 && A < t1) return 1;
+    }
+    return 0;
+}
+
 static int obf_function(luac_Proto *p) {
     if (!p->code || !p->k_num) return 0;
 
@@ -54,10 +71,13 @@ static int obf_function(luac_Proto *p) {
         if (is_number_const(p, i)) num_idx[num_count++] = i;
     }
     if (num_count == 0) { free(num_idx); return 0; }
+    if (looks_num_processed(p)) { free(num_idx); return 0; } /* already obfuscated: skip on 2nd pass */
 
     int max_reg = calc_max_reg(p);
-    int tmp1 = max_reg + 2; if (tmp1 > 245) tmp1 = 245;
-    int tmp2 = tmp1 + 1; if (tmp2 > 246) tmp2 = 246;
+    int tmp1 = max_reg + 1;
+    int tmp2 = max_reg + 2;
+    if (tmp2 + 1 > 250) { free(num_idx); return 0; } /* scratch must be strictly above every used reg; skip if no room */
+    /* tmp2 defined above */
     obf_ensure_stack(p, tmp2 + 1);
 
     unsigned int *new_code = luac_alloc(sizeof(unsigned int) * (p->sizecode * 4 + 16));

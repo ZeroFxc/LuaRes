@@ -1,0 +1,1 @@
+{"stage":"run","gen_ok":true,"gen_err":"","kind":"bc","run_ok":true,"run_err":"","run_timeout":false,"output":"down\t3\ndown\t2\ndown\t1\nsum\t166","size_in":266,"size_out":432,"module_changes":{"for_loop_unroll_c":6,"cfg_shuffle_c":1}}

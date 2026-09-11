@@ -1,0 +1,23 @@
+﻿
+  [000] GETUPVAL  A=0 B=0 C=0
+  [001] NEWTABLE  A=1 B=0 C=0
+  [002] CLOSURE   A=2 B=0 C=0
+  [003] LOADK     Bx=0
+  [004] LOADK     Bx=0
+  [005] ADD       A=4 B=4 C=257
+  [006] ADD       A=3 B=3 C=258
+  [007] LE        A=0 B=259 C=4
+  [008] JMP       A=0 sBx=-4 ->5
+  [009] MOVE      A=5 B=2 C=0
+  [010] LOADK     Bx=4
+  [011] MOVE      A=7 B=3 C=0
+  [012] CALL      A=5 B=3 C=1
+  [013] LOADK     Bx=0
+  [014] LOADK     Bx=0
+  [015] ADD       A=6 B=6 C=257
+  [016] ADD       A=5 B=5 C=258
+  [017] LE        A=0 B=258 C=6
+  [018] JMP       A=0 sBx=-4 ->15
+  [019] MOVE      A=7 B=2 C=0
+
+

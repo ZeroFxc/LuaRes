@@ -44,6 +44,8 @@ int debug_mutate_process(lua_State *L);
 int call_rewrite_process(lua_State *L);
 int upvalue_promote_process(lua_State *L);
 int block_clone_process(lua_State *L);
+int obf_heapcheck_process(lua_State *L);
+int obf_regcheck_process(lua_State *L);
 int cfg_shuffle_process(lua_State *L);
 int vm_dispatch_shuffle_process(lua_State *L);
 int vm_shuffle_register(lua_State *L);
@@ -96,6 +98,8 @@ static const luaL_Reg obf_funcs[] = {
     {"call_rewrite_c", call_rewrite_process},
     {"upvalue_promote_c", upvalue_promote_process},
     {"block_clone_c", block_clone_process},
+    {"heapcheck_c", obf_heapcheck_process},
+    {"regcheck_c", obf_regcheck_process},
     {"cfg_shuffle_c", cfg_shuffle_process},
     {"vm_dispatch_shuffle_c", vm_dispatch_shuffle_process},
     {"srand", obf_srand_lua},

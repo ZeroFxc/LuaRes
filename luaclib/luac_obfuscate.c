@@ -30,7 +30,7 @@ static unsigned int random_inst(int maxstack) {
     switch (choice) {
         case 0: return LUAC_ABC(0, r1, r2, 0);              /* MOVE */
         case 1: return LUAC_ABC(3, r1, obf_rand() % 2, 0);  /* LOADBOOL */
-        case 2: return LUAC_ABC(4, r1, r1, 0);               /* LOADNIL */
+        case 2: return LUAC_ABC(4, r1, 0, 0);                /* LOADNIL R(r1) only: B=count-1=0 */
         default: return LUAC_ABC(0, r1, r1, 0);              /* MOVE same reg (NOP-like) */
     }
 }

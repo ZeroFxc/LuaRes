@@ -1,0 +1,1675 @@
+﻿=== main sizecode=585 sizek=239 maxstack=248
+  K[0]=string(���)
+  K[1]=number(2)
+  K[2]=string(
+L8)
+  K[3]=string(n)
+  K[4]=string(����)
+  K[5]=number(0)
+  K[6]=number(4)
+  K[7]=string(qnwo)
+  K[8]=number(5)
+  K[9]=string(J7	:P)
+  K[10]=string(ꦼ��)
+  K[11]=string(D%WW)
+  K[12]=number(3)
+  K[13]=string(�����)
+  K[14]=string(s)
+  K[15]=number(1)
+  K[16]=number(1)
+  K[17]=string(ͻ�܆�)
+  K[18]=string(��)
+  K[19]=string(#)
+  K[20]=string(?)
+  K[21]=string(~)
+  K[22]=number(6)
+  K[23]=string(Yf~)
+  K[24]=string(}2q)
+  K[25]=string(r)
+  K[26]=string(i)
+  K[27]=string(b)
+  K[28]=string()
+  K[29]=string(l)
+  K[30]=string(m)
+  K[31]=string(b)
+  K[32]=string(47)
+  K[33]=string(o)
+  K[34]=string(n)
+  K[35]=string(e)
+  K[36]=string(��)
+  K[37]=string(a)
+  K[38]=string(���)
+  K[39]=string(t)
+  K[40]=string(_XB)
+  K[41]=string(r)
+  K[42]=string(p)
+  K[43]=string(EE)
+  K[44]=string(l)
+  K[45]=string(a)
+  K[46]=string(w)
+  K[47]=string(h)
+  K[48]=string(���)
+  K[49]=string(nly)
+  K[50]=string(n)
+  K[51]=string(o)
+  K[52]=string(c)
+  K[53]=string(i)
+  K[54]=string(f)
+  K[55]=string(f)
+  K[56]=string(n)
+  K[57]=string(d)
+  K[58]=string(c)
+  K[59]=string(y)
+  K[60]=string(z)
+  K[61]=string(x)
+  K[62]=string(r)
+  K[63]=string(��)
+  K[64]=string(l)
+  K[65]=number(200)
+  K[66]=number(97)
+  K[67]=number(134)
+  K[68]=number(71)
+  K[69]=number(116)
+  K[70]=number(157)
+  K[71]=number(18)
+  K[72]=number(227)
+  K[73]=number(224)
+  K[74]=number(153)
+  K[75]=number(94)
+  K[76]=number(63)
+  K[77]=number(12)
+  K[78]=number(85)
+  K[79]=number(106)
+  K[80]=number(91)
+  K[81]=number(248)
+  K[82]=number(209)
+  K[83]=number(54)
+  K[84]=number(55)
+  K[85]=number(164)
+  K[86]=number(13)
+  K[87]=number(194)
+  K[88]=string(��oYJ(�M�f��)��R)
+  K[89]=number(-1)
+  K[90]=number(1.0)
+  K[91]=number(0.0)
+  K[92]=number(1.0)
+  K[93]=number(1.0)
+  K[94]=number(0.0)
+  K[95]=number(1.0)
+  K[96]=number(1.0)
+  K[97]=number(0.0)
+  K[98]=number(1.0)
+  K[99]=number(1.0)
+  K[100]=number(0.0)
+  K[101]=number(1.0)
+  K[102]=number(1.0)
+  K[103]=number(0.0)
+  K[104]=number(1.0)
+  K[105]=number(1.0)
+  K[106]=number(0.0)
+  K[107]=number(1.0)
+  K[108]=number(1.0)
+  K[109]=number(0.0)
+  K[110]=number(1.0)
+  K[111]=number(1.0)
+  K[112]=number(0.0)
+  K[113]=number(1.0)
+  K[114]=number(1.0)
+  K[115]=number(0.0)
+  K[116]=number(1.0)
+  K[117]=number(1.0)
+  K[118]=number(0.0)
+  K[119]=number(1.0)
+  K[120]=number(2.0)
+  K[121]=number(0.5)
+  K[122]=number(2.0)
+  K[123]=number(0.5)
+  K[124]=number(2.0)
+  K[125]=number(0.5)
+  K[126]=number(6259586613843441726)
+  K[127]=number(6259586613843441725)
+  K[128]=number(8424390626891931834)
+  K[129]=number(8424390626891931832)
+  K[130]=number(-5437438573027090290)
+  K[131]=number(5437438573027090294)
+  K[132]=number(8240176612817545562)
+  K[133]=number(8240176612817545558)
+  K[134]=number(170437848232123002)
+  K[135]=number(-170437848232122997)
+  K[136]=number(-1.0)
+  K[137]=number(0.0)
+  K[138]=number(2.0)
+  K[139]=number(0.5)
+  K[140]=number(-331494258446744334)
+  K[141]=number(331494258446744389)
+  K[142]=number(0.0)
+  K[143]=number(0.0)
+  K[144]=number(-1.0)
+  K[145]=number(0.0)
+  K[146]=number(-1.0)
+  K[147]=number(0.0)
+  K[148]=number(-1.0)
+  K[149]=number(-1.0)
+  K[150]=number(-1.0)
+  K[151]=number(2732052250904746985)
+  K[152]=number(2732052250904746791)
+  K[153]=number(0.0)
+  K[154]=number(2.0)
+  K[155]=number(0.5)
+  K[156]=number(-1.0)
+  K[157]=number(-8292178517012104579)
+  K[158]=number(8292178517012104670)
+  K[159]=number(-1.0)
+  K[160]=number(0.0)
+  K[161]=number(0.0)
+  K[162]=number(-3304229730180094838)
+  K[163]=number(-3304229730180094838)
+  K[164]=number(7324451889572275711)
+  K[165]=number(7324451889572275710)
+  K[166]=number(-9082092005157922563)
+  K[167]=number(-9082092005157922567)
+  K[168]=number(-2625784193589657852)
+  K[169]=number(2625784193589657853)
+  K[170]=number(2.0)
+  K[171]=number(0.5)
+  K[172]=number(-1.0)
+  K[173]=number(-1.0)
+  K[174]=number(2.0)
+  K[175]=number(0.5)
+  K[176]=number(-1.0)
+  K[177]=number(-1.0)
+  K[178]=number(-2482647715697947269)
+  K[179]=number(2482647715697947270)
+  K[180]=number(2.0)
+  K[181]=number(0.5)
+  K[182]=number(2.0)
+  K[183]=number(0.5)
+  K[184]=number(0.0)
+  K[185]=number(7158516196705226377)
+  K[186]=number(-7158516196705226375)
+  K[187]=number(-2575069472904460149)
+  K[188]=number(-2575069472904460150)
+  K[189]=number(-1316846546078493497)
+  K[190]=number(1316846546078493661)
+  K[191]=number(-3215070351722128940)
+  K[192]=number(-3215070351722128994)
+  K[193]=number(-5613275594640902973)
+  K[194]=number(-5613275594640903182)
+  K[195]=number(1572082701046333477)
+  K[196]=number(-1572082701046333464)
+  K[197]=number(8465335993813351010)
+  K[198]=number(8465335993813351014)
+  K[199]=number(-2482260937425831361)
+  K[200]=number(2482260937425831452)
+  K[201]=number(-4654823860396602550)
+  K[202]=number(4654823860396602550)
+  K[203]=number(8326778279846397238)
+  K[204]=number(-8326778279846397237)
+  K[205]=number(6860235868603548276)
+  K[206]=number(6860235868603548277)
+  K[207]=number(-4057538459551525576)
+  K[208]=number(-4057538459551525574)
+  K[209]=number(-4943538210866038847)
+  K[210]=number(4943538210866038953)
+  K[211]=number(3371401890852570254)
+  K[212]=number(3371401890852570254)
+  K[213]=number(-1459895652433767145)
+  K[214]=number(-1459895652433767146)
+  K[215]=number(-5406461518934750362)
+  K[216]=number(-5406461518934750366)
+  K[217]=number(3395776066113192962)
+  K[218]=number(3395776066113192963)
+  K[219]=number(-8054719914395275428)
+  K[220]=number(-8054719914395275427)
+  K[221]=number(8150334124121683362)
+  K[222]=number(-8150334124121683114)
+  K[223]=number(6975904393571968048)
+  K[224]=number(6975904393571968048)
+  K[225]=number(6743399737257306682)
+  K[226]=number(6743399737257306681)
+  K[227]=number(6860479502454096836)
+  K[228]=number(6860479502454096830)
+  K[229]=number(-626860147900901694)
+  K[230]=number(-626860147900901695)
+  K[231]=number(-3909002365266800897)
+  K[232]=number(3909002365266800898)
+  K[233]=number(-5718961992369469974)
+  K[234]=number(5718961992369469976)
+  K[235]=number(-7732021368243081847)
+  K[236]=number(-7732021368243081848)
+  K[237]=number(5731269916840969442)
+  K[238]=number(-5731269916840969442)
+  [000] CLOSURE   A=53 B=0 C=2
+  [001] SETTABUP  A=0 B=344 C=53
+  [002] LOADK     Bx=90
+  [003] LOADK     Bx=120
+  [004] MUL       A=244 B=245 C=246
+  [005] LOADK     Bx=121
+  [006] MUL       A=244 B=244 C=246
+  [007] LOADK     Bx=91
+  [008] LOADK     Bx=122
+  [009] MUL       A=245 B=245 C=246
+  [010] LOADK     Bx=123
+  [011] MUL       A=245 B=245 C=246
+  [012] LOADK     Bx=92
+  [013] LOADK     Bx=124
+  [014] MUL       A=246 B=245 C=246
+  [015] LOADK     Bx=125
+  [016] MUL       A=246 B=246 C=246
+  [017] FORPREP   A=244 sBx=1 ->19
+  [018] LOADNIL   A=247 B=0 C=0
+  [019] FORLOOP   A=244 sBx=-2 ->18
+  [020] GETUPVAL  A=0 B=0 C=0
+  [021] NEWTABLE  A=1 B=0 C=0
+  [022] CLOSURE   A=2 B=0 C=0
+  [023] NEWTABLE  A=3 B=5 C=0
+  [024] LOADK     Bx=126
+  [025] LOADK     Bx=127
+  [026] SUB       A=4 B=245 C=246
+  [027] LOADK     Bx=128
+  [028] LOADK     Bx=129
+  [029] SUB       A=5 B=245 C=246
+  [030] LOADK     Bx=130
+  [031] LOADK     Bx=131
+  [032] ADD       A=6 B=245 C=246
+  [033] LOADK     Bx=132
+  [034] LOADK     Bx=133
+  [035] SUB       A=7 B=245 C=246
+  [036] LOADK     Bx=134
+  [037] LOADK     Bx=135
+  [038] ADD       A=8 B=245 C=246
+  [039] LOADK     Bx=93
+  [040] LOADK     Bx=136
+  [041] MUL       A=244 B=245 C=246
+  [042] MUL       A=244 B=244 C=246
+  [043] LOADK     Bx=94
+  [044] LOADK     Bx=137
+  [045] ADD       A=245 B=245 C=246
+  [046] SUB       A=245 B=245 C=246
+  [047] LOADK     Bx=95
+  [048] LOADK     Bx=138
+  [049] MUL       A=246 B=245 C=246
+  [050] LOADK     Bx=139
+  [051] MUL       A=246 B=246 C=246
+  [052] FORPREP   A=244 sBx=1 ->54
+  [053] LOADNIL   A=247 B=0 C=0
+  [054] FORLOOP   A=244 sBx=-2 ->53
+  [055] SETLIST   A=3 B=5 C=1
+  [056] MOVE      A=4 B=2 C=0
+  [057] LOADK     Bx=44
+  [058] LOADK     Bx=45
+  [059] GETTABUP  A=54 B=0 C=344
+  [060] LOADK     Bx=43
+  [061] LOADK     Bx=140
+  [062] LOADK     Bx=141
+  [063] ADD       A=56 B=245 C=246
+  [064] CALL      A=54 B=3 C=2
+  [065] CLOSURE   A=78 B=0 C=3
+  [066] CALL      A=78 B=1 C=1
+  [067] LOADK     Bx=96
+  [068] LOADK     Bx=142
+  [069] ADD       A=244 B=245 C=246
+  [070] SUB       A=244 B=244 C=246
+  [071] LOADK     Bx=97
+  [072] LOADK     Bx=143
+  [073] ADD       A=245 B=245 C=246
+  [074] SUB       A=245 B=245 C=246
+  [075] LOADK     Bx=98
+  [076] LOADK     Bx=144
+  [077] MUL       A=246 B=245 C=246
+  [078] MUL       A=246 B=246 C=246
+  [079] FORPREP   A=244 sBx=1 ->81
+  [080] LOADNIL   A=247 B=0 C=0
+  [081] FORLOOP   A=244 sBx=-2 ->80
+  [082] CLOSURE   A=4 B=0 C=1
+  [083] CLOSURE   A=134 B=0 C=4
+  [084] CALL      A=134 B=1 C=1
+  [085] LE        A=1 B=278 C=257
+  [086] JMP       A=0 sBx=470 ->557
+  [087] JMP       A=0 sBx=391 ->479
+  [088] NEWTABLE  A=12 B=3 C=0
+  [089] MOVE      A=13 B=11 C=0
+  [090] MUL       A=14 B=11 C=257
+  [091] LOADK     Bx=99
+  [092] LOADK     Bx=145
+  [093] ADD       A=244 B=245 C=246
+  [094] SUB       A=244 B=244 C=246
+  [095] LOADK     Bx=100
+  [096] LOADK     Bx=146
+  [097] MUL       A=245 B=245 C=246
+  [098] MUL       A=245 B=245 C=246
+  [099] LOADK     Bx=101
+  [100] LOADK     Bx=147
+  [101] ADD       A=246 B=245 C=246
+  [102] SUB       A=246 B=246 C=246
+  [103] FORPREP   A=244 sBx=1 ->105
+  [104] LOADNIL   A=247 B=0 C=0
+  [105] FORLOOP   A=244 sBx=-2 ->104
+  [106] LOADK     Bx=58
+  [107] LOADK     Bx=57
+  [108] CONCAT    A=29 B=29 C=30
+  [109] MOVE      A=15 B=29 C=0
+  [110] SETLIST   A=12 B=3 C=1
+  [111] GETTABLE  A=13 B=12 C=271
+  [112] ADD       A=13 B=13 C=7
+  [113] GETTABLE  A=14 B=12 C=257
+  [114] ADD       A=7 B=14 C=13
+  [115] JMP       A=0 sBx=104 ->220
+  [116] MOVE      A=8 B=2 C=0
+  [117] LOADK     Bx=102
+  [118] LOADK     Bx=148
+  [119] MUL       A=244 B=245 C=246
+  [120] MUL       A=244 B=244 C=246
+  [121] LOADK     Bx=103
+  [122] LOADK     Bx=149
+  [123] MUL       A=245 B=245 C=246
+  [124] MUL       A=245 B=245 C=246
+  [125] LOADK     Bx=104
+  [126] LOADK     Bx=150
+  [127] MUL       A=246 B=245 C=246
+  [128] MUL       A=246 B=246 C=246
+  [129] FORPREP   A=244 sBx=1 ->131
+  [130] LOADNIL   A=247 B=0 C=0
+  [131] FORLOOP   A=244 sBx=-2 ->130
+  [132] LOADK     Bx=64
+  [133] LOADK     Bx=62
+  [134] GETTABUP  A=54 B=0 C=344
+  [135] LOADK     Bx=63
+  [136] LOADK     Bx=151
+  [137] LOADK     Bx=152
+  [138] SUB       A=56 B=245 C=246
+  [139] CALL      A=54 B=3 C=2
+  [140] MOVE      A=31 B=54 C=0
+  [141] CONCAT    A=29 B=29 C=31
+  [142] MOVE      A=9 B=29 C=0
+  [143] LOADK     Bx=105
+  [144] LOADK     Bx=153
+  [145] ADD       A=244 B=245 C=246
+  [146] SUB       A=244 B=244 C=246
+  [147] LOADK     Bx=106
+  [148] LOADK     Bx=154
+  [149] MUL       A=245 B=245 C=246
+  [150] LOADK     Bx=155
+  [151] MUL       A=245 B=245 C=246
+  [152] LOADK     Bx=107
+  [153] LOADK     Bx=156
+  [154] MUL       A=246 B=245 C=246
+  [155] MUL       A=246 B=246 C=246
+  [156] FORPREP   A=244 sBx=1 ->158
+  [157] LOADNIL   A=247 B=0 C=0
+  [158] FORLOOP   A=244 sBx=-2 ->157
+  [159] MOVE      A=10 B=7 C=0
+  [160] CALL      A=8 B=3 C=1
+  [161] MOVE      A=8 B=2 C=0
+  [162] LOADK     Bx=31
+  [163] LOADK     Bx=33
+  [164] GETTABUP  A=54 B=0 C=344
+  [165] LOADK     Bx=32
+  [166] LOADK     Bx=157
+  [167] LOADK     Bx=158
+  [168] ADD       A=56 B=245 C=246
+  [169] CALL      A=54 B=3 C=2
+  [170] LOADK     Bx=108
+  [171] LOADK     Bx=159
+  [172] MUL       A=244 B=245 C=246
+  [173] MUL       A=244 B=244 C=246
+  [174] LOADK     Bx=109
+  [175] LOADK     Bx=160
+  [176] ADD       A=245 B=245 C=246
+  [177] SUB       A=245 B=245 C=246
+  [178] LOADK     Bx=110
+  [179] LOADK     Bx=161
+  [180] ADD       A=246 B=245 C=246
+  [181] SUB       A=246 B=246 C=246
+  [182] FORPREP   A=244 sBx=1 ->184
+  [183] LOADNIL   A=247 B=0 C=0
+  [184] FORLOOP   A=244 sBx=-2 ->183
+  [185] MOVE      A=31 B=54 C=0
+  [186] CONCAT    A=29 B=29 C=31
+  [187] MOVE      A=9 B=29 C=0
+  [188] LOADBOOL  A=10 B=0 C=0
+  [189] CALL      A=8 B=3 C=1
+  [190] LOADK     Bx=162
+  [191] LOADK     Bx=163
+  [192] BXOR      A=8 B=245 C=246
+  [193] LOADK     Bx=164
+  [194] LOADK     Bx=165
+  [195] SUB       A=9 B=245 C=246
+  [196] LOADK     Bx=166
+  [197] LOADK     Bx=167
+  [198] SUB       A=10 B=245 C=246
+  [199] LOADK     Bx=168
+  [200] LOADK     Bx=169
+  [201] ADD       A=11 B=245 C=246
+  [202] LOADK     Bx=111
+  [203] LOADK     Bx=170
+  [204] MUL       A=244 B=245 C=246
+  [205] LOADK     Bx=171
+  [206] MUL       A=244 B=244 C=246
+  [207] LOADK     Bx=112
+  [208] LOADK     Bx=172
+  [209] MUL       A=245 B=245 C=246
+  [210] MUL       A=245 B=245 C=246
+  [211] LOADK     Bx=113
+  [212] LOADK     Bx=173
+  [213] MUL       A=246 B=245 C=246
+  [214] MUL       A=246 B=246 C=246
+  [215] FORPREP   A=244 sBx=1 ->217
+  [216] LOADNIL   A=247 B=0 C=0
+  [217] FORLOOP   A=244 sBx=-2 ->216
+  [218] SUB       A=9 B=9 C=11
+  [219] JMP       A=0 sBx=73 ->293
+  [220] ADD       A=8 B=8 C=10
+  [221] LE        A=1 B=8 C=9
+  [222] JMP       A=0 sBx=1 ->224
+  [223] JMP       A=0 sBx=3 ->227
+  [224] MOVE      A=11 B=8 C=0
+  [225] LOADBOOL  A=243 B=1 C=0
+  [226] TFORLOOP  A=242 sBx=-139 ->88
+  [227] JMP       A=0 sBx=-112 ->116
+  [228] ADD       A=9 B=10 C=9
+  [229] LOADK     Bx=114
+  [230] LOADK     Bx=174
+  [231] MUL       A=244 B=245 C=246
+  [232] LOADK     Bx=175
+  [233] MUL       A=244 B=244 C=246
+  [234] LOADK     Bx=115
+  [235] LOADK     Bx=176
+  [236] MUL       A=245 B=245 C=246
+  [237] MUL       A=245 B=245 C=246
+  [238] LOADK     Bx=116
+  [239] LOADK     Bx=177
+  [240] MUL       A=246 B=245 C=246
+  [241] MUL       A=246 B=246 C=246
+  [242] FORPREP   A=244 sBx=1 ->244
+  [243] LOADNIL   A=247 B=0 C=0
+  [244] FORLOOP   A=244 sBx=-2 ->243
+  [245] ADD       A=10 B=271 C=10
+  [246] JMP       A=0 sBx=106 ->353
+  [247] FORPREP   A=11 sBx=207 ->455
+  [248] MOVE      A=217 B=9 C=0
+  [249] MOVE      A=218 B=10 C=0
+  [250] ADD       A=217 B=218 C=217
+  [251] ADD       A=218 B=271 C=218
+  [252] MOVE      A=9 B=217 C=0
+  [253] MOVE      A=10 B=218 C=0
+  [254] JMP       A=0 sBx=98 ->353
+  [255] LOADK     Bx=178
+  [256] LOADK     Bx=179
+  [257] ADD       A=219 B=245 C=246
+  [258] LOADK     Bx=117
+  [259] LOADK     Bx=180
+  [260] MUL       A=244 B=245 C=246
+  [261] LOADK     Bx=181
+  [262] MUL       A=244 B=244 C=246
+  [263] LOADK     Bx=118
+  [264] LOADK     Bx=182
+  [265] MUL       A=245 B=245 C=246
+  [266] LOADK     Bx=183
+  [267] MUL       A=245 B=245 C=246
+  [268] LOADK     Bx=119
+  [269] LOADK     Bx=184
+  [270] ADD       A=246 B=245 C=246
+  [271] SUB       A=246 B=246 C=246
+  [272] FORPREP   A=244 sBx=1 ->274
+  [273] LOADNIL   A=247 B=0 C=0
+  [274] FORLOOP   A=244 sBx=-2 ->273
+  [275] LOADK     Bx=185
+  [276] LOADK     Bx=186
+  [277] ADD       A=220 B=245 C=246
+  [278] LOADK     Bx=187
+  [279] LOADK     Bx=188
+  [280] SUB       A=221 B=245 C=246
+  [281] MOVE      A=11 B=219 C=0
+  [282] MOVE      A=12 B=220 C=0
+  [283] MOVE      A=13 B=221 C=0
+  [284] JMP       A=0 sBx=-38 ->247
+  [285] ADD       A=8 B=271 C=8
+  [286] JMP       A=0 sBx=6 ->293
+  [287] LE        A=0 B=10 C=278
+  [288] JMP       A=0 sBx=11 ->300
+  [289] JMP       A=0 sBx=107 ->397
+  [290] SUB       A=8 B=8 C=271
+  [291] ADD       A=8 B=8 C=261
+  [292] JMP       A=0 sBx=0 ->293
+  [293] ADD       A=9 B=9 C=11
+  [294] LE        A=1 B=9 C=10
+  [295] JMP       A=0 sBx=1 ->297
+  [296] JMP       A=0 sBx=2 ->299
+  [297] MOVE      A=12 B=9 C=0
+  [298] JMP       A=0 sBx=281 ->580
+  [299] JMP       A=0 sBx=54 ->354
+  [300] MOVE      A=11 B=2 C=0
+  [301] LOADK     Bx=46
+  [302] LOADK     Bx=47
+  [303] GETTABUP  A=54 B=0 C=344
+  [304] LOADK     Bx=48
+  [305] LOADK     Bx=189
+  [306] LOADK     Bx=190
+  [307] ADD       A=56 B=245 C=246
+  [308] CALL      A=54 B=3 C=2
+  [309] MOVE      A=31 B=54 C=0
+  [310] CONCAT    A=29 B=29 C=31
+  [311] MOVE      A=12 B=29 C=0
+  [312] MOVE      A=13 B=9 C=0
+  [313] CALL      A=11 B=3 C=1
+  [314] LOADK     Bx=42
+  [315] LOADK     Bx=41
+  [316] GETTABUP  A=54 B=0 C=344
+  [317] LOADK     Bx=40
+  [318] LOADK     Bx=191
+  [319] LOADK     Bx=192
+  [320] SUB       A=56 B=245 C=246
+  [321] CALL      A=54 B=3 C=2
+  [322] MOVE      A=31 B=54 C=0
+  [323] CONCAT    A=29 B=29 C=31
+  [324] GETTABLE  A=11 B=0 C=29
+  [325] LOADK     Bx=39
+  [326] LOADK     Bx=37
+  [327] GETTABUP  A=54 B=0 C=344
+  [328] LOADK     Bx=38
+  [329] LOADK     Bx=193
+  [330] LOADK     Bx=194
+  [331] SUB       A=56 B=245 C=246
+  [332] CALL      A=54 B=3 C=2
+  [333] MOVE      A=31 B=54 C=0
+  [334] CONCAT    A=29 B=29 C=31
+  [335] GETTABLE  A=12 B=0 C=29
+  [336] LOADK     Bx=52
+  [337] LOADK     Bx=51
+  [338] LOADK     Bx=50
+  [339] GETTABUP  A=54 B=0 C=344
+  [340] LOADK     Bx=49
+  [341] LOADK     Bx=195
+  [342] LOADK     Bx=196
+  [343] ADD       A=56 B=245 C=246
+  [344] CALL      A=54 B=3 C=2
+  [345] MOVE      A=32 B=54 C=0
+  [346] CONCAT    A=29 B=29 C=32
+  [347] GETTABLE  A=12 B=12 C=29
+  [348] MOVE      A=13 B=1 C=0
+  [349] LOADK     Bx=19
+  [350] CLOSURE   A=192 B=0 C=5
+  [351] CALL      A=192 B=1 C=1
+  [352] RETURN    A=0 B=1 C=0
+  [353] JMP       A=0 sBx=-67 ->287
+  [354] MOVE      A=9 B=2 C=0
+  [355] LOADK     Bx=26
+  [356] LOADK     Bx=27
+  [357] LOADK     Bx=25
+  [358] CONCAT    A=29 B=29 C=31
+  [359] MOVE      A=10 B=29 C=0
+  [360] MOVE      A=11 B=8 C=0
+  [361] CALL      A=9 B=3 C=1
+  [362] MOVE      A=9 B=2 C=0
+  [363] LOADK     Bx=3
+  [364] LOADK     Bx=197
+  [365] LOADK     Bx=198
+  [366] BXOR      A=11 B=245 C=246
+  [367] CALL      A=9 B=3 C=1
+  [368] MOVE      A=9 B=2 C=0
+  [369] LOADK     Bx=31
+  [370] LOADK     Bx=33
+  [371] GETTABUP  A=54 B=0 C=344
+  [372] LOADK     Bx=32
+  [373] LOADK     Bx=199
+  [374] LOADK     Bx=200
+  [375] ADD       A=56 B=245 C=246
+  [376] CALL      A=54 B=3 C=2
+  [377] MOVE      A=31 B=54 C=0
+  [378] CONCAT    A=29 B=29 C=31
+  [379] MOVE      A=10 B=29 C=0
+  [380] LOADBOOL  A=11 B=0 C=0
+  [381] CALL      A=9 B=3 C=1
+  [382] MOVE      A=9 B=2 C=0
+  [383] LOADK     Bx=14
+  [384] LOADK     Bx=58
+  [385] LOADK     Bx=57
+  [386] CONCAT    A=29 B=29 C=30
+  [387] MOVE      A=11 B=29 C=0
+  [388] CALL      A=9 B=3 C=1
+  [389] LOADK     Bx=201
+  [390] LOADK     Bx=202
+  [391] ADD       A=9 B=245 C=246
+  [392] LOADK     Bx=203
+  [393] LOADK     Bx=204
+  [394] ADD       A=10 B=245 C=246
+  [395] LOADBOOL  A=243 B=1 C=0
+  [396] TFORLOOP  A=242 sBx=-110 ->287
+  [397] LOADBOOL  A=219 B=1 C=0
+  [398] TEST      A=219 B=0 C=0
+  [399] JMP       A=0 sBx=-152 ->248
+  [400] LOADBOOL  A=243 B=1 C=0
+  [401] TFORLOOP  A=242 sBx=-174 ->228
+  [402] NEWTABLE  A=5 B=2 C=0
+  [403] NEWTABLE  A=6 B=2 C=0
+  [404] LOADK     Bx=61
+  [405] LOADK     Bx=59
+  [406] LOADK     Bx=60
+  [407] CONCAT    A=29 B=29 C=31
+  [408] MOVE      A=7 B=29 C=0
+  [409] LOADK     Bx=205
+  [410] LOADK     Bx=206
+  [411] BXOR      A=8 B=245 C=246
+  [412] SETLIST   A=6 B=2 C=1
+  [413] NEWTABLE  A=7 B=2 C=0
+  [414] LOADK     Bx=61
+  [415] LOADK     Bx=59
+  [416] LOADK     Bx=60
+  [417] CONCAT    A=29 B=29 C=31
+  [418] MOVE      A=8 B=29 C=0
+  [419] LOADK     Bx=207
+  [420] LOADK     Bx=208
+  [421] BXOR      A=9 B=245 C=246
+  [422] SETLIST   A=7 B=2 C=1
+  [423] SETLIST   A=5 B=2 C=1
+  [424] MOVE      A=6 B=2 C=0
+  [425] LOADK     Bx=29
+  [426] LOADK     Bx=30
+  [427] GETTABUP  A=54 B=0 C=344
+  [428] LOADK     Bx=28
+  [429] LOADK     Bx=209
+  [430] LOADK     Bx=210
+  [431] ADD       A=56 B=245 C=246
+  [432] CALL      A=54 B=3 C=2
+  [433] MOVE      A=31 B=54 C=0
+  [434] CONCAT    A=29 B=29 C=31
+  [435] MOVE      A=7 B=29 C=0
+  [436] GETTABLE  A=8 B=5 C=271
+  [437] GETTABLE  A=8 B=8 C=271
+  [438] GETTABLE  A=9 B=5 C=257
+  [439] GETTABLE  A=9 B=9 C=257
+  [440] CALL      A=6 B=4 C=1
+  [441] LOADK     Bx=211
+  [442] LOADK     Bx=212
+  [443] BXOR      A=6 B=245 C=246
+  [444] LOADK     Bx=213
+  [445] LOADK     Bx=214
+  [446] SUB       A=7 B=245 C=246
+  [447] LOADK     Bx=215
+  [448] LOADK     Bx=216
+  [449] SUB       A=8 B=245 C=246
+  [450] LOADK     Bx=217
+  [451] LOADK     Bx=218
+  [452] BXOR      A=9 B=245 C=246
+  [453] SUB       A=7 B=7 C=9
+  [454] JMP       A=0 sBx=17 ->472
+  [455] FORLOOP   A=11 sBx=121 ->577
+  [456] JMP       A=0 sBx=15 ->472
+  [457] LOADBOOL  A=222 B=1 C=0
+  [458] TEST      A=222 B=0 C=0
+  [459] JMP       A=0 sBx=-205 ->255
+  [460] JMP       A=0 sBx=58 ->519
+  [461] MOVE      A=214 B=6 C=0
+  [462] MOVE      A=222 B=14 C=0
+  [463] ADD       A=214 B=222 C=214
+  [464] ADD       A=214 B=214 C=261
+  [465] MOVE      A=6 B=214 C=0
+  [466] JMP       A=0 sBx=-12 ->455
+  [467] LOADBOOL  A=239 B=1 C=0
+  [468] TEST      A=239 B=0 C=0
+  [469] JMP       A=0 sBx=59 ->529
+  [470] LOADBOOL  A=243 B=1 C=0
+  [471] TFORLOOP  A=242 sBx=-384 ->88
+  [472] ADD       A=7 B=7 C=9
+  [473] LE        A=1 B=7 C=8
+  [474] JMP       A=0 sBx=1 ->476
+  [475] JMP       A=0 sBx=2 ->478
+  [476] MOVE      A=10 B=7 C=0
+  [477] JMP       A=0 sBx=41 ->519
+  [478] JMP       A=0 sBx=11 ->490
+  [479] MOVE      A=5 B=2 C=0
+  [480] LOADK     Bx=53
+  [481] LOADK     Bx=54
+  [482] CONCAT    A=29 B=29 C=30
+  [483] MOVE      A=6 B=29 C=0
+  [484] LOADK     Bx=219
+  [485] LOADK     Bx=220
+  [486] BXOR      A=7 B=245 C=246
+  [487] CALL      A=5 B=3 C=1
+  [488] LOADBOOL  A=243 B=1 C=0
+  [489] TFORLOOP  A=242 sBx=-88 ->402
+  [490] MOVE      A=7 B=2 C=0
+  [491] LOADK     Bx=34
+  [492] LOADK     Bx=35
+  [493] GETTABUP  A=54 B=0 C=344
+  [494] LOADK     Bx=36
+  [495] LOADK     Bx=221
+  [496] LOADK     Bx=222
+  [497] ADD       A=56 B=245 C=246
+  [498] CALL      A=54 B=3 C=2
+  [499] MOVE      A=31 B=54 C=0
+  [500] CONCAT    A=29 B=29 C=31
+  [501] MOVE      A=8 B=29 C=0
+  [502] MOVE      A=9 B=6 C=0
+  [503] CALL      A=7 B=3 C=1
+  [504] LOADK     Bx=223
+  [505] LOADK     Bx=224
+  [506] SUB       A=7 B=245 C=246
+  [507] LOADK     Bx=225
+  [508] LOADK     Bx=226
+  [509] SUB       A=8 B=245 C=246
+  [510] LOADK     Bx=227
+  [511] LOADK     Bx=228
+  [512] SUB       A=9 B=245 C=246
+  [513] LOADK     Bx=229
+  [514] LOADK     Bx=230
+  [515] SUB       A=10 B=245 C=246
+  [516] SUB       A=8 B=8 C=10
+  [517] LOADBOOL  A=243 B=1 C=0
+  [518] TFORLOOP  A=242 sBx=-299 ->220
+  [519] LOADK     Bx=231
+  [520] LOADK     Bx=232
+  [521] ADD       A=11 B=245 C=246
+  [522] LOADK     Bx=233
+  [523] LOADK     Bx=234
+  [524] ADD       A=12 B=245 C=246
+  [525] LOADK     Bx=235
+  [526] LOADK     Bx=236
+  [527] BXOR      A=13 B=245 C=246
+  [528] JMP       A=0 sBx=-282 ->247
+  [529] MOVE      A=215 B=7 C=0
+  [530] MOVE      A=219 B=11 C=0
+  [531] NEWTABLE  A=220 B=3 C=0
+  [532] MOVE      A=221 B=219 C=0
+  [533] MUL       A=222 B=219 C=257
+  [534] LOADK     Bx=58
+  [535] LOADK     Bx=57
+  [536] CONCAT    A=237 B=237 C=238
+  [537] MOVE      A=223 B=237 C=0
+  [538] SETLIST   A=220 B=3 C=1
+  [539] GETTABLE  A=221 B=220 C=271
+  [540] ADD       A=221 B=221 C=215
+  [541] GETTABLE  A=222 B=220 C=257
+  [542] ADD       A=215 B=222 C=221
+  [543] MOVE      A=7 B=215 C=0
+  [544] MOVE      A=12 B=220 C=0
+  [545] MOVE      A=13 B=221 C=0
+  [546] MOVE      A=14 B=222 C=0
+  [547] MOVE      A=15 B=223 C=0
+  [548] MOVE      A=29 B=237 C=0
+  [549] MOVE      A=30 B=238 C=0
+  [550] LOADBOOL  A=243 B=1 C=0
+  [551] TFORLOOP  A=242 sBx=-332 ->220
+  [552] LOADBOOL  A=217 B=1 C=0
+  [553] TEST      A=217 B=0 C=0
+  [554] JMP       A=0 sBx=13 ->568
+  [555] LOADBOOL  A=243 B=1 C=0
+  [556] TFORLOOP  A=242 sBx=-267 ->290
+  [557] MOVE      A=5 B=2 C=0
+  [558] LOADK     Bx=53
+  [559] LOADK     Bx=54
+  [560] CONCAT    A=29 B=29 C=30
+  [561] MOVE      A=6 B=29 C=0
+  [562] LOADK     Bx=237
+  [563] LOADK     Bx=238
+  [564] ADD       A=7 B=245 C=246
+  [565] CALL      A=5 B=3 C=1
+  [566] LOADBOOL  A=243 B=1 C=0
+  [567] TFORLOOP  A=242 sBx=-166 ->402
+  [568] MOVE      A=216 B=8 C=0
+  [569] SUB       A=216 B=216 C=271
+  [570] ADD       A=216 B=216 C=261
+  [571] MOVE      A=8 B=216 C=0
+  [572] LOADBOOL  A=243 B=1 C=0
+  [573] TFORLOOP  A=242 sBx=-281 ->293
+  [574] LOADBOOL  A=223 B=1 C=0
+  [575] TEST      A=223 B=0 C=0
+  [576] JMP       A=0 sBx=-116 ->461
+  [577] ADD       A=6 B=14 C=6
+  [578] ADD       A=6 B=6 C=261
+  [579] JMP       A=0 sBx=-125 ->455
+  [580] MOD       A=13 B=12 C=257
+  [581] EQ        A=0 B=261 C=13
+  [582] JMP       A=0 sBx=-293 ->290
+  [583] LOADBOOL  A=243 B=1 C=0
+  [584] TFORLOOP  A=242 sBx=-300 ->285
+  === child1 sizecode=140 sizek=52 maxstack=83
+    K[0]=number(1)
+    K[1]=string(#)
+    K[2]=string(�耉��)
+    K[3]=string()
+    K[4]=string(|)
+    K[5]=string(O| dSJ)
+    K[6]=string(s)
+    K[7]=string(l)
+    K[8]=string(e)
+    K[9]=string(���)
+    K[10]=string(!()
+    K[11]=string(��)
+    K[12]=string(��)
+    K[13]=string(��)
+    K[14]=number(176)
+    K[15]=number(41)
+    K[16]=number(174)
+    K[17]=number(79)
+    K[18]=number(220)
+    K[19]=number(229)
+    K[20]=number(186)
+    K[21]=string(��oYJ(�M�f��)��R)
+    K[22]=number(0)
+    K[23]=number(-1)
+    K[24]=number(1.0)
+    K[25]=number(0.0)
+    K[26]=number(1.0)
+    K[27]=number(1.0)
+    K[28]=number(0.0)
+    K[29]=number(1.0)
+    K[30]=number(2.0)
+    K[31]=number(0.5)
+    K[32]=number(0.0)
+    K[33]=number(2.0)
+    K[34]=number(0.5)
+    K[35]=number(-1820155692621641740)
+    K[36]=number(1820155692621641741)
+    K[37]=number(0.0)
+    K[38]=number(-1.0)
+    K[39]=number(0.0)
+    K[40]=number(8988872447699149919)
+    K[41]=number(-8988872447699149745)
+    K[42]=number(7430686106667224496)
+    K[43]=number(-7430686106667224495)
+    K[44]=number(-6646837914184260928)
+    K[45]=number(-6646837914184261148)
+    K[46]=number(-6084508769602230691)
+    K[47]=number(-6084508769602230877)
+    K[48]=number(3407155707011514741)
+    K[49]=number(3407155707011514768)
+    K[50]=number(6600031697425048045)
+    K[51]=number(6600031697425047966)
+    [000] GETUPVAL  A=0 B=0 C=0
+    [001] LOADK     Bx=24
+    [002] LOADK     Bx=30
+    [003] MUL       A=76 B=81 C=82
+    [004] LOADK     Bx=31
+    [005] MUL       A=76 B=76 C=82
+    [006] LOADK     Bx=25
+    [007] LOADK     Bx=32
+    [008] ADD       A=77 B=81 C=82
+    [009] SUB       A=77 B=77 C=82
+    [010] LOADK     Bx=26
+    [011] LOADK     Bx=33
+    [012] MUL       A=78 B=81 C=82
+    [013] LOADK     Bx=34
+    [014] MUL       A=78 B=78 C=82
+    [015] FORPREP   A=76 sBx=1 ->17
+    [016] LOADNIL   A=79 B=0 C=0
+    [017] FORLOOP   A=76 sBx=-2 ->16
+    [018] NEWTABLE  A=1 B=0 C=0
+    [019] VARARG    A=2 B=0 C=0
+    [020] SETLIST   A=1 B=0 C=1
+    [021] LOADK     Bx=3
+    [022] LOADK     Bx=35
+    [023] LOADK     Bx=36
+    [024] ADD       A=3 B=81 C=82
+    [025] LOADK     Bx=6
+    [026] LOADK     Bx=8
+    [027] LOADK     Bx=7
+    [028] GETTABUP  A=38 B=0 C=277
+    [029] LOADK     Bx=27
+    [030] LOADK     Bx=37
+    [031] ADD       A=76 B=81 C=82
+    [032] SUB       A=76 B=76 C=82
+    [033] LOADK     Bx=28
+    [034] LOADK     Bx=38
+    [035] MUL       A=77 B=81 C=82
+    [036] MUL       A=77 B=77 C=82
+    [037] LOADK     Bx=29
+    [038] LOADK     Bx=39
+    [039] ADD       A=78 B=81 C=82
+    [040] SUB       A=78 B=78 C=82
+    [041] FORPREP   A=76 sBx=1 ->43
+    [042] LOADNIL   A=79 B=0 C=0
+    [043] FORLOOP   A=76 sBx=-2 ->42
+    [044] LOADK     Bx=9
+    [045] LOADK     Bx=40
+    [046] LOADK     Bx=41
+    [047] ADD       A=40 B=81 C=82
+    [048] CALL      A=38 B=3 C=2
+    [049] MOVE      A=17 B=38 C=0
+    [050] CONCAT    A=14 B=14 C=17
+    [051] GETTABLE  A=4 B=0 C=14
+    [052] LOADK     Bx=1
+    [053] VARARG    A=6 B=0 C=0
+    [054] CALL      A=4 B=0 C=2
+    [055] LOADK     Bx=42
+    [056] LOADK     Bx=43
+    [057] ADD       A=5 B=81 C=82
+    [058] SUB       A=3 B=3 C=5
+    [059] JMP       A=0 sBx=0 ->60
+    [060] ADD       A=3 B=3 C=5
+    [061] LE        A=1 B=3 C=4
+    [062] JMP       A=0 sBx=1 ->64
+    [063] JMP       A=0 sBx=2 ->66
+    [064] MOVE      A=6 B=3 C=0
+    [065] JMP       A=0 sBx=1 ->67
+    [066] JMP       A=0 sBx=6 ->73
+    [067] LE        A=1 B=6 C=256
+    [068] JMP       A=0 sBx=13 ->82
+    [069] LOADBOOL  A=71 B=1 C=0
+    [070] TEST      A=71 B=0 C=0
+    [071] JMP       A=0 sBx=59 ->131
+    [072] JMP       A=0 sBx=45 ->118
+    [073] LOADBOOL  A=66 B=1 C=0
+    [074] TEST      A=66 B=0 C=0
+    [075] JMP       A=0 sBx=47 ->123
+    [076] GETUPVAL  A=3 B=1 C=0
+    [077] LEN       A=3 B=3 C=0
+    [078] ADD       A=3 B=256 C=3
+    [079] SETTABUP  A=1 B=3 C=2
+    [080] JMP       A=0 sBx=0 ->81
+    [081] RETURN    A=0 B=1 C=0
+    [082] MOVE      A=7 B=2 C=0
+    [083] GETTABUP  A=38 B=0 C=277
+    [084] LOADK     Bx=11
+    [085] LOADK     Bx=44
+    [086] LOADK     Bx=45
+    [087] SUB       A=40 B=81 C=82
+    [088] CALL      A=38 B=3 C=2
+    [089] MOVE      A=14 B=38 C=0
+    [090] GETTABUP  A=38 B=0 C=277
+    [091] LOADK     Bx=13
+    [092] LOADK     Bx=46
+    [093] LOADK     Bx=47
+    [094] SUB       A=40 B=81 C=82
+    [095] CALL      A=38 B=3 C=2
+    [096] MOVE      A=15 B=38 C=0
+    [097] GETTABUP  A=38 B=0 C=277
+    [098] LOADK     Bx=12
+    [099] LOADK     Bx=48
+    [100] LOADK     Bx=49
+    [101] BXOR      A=40 B=81 C=82
+    [102] CALL      A=38 B=3 C=2
+    [103] MOVE      A=16 B=38 C=0
+    [104] GETTABUP  A=38 B=0 C=277
+    [105] LOADK     Bx=10
+    [106] LOADK     Bx=50
+    [107] LOADK     Bx=51
+    [108] SUB       A=40 B=81 C=82
+    [109] CALL      A=38 B=3 C=2
+    [110] MOVE      A=17 B=38 C=0
+    [111] CONCAT    A=14 B=14 C=17
+    [112] GETTABLE  A=8 B=0 C=14
+    [113] GETTABLE  A=9 B=1 C=6
+    [114] CALL      A=8 B=2 C=2
+    [115] CONCAT    A=2 B=7 C=8
+    [116] LOADBOOL  A=75 B=1 C=0
+    [117] TFORLOOP  A=74 sBx=-58 ->60
+    [118] MOVE      A=7 B=2 C=0
+    [119] LOADK     Bx=4
+    [120] CONCAT    A=2 B=7 C=8
+    [121] LOADBOOL  A=75 B=1 C=0
+    [122] TFORLOOP  A=74 sBx=-41 ->82
+    [123] MOVE      A=63 B=1 C=0
+    [124] MOVE      A=64 B=2 C=0
+    [125] GETUPVAL  A=65 B=1 C=0
+    [126] LEN       A=65 B=65 C=0
+    [127] ADD       A=65 B=256 C=65
+    [128] SETTABUP  A=63 B=3 C=64
+    [129] MOVE      A=3 B=65 C=0
+    [130] JMP       A=0 sBx=-50 ->81
+    [131] MOVE      A=64 B=2 C=0
+    [132] MOVE      A=69 B=64 C=0
+    [133] LOADK     Bx=4
+    [134] CONCAT    A=64 B=69 C=70
+    [135] MOVE      A=2 B=64 C=0
+    [136] MOVE      A=7 B=69 C=0
+    [137] MOVE      A=8 B=70 C=0
+    [138] LOADBOOL  A=75 B=1 C=0
+    [139] TFORLOOP  A=74 sBx=-58 ->82
+  === child2 sizecode=85 sizek=30 maxstack=45
+    K[0]=number(1)
+    K[1]=number(0)
+    K[2]=number(-1)
+    K[3]=number(2)
+    K[4]=number(1.0)
+    K[5]=number(0.0)
+    K[6]=number(1.0)
+    K[7]=number(1.0)
+    K[8]=number(0.0)
+    K[9]=number(1.0)
+    K[10]=number(0.0)
+    K[11]=number(-1.0)
+    K[12]=number(-1.0)
+    K[13]=number(2.0)
+    K[14]=number(0.5)
+    K[15]=number(-1.0)
+    K[16]=number(2.0)
+    K[17]=number(0.5)
+    K[18]=number(-221408813879421968)
+    K[19]=number(-221408813879421968)
+    K[20]=number(-1366093596057938936)
+    K[21]=number(-1366093596057938935)
+    K[22]=number(7434185477728913628)
+    K[23]=number(-7434185477728913627)
+    K[24]=number(-1888697563536587921)
+    K[25]=number(-1888697563536587921)
+    K[26]=number(7476329431689723361)
+    K[27]=number(7476329431689723360)
+    K[28]=number(-8044807925550715808)
+    K[29]=number(-8044807925550715807)
+    [000] LOADBOOL  A=17 B=1 C=0
+    [001] TEST      A=17 B=0 C=0
+    [002] JMP       A=0 sBx=24 ->27
+    [003] JMP       A=0 sBx=68 ->72
+    [004] RETURN    A=2 B=2 C=0
+    [005] LOADK     Bx=4
+    [006] LOADK     Bx=10
+    [007] ADD       A=24 B=43 C=44
+    [008] SUB       A=24 B=24 C=44
+    [009] LOADK     Bx=5
+    [010] LOADK     Bx=11
+    [011] MUL       A=25 B=43 C=44
+    [012] MUL       A=25 B=25 C=44
+    [013] LOADK     Bx=6
+    [014] LOADK     Bx=12
+    [015] MUL       A=26 B=43 C=44
+    [016] MUL       A=26 B=26 C=44
+    [017] FORPREP   A=24 sBx=1 ->19
+    [018] LOADNIL   A=27 B=0 C=0
+    [019] FORLOOP   A=24 sBx=-2 ->18
+    [020] MOVE      A=13 B=2 C=0
+    [021] MOVE      A=17 B=6 C=0
+    [022] UNM       A=18 B=13 C=0
+    [023] SUB       A=13 B=17 C=18
+    [024] MOVE      A=2 B=13 C=0
+    [025] MOVE      A=7 B=18 C=0
+    [026] JMP       A=0 sBx=40 ->67
+    [027] MOVE      A=11 B=0 C=0
+    [028] GETUPVAL  A=12 B=0 C=0
+    [029] LOADK     Bx=7
+    [030] LOADK     Bx=13
+    [031] MUL       A=24 B=43 C=44
+    [032] LOADK     Bx=14
+    [033] MUL       A=24 B=24 C=44
+    [034] LOADK     Bx=8
+    [035] LOADK     Bx=15
+    [036] MUL       A=25 B=43 C=44
+    [037] MUL       A=25 B=25 C=44
+    [038] LOADK     Bx=9
+    [039] LOADK     Bx=16
+    [040] MUL       A=26 B=43 C=44
+    [041] LOADK     Bx=17
+    [042] MUL       A=26 B=26 C=44
+    [043] FORPREP   A=24 sBx=1 ->45
+    [044] LOADNIL   A=27 B=0 C=0
+    [045] FORLOOP   A=24 sBx=-2 ->44
+    [046] LOADK     Bx=18
+    [047] LOADK     Bx=19
+    [048] BXOR      A=13 B=43 C=44
+    [049] LOADK     Bx=20
+    [050] LOADK     Bx=21
+    [051] BXOR      A=14 B=43 C=44
+    [052] MOVE      A=15 B=11 C=0
+    [053] LOADK     Bx=22
+    [054] LOADK     Bx=23
+    [055] ADD       A=16 B=43 C=44
+    [056] MOVE      A=1 B=12 C=0
+    [057] MOVE      A=2 B=13 C=0
+    [058] MOVE      A=3 B=14 C=0
+    [059] MOVE      A=4 B=15 C=0
+    [060] MOVE      A=5 B=16 C=0
+    [061] JMP       A=0 sBx=22 ->84
+    [062] LOADBOOL  A=19 B=1 C=0
+    [063] TEST      A=19 B=0 C=0
+    [064] JMP       A=0 sBx=-45 ->20
+    [065] JMP       A=0 sBx=3 ->69
+    [066] RETURN    A=0 B=1 C=0
+    [067] FORLOOP   A=3 sBx=1 ->69
+    [068] JMP       A=0 sBx=-65 ->4
+    [069] UNM       A=7 B=2 C=0
+    [070] SUB       A=2 B=6 C=7
+    [071] JMP       A=0 sBx=-5 ->67
+    [072] GETUPVAL  A=1 B=0 C=0
+    [073] LOADK     Bx=24
+    [074] LOADK     Bx=25
+    [075] BXOR      A=2 B=43 C=44
+    [076] LOADK     Bx=26
+    [077] LOADK     Bx=27
+    [078] BXOR      A=3 B=43 C=44
+    [079] MOVE      A=4 B=0 C=0
+    [080] LOADK     Bx=28
+    [081] LOADK     Bx=29
+    [082] BXOR      A=5 B=43 C=44
+    [083] JMP       A=0 sBx=0 ->84
+    [084] FORPREP   A=3 sBx=-18 ->67
+  === child3 sizecode=75 sizek=28 maxstack=32
+    K[0]=string()
+    K[1]=number(1)
+    K[2]=string(string)
+    K[3]=string(byte)
+    K[4]=string(char)
+    K[5]=number(0)
+    K[6]=number(-1)
+    K[7]=number(2)
+    K[8]=number(1.0)
+    K[9]=number(0.0)
+    K[10]=number(1.0)
+    K[11]=number(1.0)
+    K[12]=number(0.0)
+    K[13]=number(1.0)
+    K[14]=number(2.0)
+    K[15]=number(0.5)
+    K[16]=number(2.0)
+    K[17]=number(0.5)
+    K[18]=number(2.0)
+    K[19]=number(0.5)
+    K[20]=number(-7748782444422483674)
+    K[21]=number(-7748782444422483673)
+    K[22]=number(-4110411528856212669)
+    K[23]=number(-4110411528856212670)
+    K[24]=number(2.0)
+    K[25]=number(0.5)
+    K[26]=number(0.0)
+    K[27]=number(-1.0)
+    [000] LOADBOOL  A=20 B=1 C=0
+    [001] TEST      A=20 B=0 C=0
+    [002] JMP       A=0 sBx=26 ->29
+    [003] GETUPVAL  A=2 B=0 C=0
+    [004] LOADK     Bx=8
+    [005] LOADK     Bx=14
+    [006] MUL       A=25 B=30 C=31
+    [007] LOADK     Bx=15
+    [008] MUL       A=25 B=25 C=31
+    [009] LOADK     Bx=9
+    [010] LOADK     Bx=16
+    [011] MUL       A=26 B=30 C=31
+    [012] LOADK     Bx=17
+    [013] MUL       A=26 B=26 C=31
+    [014] LOADK     Bx=10
+    [015] LOADK     Bx=18
+    [016] MUL       A=27 B=30 C=31
+    [017] LOADK     Bx=19
+    [018] MUL       A=27 B=27 C=31
+    [019] FORPREP   A=25 sBx=1 ->21
+    [020] LOADNIL   A=28 B=0 C=0
+    [021] FORLOOP   A=25 sBx=-2 ->20
+    [022] LOADK     Bx=0
+    [023] LOADK     Bx=20
+    [024] LOADK     Bx=21
+    [025] BXOR      A=4 B=30 C=31
+    [026] LEN       A=5 B=0 C=0
+    [027] JMP       A=0 sBx=28 ->56
+    [028] RETURN    A=0 B=1 C=0
+    [029] MOVE      A=14 B=0 C=0
+    [030] GETUPVAL  A=16 B=0 C=0
+    [031] LOADK     Bx=0
+    [032] LOADK     Bx=22
+    [033] LOADK     Bx=23
+    [034] BXOR      A=18 B=30 C=31
+    [035] LOADK     Bx=11
+    [036] LOADK     Bx=24
+    [037] MUL       A=25 B=30 C=31
+    [038] LOADK     Bx=25
+    [039] MUL       A=25 B=25 C=31
+    [040] LOADK     Bx=12
+    [041] LOADK     Bx=26
+    [042] ADD       A=26 B=30 C=31
+    [043] SUB       A=26 B=26 C=31
+    [044] LOADK     Bx=13
+    [045] LOADK     Bx=27
+    [046] MUL       A=27 B=30 C=31
+    [047] MUL       A=27 B=27 C=31
+    [048] FORPREP   A=25 sBx=1 ->50
+    [049] LOADNIL   A=28 B=0 C=0
+    [050] FORLOOP   A=25 sBx=-2 ->49
+    [051] LEN       A=19 B=14 C=0
+    [052] MOVE      A=2 B=16 C=0
+    [053] MOVE      A=3 B=17 C=0
+    [054] MOVE      A=4 B=18 C=0
+    [055] MOVE      A=5 B=19 C=0
+    [056] LE        A=0 B=4 C=5
+    [057] JMP       A=0 sBx=16 ->74
+    [058] GETTABLE  A=6 B=2 C=258
+    [059] GETTABLE  A=6 B=6 C=259
+    [060] MOVE      A=7 B=0 C=0
+    [061] MOVE      A=8 B=4 C=0
+    [062] CALL      A=6 B=3 C=2
+    [063] BXOR      A=6 B=1 C=6
+    [064] MOVE      A=7 B=3 C=0
+    [065] GETTABLE  A=8 B=2 C=258
+    [066] GETTABLE  A=8 B=8 C=260
+    [067] MOVE      A=9 B=6 C=0
+    [068] CALL      A=8 B=2 C=2
+    [069] CONCAT    A=3 B=7 C=8
+    [070] UNM       A=10 B=4 C=0
+    [071] SUB       A=4 B=257 C=10
+    [072] LOADBOOL  A=24 B=1 C=0
+    [073] TFORLOOP  A=23 sBx=-18 ->56
+    [074] RETURN    A=3 B=2 C=0
+  === child4 sizecode=47 sizek=105 maxstack=99
+    K[0]=string(���)
+    K[1]=number(2)
+    K[2]=string(
+L8)
+    K[3]=string(n)
+    K[4]=string(����)
+    K[5]=number(0)
+    K[6]=number(4)
+    K[7]=string(qnwo)
+    K[8]=number(5)
+    K[9]=string(J7	:P)
+    K[10]=string(ꦼ��)
+    K[11]=string(D%WW)
+    K[12]=number(3)
+    K[13]=string(�����)
+    K[14]=string(s)
+    K[15]=number(1)
+    K[16]=number(1)
+    K[17]=string(ͻ�܆�)
+    K[18]=string(��)
+    K[19]=string(#)
+    K[20]=string(?)
+    K[21]=string(~)
+    K[22]=number(6)
+    K[23]=string(Yf~)
+    K[24]=string(}2q)
+    K[25]=string(r)
+    K[26]=string(i)
+    K[27]=string(b)
+    K[28]=string()
+    K[29]=string(l)
+    K[30]=string(m)
+    K[31]=string(b)
+    K[32]=string(47)
+    K[33]=string(o)
+    K[34]=string(n)
+    K[35]=string(e)
+    K[36]=string(��)
+    K[37]=string(a)
+    K[38]=string(���)
+    K[39]=string(t)
+    K[40]=string(_XB)
+    K[41]=string(r)
+    K[42]=string(p)
+    K[43]=string(EE)
+    K[44]=string(l)
+    K[45]=string(a)
+    K[46]=string(w)
+    K[47]=string(h)
+    K[48]=string(���)
+    K[49]=string(nly)
+    K[50]=string(n)
+    K[51]=string(o)
+    K[52]=string(c)
+    K[53]=string(i)
+    K[54]=string(f)
+    K[55]=string(f)
+    K[56]=string(n)
+    K[57]=string(d)
+    K[58]=string(c)
+    K[59]=string(y)
+    K[60]=string(z)
+    K[61]=string(x)
+    K[62]=string(r)
+    K[63]=string(��)
+    K[64]=string(l)
+    K[65]=number(200)
+    K[66]=number(97)
+    K[67]=number(134)
+    K[68]=number(71)
+    K[69]=number(116)
+    K[70]=number(157)
+    K[71]=number(18)
+    K[72]=number(227)
+    K[73]=number(224)
+    K[74]=number(153)
+    K[75]=number(94)
+    K[76]=number(63)
+    K[77]=number(12)
+    K[78]=number(85)
+    K[79]=number(106)
+    K[80]=number(91)
+    K[81]=number(248)
+    K[82]=number(209)
+    K[83]=number(54)
+    K[84]=number(55)
+    K[85]=number(164)
+    K[86]=number(13)
+    K[87]=number(194)
+    K[88]=string(��oYJ(�M�f��)��R)
+    K[89]=number(-1)
+    K[90]=number(1.0)
+    K[91]=number(0.0)
+    K[92]=number(1.0)
+    K[93]=number(1.0)
+    K[94]=number(0.0)
+    K[95]=number(1.0)
+    K[96]=number(0.0)
+    K[97]=number(2.0)
+    K[98]=number(0.5)
+    K[99]=number(-1.0)
+    K[100]=number(2.0)
+    K[101]=number(0.5)
+    K[102]=number(0.0)
+    K[103]=number(2.0)
+    K[104]=number(0.5)
+    [000] GETUPVAL  A=3 B=1 C=0
+    [001] LOADK     Bx=90
+    [002] LOADK     Bx=96
+    [003] ADD       A=59 B=97 C=98
+    [004] SUB       A=59 B=59 C=98
+    [005] LOADK     Bx=91
+    [006] LOADK     Bx=97
+    [007] MUL       A=60 B=97 C=98
+    [008] LOADK     Bx=98
+    [009] MUL       A=60 B=60 C=98
+    [010] LOADK     Bx=92
+    [011] LOADK     Bx=99
+    [012] MUL       A=61 B=97 C=98
+    [013] MUL       A=61 B=61 C=98
+    [014] FORPREP   A=59 sBx=1 ->16
+    [015] LOADNIL   A=62 B=0 C=0
+    [016] FORLOOP   A=59 sBx=-2 ->15
+    [017] GETUPVAL  A=4 B=2 C=0
+    [018] GETUPVAL  A=29 B=3 C=0
+    [019] GETUPVAL  A=30 B=4 C=0
+    [020] GETUPVAL  A=54 B=5 C=0
+    [021] MOVE      A=31 B=54 C=0
+    [022] CONCAT    A=29 B=29 C=31
+    [023] MOVE      A=5 B=29 C=0
+    [024] GETTABLE  A=6 B=3 C=272
+    [025] GETTABLE  A=7 B=3 C=268
+    [026] LOADK     Bx=93
+    [027] LOADK     Bx=100
+    [028] MUL       A=59 B=97 C=98
+    [029] LOADK     Bx=101
+    [030] MUL       A=59 B=59 C=98
+    [031] LOADK     Bx=94
+    [032] LOADK     Bx=102
+    [033] ADD       A=60 B=97 C=98
+    [034] SUB       A=60 B=60 C=98
+    [035] LOADK     Bx=95
+    [036] LOADK     Bx=103
+    [037] MUL       A=61 B=97 C=98
+    [038] LOADK     Bx=104
+    [039] MUL       A=61 B=61 C=98
+    [040] FORPREP   A=59 sBx=1 ->42
+    [041] LOADNIL   A=62 B=0 C=0
+    [042] FORLOOP   A=59 sBx=-2 ->41
+    [043] LEN       A=8 B=3 C=0
+    [044] SUB       A=8 B=8 C=261
+    [045] CALL      A=4 B=5 C=1
+    [046] RETURN    A=0 B=1 C=0
+  === child5 sizecode=48 sizek=108 maxstack=99
+    K[0]=string(���)
+    K[1]=number(2)
+    K[2]=string(
+L8)
+    K[3]=string(n)
+    K[4]=string(����)
+    K[5]=number(0)
+    K[6]=number(4)
+    K[7]=string(qnwo)
+    K[8]=number(5)
+    K[9]=string(J7	:P)
+    K[10]=string(ꦼ��)
+    K[11]=string(D%WW)
+    K[12]=number(3)
+    K[13]=string(�����)
+    K[14]=string(s)
+    K[15]=number(1)
+    K[16]=number(1)
+    K[17]=string(ͻ�܆�)
+    K[18]=string(��)
+    K[19]=string(#)
+    K[20]=string(?)
+    K[21]=string(~)
+    K[22]=number(6)
+    K[23]=string(Yf~)
+    K[24]=string(}2q)
+    K[25]=string(r)
+    K[26]=string(i)
+    K[27]=string(b)
+    K[28]=string()
+    K[29]=string(l)
+    K[30]=string(m)
+    K[31]=string(b)
+    K[32]=string(47)
+    K[33]=string(o)
+    K[34]=string(n)
+    K[35]=string(e)
+    K[36]=string(��)
+    K[37]=string(a)
+    K[38]=string(���)
+    K[39]=string(t)
+    K[40]=string(_XB)
+    K[41]=string(r)
+    K[42]=string(p)
+    K[43]=string(EE)
+    K[44]=string(l)
+    K[45]=string(a)
+    K[46]=string(w)
+    K[47]=string(h)
+    K[48]=string(���)
+    K[49]=string(nly)
+    K[50]=string(n)
+    K[51]=string(o)
+    K[52]=string(c)
+    K[53]=string(i)
+    K[54]=string(f)
+    K[55]=string(f)
+    K[56]=string(n)
+    K[57]=string(d)
+    K[58]=string(c)
+    K[59]=string(y)
+    K[60]=string(z)
+    K[61]=string(x)
+    K[62]=string(r)
+    K[63]=string(��)
+    K[64]=string(l)
+    K[65]=number(200)
+    K[66]=number(97)
+    K[67]=number(134)
+    K[68]=number(71)
+    K[69]=number(116)
+    K[70]=number(157)
+    K[71]=number(18)
+    K[72]=number(227)
+    K[73]=number(224)
+    K[74]=number(153)
+    K[75]=number(94)
+    K[76]=number(63)
+    K[77]=number(12)
+    K[78]=number(85)
+    K[79]=number(106)
+    K[80]=number(91)
+    K[81]=number(248)
+    K[82]=number(209)
+    K[83]=number(54)
+    K[84]=number(55)
+    K[85]=number(164)
+    K[86]=number(13)
+    K[87]=number(194)
+    K[88]=string(��oYJ(�M�f��)��R)
+    K[89]=number(-1)
+    K[90]=number(1.0)
+    K[91]=number(0.0)
+    K[92]=number(1.0)
+    K[93]=number(1.0)
+    K[94]=number(0.0)
+    K[95]=number(1.0)
+    K[96]=number(2.0)
+    K[97]=number(0.5)
+    K[98]=number(2.0)
+    K[99]=number(0.5)
+    K[100]=number(2.0)
+    K[101]=number(0.5)
+    K[102]=number(4628078602712202117)
+    K[103]=number(4628078602712202115)
+    K[104]=number(0.0)
+    K[105]=number(2.0)
+    K[106]=number(0.5)
+    K[107]=number(-1.0)
+    [000] GETUPVAL  A=2 B=1 C=0
+    [001] LOADK     Bx=90
+    [002] LOADK     Bx=96
+    [003] MUL       A=61 B=97 C=98
+    [004] LOADK     Bx=97
+    [005] MUL       A=61 B=61 C=98
+    [006] LOADK     Bx=91
+    [007] LOADK     Bx=98
+    [008] MUL       A=62 B=97 C=98
+    [009] LOADK     Bx=99
+    [010] MUL       A=62 B=62 C=98
+    [011] LOADK     Bx=92
+    [012] LOADK     Bx=100
+    [013] MUL       A=63 B=97 C=98
+    [014] LOADK     Bx=101
+    [015] MUL       A=63 B=63 C=98
+    [016] FORPREP   A=61 sBx=1 ->18
+    [017] LOADNIL   A=64 B=0 C=0
+    [018] FORLOOP   A=61 sBx=-2 ->17
+    [019] GETUPVAL  A=4 B=2 C=0
+    [020] MOVE      A=5 B=2 C=0
+    [021] LOADK     Bx=55
+    [022] LOADK     Bx=56
+    [023] CONCAT    A=29 B=29 C=30
+    [024] MOVE      A=6 B=29 C=0
+    [025] MOVE      A=7 B=4 C=0
+    [026] LOADK     Bx=102
+    [027] LOADK     Bx=103
+    [028] SUB       A=8 B=97 C=98
+    [029] CALL      A=7 B=2 C=0
+    [030] LOADK     Bx=93
+    [031] LOADK     Bx=104
+    [032] ADD       A=61 B=97 C=98
+    [033] SUB       A=61 B=61 C=98
+    [034] LOADK     Bx=94
+    [035] LOADK     Bx=105
+    [036] MUL       A=62 B=97 C=98
+    [037] LOADK     Bx=106
+    [038] MUL       A=62 B=62 C=98
+    [039] LOADK     Bx=95
+    [040] LOADK     Bx=107
+    [041] MUL       A=63 B=97 C=98
+    [042] MUL       A=63 B=63 C=98
+    [043] FORPREP   A=61 sBx=1 ->45
+    [044] LOADNIL   A=64 B=0 C=0
+    [045] FORLOOP   A=61 sBx=-2 ->44
+    [046] CALL      A=5 B=0 C=1
+    [047] RETURN    A=0 B=1 C=0
+  === child6 sizecode=24 sizek=98 maxstack=96
+    K[0]=string(���)
+    K[1]=number(2)
+    K[2]=string(
+L8)
+    K[3]=string(n)
+    K[4]=string(����)
+    K[5]=number(0)
+    K[6]=number(4)
+    K[7]=string(qnwo)
+    K[8]=number(5)
+    K[9]=string(J7	:P)
+    K[10]=string(ꦼ��)
+    K[11]=string(D%WW)
+    K[12]=number(3)
+    K[13]=string(�����)
+    K[14]=string(s)
+    K[15]=number(1)
+    K[16]=number(1)
+    K[17]=string(ͻ�܆�)
+    K[18]=string(��)
+    K[19]=string(#)
+    K[20]=string(?)
+    K[21]=string(~)
+    K[22]=number(6)
+    K[23]=string(Yf~)
+    K[24]=string(}2q)
+    K[25]=string(r)
+    K[26]=string(i)
+    K[27]=string(b)
+    K[28]=string()
+    K[29]=string(l)
+    K[30]=string(m)
+    K[31]=string(b)
+    K[32]=string(47)
+    K[33]=string(o)
+    K[34]=string(n)
+    K[35]=string(e)
+    K[36]=string(��)
+    K[37]=string(a)
+    K[38]=string(���)
+    K[39]=string(t)
+    K[40]=string(_XB)
+    K[41]=string(r)
+    K[42]=string(p)
+    K[43]=string(EE)
+    K[44]=string(l)
+    K[45]=string(a)
+    K[46]=string(w)
+    K[47]=string(h)
+    K[48]=string(���)
+    K[49]=string(nly)
+    K[50]=string(n)
+    K[51]=string(o)
+    K[52]=string(c)
+    K[53]=string(i)
+    K[54]=string(f)
+    K[55]=string(f)
+    K[56]=string(n)
+    K[57]=string(d)
+    K[58]=string(c)
+    K[59]=string(y)
+    K[60]=string(z)
+    K[61]=string(x)
+    K[62]=string(r)
+    K[63]=string(��)
+    K[64]=string(l)
+    K[65]=number(200)
+    K[66]=number(97)
+    K[67]=number(134)
+    K[68]=number(71)
+    K[69]=number(116)
+    K[70]=number(157)
+    K[71]=number(18)
+    K[72]=number(227)
+    K[73]=number(224)
+    K[74]=number(153)
+    K[75]=number(94)
+    K[76]=number(63)
+    K[77]=number(12)
+    K[78]=number(85)
+    K[79]=number(106)
+    K[80]=number(91)
+    K[81]=number(248)
+    K[82]=number(209)
+    K[83]=number(54)
+    K[84]=number(55)
+    K[85]=number(164)
+    K[86]=number(13)
+    K[87]=number(194)
+    K[88]=string(��oYJ(�M�f��)��R)
+    K[89]=number(-1)
+    K[90]=number(1.0)
+    K[91]=number(0.0)
+    K[92]=number(1.0)
+    K[93]=number(-1.0)
+    K[94]=number(2.0)
+    K[95]=number(0.5)
+    K[96]=number(2.0)
+    K[97]=number(0.5)
+    [000] GETUPVAL  A=11 B=1 C=0
+    [001] LOADK     Bx=90
+    [002] LOADK     Bx=93
+    [003] MUL       A=19 B=94 C=95
+    [004] MUL       A=19 B=19 C=95
+    [005] LOADK     Bx=91
+    [006] LOADK     Bx=94
+    [007] MUL       A=20 B=94 C=95
+    [008] LOADK     Bx=95
+    [009] MUL       A=20 B=20 C=95
+    [010] LOADK     Bx=92
+    [011] LOADK     Bx=96
+    [012] MUL       A=21 B=94 C=95
+    [013] LOADK     Bx=97
+    [014] MUL       A=21 B=21 C=95
+    [015] FORPREP   A=19 sBx=1 ->17
+    [016] LOADNIL   A=22 B=0 C=0
+    [017] FORLOOP   A=19 sBx=-2 ->16
+    [018] GETUPVAL  A=12 B=2 C=0
+    [019] GETUPVAL  A=13 B=3 C=0
+    [020] GETUPVAL  A=14 B=4 C=0
+    [021] CALL      A=12 B=3 C=0
+    [022] CALL      A=11 B=0 C=1
+    [023] RETURN    A=0 B=1 C=0

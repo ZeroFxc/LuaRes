@@ -42,7 +42,7 @@ static unsigned int clone_rewrite_ins(unsigned int ins, int high_base) {
         case LUAC_OP_LOADBOOL: /* 3 */
             return LUAC_ABC(LUAC_OP_LOADBOOL, map_reg(A, high_base), B, C);
         case LUAC_OP_LOADNIL: /* 4 */
-            return LUAC_ABC(LUAC_OP_LOADNIL, map_reg(A, high_base), map_reg(B, high_base), 0);
+            return LUAC_ABC(LUAC_OP_LOADNIL, map_reg(A, high_base), B, 0); /* B=count-1, keep */
         case LUAC_OP_GETUPVAL: /* 5 */
             return LUAC_ABC(LUAC_OP_GETUPVAL, map_reg(A, high_base), B, 0);
         case LUAC_OP_GETTABUP: /* 6 */
@@ -99,6 +99,13 @@ static int find_blocks(luac_Proto *p, Block **out_blocks) {
             int target = i + 1 + sbx;
             if (target >= 0 && target < n) is_start[target] = 1;
         }
+        /* Terminator / conditional instructions start their own block so the
+           straight-line (e.g. arithmetic) prefix becomes an independently
+           cloneable block instead of being rejected for containing them. */
+        if (op == LUAC_OP_JMP || op == LUAC_OP_RETURN || op == LUAC_OP_TAILCALL ||
+            op == LUAC_OP_FORLOOP || op == LUAC_OP_FORPREP || op == LUAC_OP_TFORLOOP ||
+            op == LUAC_OP_EQ || op == LUAC_OP_LT || op == LUAC_OP_LE ||
+            op == LUAC_OP_TEST || op == LUAC_OP_TESTSET) is_start[i] = 1;
         if (op == LUAC_OP_JMP || op == LUAC_OP_RETURN || op == LUAC_OP_TAILCALL ||
             op == LUAC_OP_FORLOOP || op == LUAC_OP_FORPREP || op == LUAC_OP_TFORLOOP) {
             if (i + 1 < n) is_start[i + 1] = 1;
@@ -145,7 +152,7 @@ static int is_cloneable(luac_Proto *p, int start, int end) {
         if (op == LUAC_OP_LOADKX) return 0;   /* needs EXTRAARG */
         /* Arithmetic ops: skip to avoid register remapping conflicts
            with for_loop_unroll + cfg_shuffle (root cause under investigation) */
-        if (op >= LUAC_OP_ADD && op <= LUAC_OP_SHR) return 0;
+        /* arithmetic/bitwise ADD..SHR are cloneable (rewrite+analyze handle them) */
         if (op == LUAC_OP_CALL) return 0;       /* side effects */
         if (op == LUAC_OP_TFORCALL) return 0;
         if (op == LUAC_OP_CLOSURE) return 0;    /* upvalue setup */
@@ -185,7 +192,7 @@ static void analyze_block(luac_Proto *p, int start, int end,
             case LUAC_OP_MOVE: MR(B); MW(A); break;
             case LUAC_OP_LOADK: MW(A); break;
             case LUAC_OP_LOADBOOL: MW(A); break;
-            case LUAC_OP_LOADNIL: for (int r = A; r <= B; r++) MW(r); break;
+            case LUAC_OP_LOADNIL: for (int r = A; r <= A+B; r++) MW(r); break; /* B=count-1: writes R(A)..R(A+B) */
             case LUAC_OP_GETUPVAL: MW(A); break;
             case LUAC_OP_GETTABUP: if (C < LUAC_BITRK) MR(C); MW(A); break;
             case LUAC_OP_GETTABLE: MR(B); if (C < LUAC_BITRK) MR(C); MW(A); break;
@@ -261,6 +268,8 @@ static int clone_blocks_in_proto(luac_Proto *p, int max_clones) {
         int max_reg = 0;
         analyze_block(p, blocks[bi].start, blocks[bi].end, input, output, &max_reg);
         int extra = max_reg + 2; /* high regs + temp for predicate */
+        int cand_extra = (extra > need_extra) ? extra : need_extra;
+        if (high_base + cand_extra > 250) { selected[bi] = 0; continue; } /* would overlap low regs */
         if (extra > need_extra) need_extra = extra;
         int n_in = 0, n_out = 0;
         for (int r = 0; r < 256; r++) { if (input[r]) n_in++; if (output[r]) n_out++; }
@@ -269,6 +278,7 @@ static int clone_blocks_in_proto(luac_Proto *p, int max_clones) {
         est_new += 3 + blen + 1 + n_in + blen + n_out;
     }
 
+    if (need_extra <= 0) { free(cidx); free(blocks); free(selected); return 0; }
     int new_max = high_base + need_extra;
     if (new_max > 250) new_max = 250;
     obf_ensure_stack(p, new_max);
@@ -277,7 +287,7 @@ static int clone_blocks_in_proto(luac_Proto *p, int max_clones) {
     /* Build new code array (est_new is an exact upper bound) */
     int old_n = p->sizecode;
     unsigned int *new_code = (unsigned int *)malloc(sizeof(unsigned int) * est_new);
-    int *pos_map = (int *)malloc(sizeof(int) * old_n); /* old_pos -> new_pos */
+    int *pos_map = (int *)malloc(sizeof(int) * (old_n + 1)); /* old_pos -> new_pos; [old_n]=end */
     int new_n = 0;
 
     /* Track special JMP positions for fixing */
@@ -369,6 +379,8 @@ static int clone_blocks_in_proto(luac_Proto *p, int max_clones) {
         }
     }
 
+    pos_map[old_n] = new_n; /* a jump to function end maps to end of new code */
+
     /* Fix special JMPs (predicate -> clone, original -> merge) */
     for (int i = 0; i < cinfo_count; i++) {
         int pj = cinfo[i].pred_jmp_pos;
@@ -411,8 +423,8 @@ static int clone_blocks_in_proto(luac_Proto *p, int max_clones) {
             int old_sbx = ((p->code[old_pos] >> 14) & 0x3FFFF) - 131071;
             int old_target = old_pos + 1 + old_sbx;
 
-            if (old_target >= 0 && old_target < old_n) {
-                int new_target = pos_map[old_target];
+            if (old_target >= 0 && old_target <= old_n) {
+                int new_target = (old_target == old_n) ? new_n : pos_map[old_target];
                 int new_sbx = new_target - (i + 1);
                 new_code[i] = LUAC_AsBx(op, (new_code[i] >> 6) & 0xFF, new_sbx);
             }

@@ -38,12 +38,13 @@ char *vm_gen_runtime(const char *R, const char *K, const char *UV,
             "  if not _bit.lshift then function _bit.lshift(a,b) a=_to32(a);b=math.floor(b);return _to32(a*(2^b)) end end\n"
             "  if not _bit.rshift then function _bit.rshift(a,b) a=_to32(a);b=math.floor(b);return math.floor(a/(2^b)) end end\n"
             "  if not _bit.bnot then function _bit.bnot(a) a=_to32(a);return _to32(4294967295-a) end end\n"
-            "  local function _band(a,b) return _bit.band(a,b) end\n"
-            "  local function _bor(a,b) return _bit.bor(a,b) end\n"
-            "  local function _bxor(a,b) return _bit.bxor(a,b) end\n"
-            "  local function _shl(a,b) return _bit.lshift(a,b) end\n"
+            "  local function _s32(x) x=x%4294967296; if x>=2147483648 then return x-4294967296 end; return x end\n"
+            "  local function _band(a,b) return _s32(_bit.band(a,b)) end\n"
+            "  local function _bor(a,b) return _s32(_bit.bor(a,b)) end\n"
+            "  local function _bxor(a,b) return _s32(_bit.bxor(a,b)) end\n"
+            "  local function _shl(a,b) return _s32(_bit.lshift(a,b)) end\n"
             "  local function _shr(a,b) return _bit.rshift(a,b) end\n"
-            "  local function _bnot(a) return _bit.bnot(a) end\n"
+            "  local function _bnot(a) return _s32(_bit.bnot(a)) end\n"
             "  local function _idiv(a,b) return math.floor(a/b) end\n");
     }
 

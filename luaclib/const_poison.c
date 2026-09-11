@@ -10,11 +10,13 @@ static void add_poison_const(luac_Proto *p, int tag) {
     p->k_str = realloc(p->k_str, sizeof(char *) * (p->sizek + 1));
     p->k_str_len = realloc(p->k_str_len, sizeof(int) * (p->sizek + 1));
     p->k_num = realloc(p->k_num, sizeof(double) * (p->sizek + 1));
+    p->k_int = realloc(p->k_int, sizeof(int64_t) * (p->sizek + 1));
     p->k_bool = realloc(p->k_bool, sizeof(int) * (p->sizek + 1));
     p->k_tag[idx] = tag;
     p->k_str[idx] = NULL;
     p->k_str_len[idx] = 0;
     p->k_num[idx] = 0;
+    p->k_int[idx] = 0;
     p->k_bool[idx] = 0;
     p->sizek++;
 }

@@ -1,0 +1,1 @@
+{"stage":"run","gen_ok":true,"gen_err":"","kind":"bc","run_ok":false,"run_err":"?:-1: attempt to index a nil value","run_timeout":false,"output":"","size_in":946,"size_out":1896,"module_changes":{"upvalue_promote_c":3}}

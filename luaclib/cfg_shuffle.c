@@ -57,7 +57,7 @@ static int get_sbx(unsigned int ins) {
 /* 设置JMP类指令的sBx */
 static unsigned int set_sbx(unsigned int ins, int sbx) {
     int bx = sbx + 131071;
-    return (ins & 0x3FFF) | ((bx & 0x3FFFF) << 14);
+    return (ins & 0x3FFF) | ((unsigned int)(bx & 0x3FFFF) << 14);
 }
 
 

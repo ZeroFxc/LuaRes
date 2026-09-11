@@ -1,0 +1,1 @@
+{"stage":"run","gen_ok":true,"gen_err":"","kind":"bc","run_ok":true,"run_err":"","run_timeout":false,"output":"1\t2\t3","size_in":102,"size_out":291,"module_changes":{"upvalue_promote_c":0}}

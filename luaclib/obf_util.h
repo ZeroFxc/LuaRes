@@ -28,6 +28,10 @@ char *obf_xor_decrypt(const char *s, size_t len, size_t *out_len);
 /* Insert n instructions at pos (1-based) into p->code */
 void obf_code_insert(luac_Proto *p, int pos, const unsigned int *ins, int n);
 
+/* Nonzero if inserting before 0-based pos would split a CLOSURE's upvalue
+   pseudo-instruction run (the MOVE/GETUPVAL/GETTABUP that follow CLOSURE). */
+int obf_in_closure_run(luac_Proto *p, int pos);
+
 /* Remove n instructions at pos (1-based) from p->code */
 void obf_code_remove(luac_Proto *p, int pos, int n);
 

@@ -30,8 +30,9 @@ static void inject_function(luac_Proto *p, int count) {
     int old_maxstack = p->maxstacksize;
     int extra = count < 20 ? count : 20;
     int new_max = old_maxstack + extra; if (new_max > 250) new_max = 250;
+    if (new_max <= old_maxstack) { for (int _zi=0;_zi<p->sizep;_zi++){ if(obf_is_decrypt_proto(p->p[_zi]))continue; inject_function(p->p[_zi],count);} return; }
     p->maxstacksize = (unsigned char)new_max;
-    int usable = new_max - old_maxstack; if (usable <= 0) usable = 1;
+    int usable = new_max - old_maxstack;
 
     int injected = 0, attempts = 0;
     while (injected < count && attempts < count * 10) {
@@ -41,6 +42,7 @@ static void inject_function(luac_Proto *p, int count) {
         if (CONDITION_OPS(prev_op)) continue;
         if (prev_op == 43 && ((p->code[pos-1] >> 14) & 0x1FF) == 0) continue;
         if (!is_safe_insert_pos(p, pos-1)) continue;
+        if (obf_in_closure_run(p, pos)) continue;
         int a = old_maxstack + (int)(obf_rand() % usable);
         int b = old_maxstack + (int)(obf_rand() % usable);
         p->code = realloc(p->code, sizeof(unsigned int) * (p->sizecode + 1));

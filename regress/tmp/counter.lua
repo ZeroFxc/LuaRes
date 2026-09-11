@@ -1,0 +1,1 @@
+local function mk() local x=0 return function() x=x+1 return x end end local a=mk() print(a(),a(),a())
