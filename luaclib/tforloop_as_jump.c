@@ -23,6 +23,7 @@
 
 #include "obf_util.h"
 
+
 /* 判断是否是可以安全替换的回跳 JMP */
 static int is_safe_jmp(luac_Proto *p, int pos) {
     unsigned int ins = p->code[pos];
@@ -53,10 +54,15 @@ static int is_safe_jmp(luac_Proto *p, int pos) {
     int target_op = p->code[target] & 0x3F;
     if (target_op == 46) return 0;  /* EXTRAARG */
 
+    /* 跳转目标不能是跳转类或终止类指令（cfg_shuffle/for_loop_unroll 可能产生中间 JMP） */
+    if (target_op == 30 || target_op == 39 || target_op == 40 || target_op == 42 ||
+        target_op == 38 || target_op == 37) return 0;
+
+
     return 1;
 }
 
-static int convert_one(luac_Proto *p, int pos, int high_reg) {
+static int convert_one(lua_State *L, luac_Proto *p, int pos, int high_reg) {
     unsigned int ins = p->code[pos];
     int sbx = (int)((ins >> 14) & 0x3FFFF) - 131071;
 
@@ -71,7 +77,7 @@ static int convert_one(luac_Proto *p, int pos, int high_reg) {
     return 1;
 }
 
-static int convert_function(luac_Proto *p) {
+static int convert_function(lua_State *L, luac_Proto *p) {
     int changes = 0;
     int old_max = p->maxstacksize;
     int high_reg = old_max + 2;  /* 用高寄存器，留 2 个位置给 R(A) 和 R(A+1) */
@@ -80,9 +86,9 @@ static int convert_function(luac_Proto *p) {
     obf_ensure_stack(p, high_reg + 2);
 
     int i = 0;
-    while (i < p->sizecode) {
+        while (i < p->sizecode) {
         if (is_safe_jmp(p, i)) {
-            if (convert_one(p, i, high_reg)) {
+            if (convert_one(L, p, i, high_reg)) {
                 changes++;
                 i += 3;  /* 跳过 LOADBOOL + TFORLOOP + 下一条 */
                 continue;
@@ -98,9 +104,9 @@ int tforloop_as_jump_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
 
-    int n = convert_function(p);
+    int n = convert_function(L, p);
     if (p->p) for (int i = 0; i < p->sizep; i++)
-        n += convert_function(p->p[i]);
+        n += convert_function(L, p->p[i]);
 
     lua_pushinteger(L, n);
     return 1;
