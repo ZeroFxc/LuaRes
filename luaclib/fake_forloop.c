@@ -118,7 +118,7 @@ static int process_function(lua_State *L, luac_Proto *p, int count) {
             if (inject_fake_forloop(p, i, base_reg)) {
                 changes++;
                 injected++;
-                i += 7;  /* 跳过插入的 6 条 + 下一条 */
+                i += 15;  /* 跳过插入的6条+间隔9条，避免与cfg_shuffle重排后的紧密指令对冲突 */
                 continue;
             }
         }
@@ -141,7 +141,7 @@ int fake_forloop_process(lua_State *L) {
 
     int n = process_function(L, p, count);
     if (p->p) for (int i = 0; i < p->sizep; i++)
-        n += process_function(L, p->p[i], 2);  /* 子proto限2个，>2可能破坏upvalue close时序 */
+        n += process_function(L, p->p[i], 2);  /* 子proto限2个 */
 
     lua_pushinteger(L, n);
     return 1;
