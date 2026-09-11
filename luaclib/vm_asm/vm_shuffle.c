@@ -112,9 +112,9 @@ void vm_reg_anchor_scan(const unsigned int *code, int ncode,
         unsigned int lo = 0, hi = 0;
         int scan = 0;
         switch (op) {
-            case 30: /* JMP A sBx: A!=0 时关闭 idx>=A-1 的 upvalue，该范围内寄存器必须锚定
-                           (防止 remap 把非循环局部变量映射进关闭范围被错误关闭) */
-                if (a > 0) { lo = a - 1; hi = maxstack; scan = 1; }
+            case 30: /* JMP A sBx: A!=0 时关闭 idx>=A-1 的 upvalue。
+                           A 是 upvalue 列表索引不是寄存器编号，不能用 lo=a-1 标记寄存器范围。
+                           instack=1 upvalue 引用的寄存器已由调用方（vm_embed.c）单独锚定。 */
                 break;
             case 4: /* LOADNIL A B: R[A..B]=nil; B<A 时 Lua 语义只 R[A]=nil */
                 lo = a; hi = ((int)b >= (int)a) ? (b + 1) : (a + 1); scan = 1; break;
