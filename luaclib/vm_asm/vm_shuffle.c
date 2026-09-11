@@ -147,9 +147,10 @@ void vm_reg_anchor_scan(const unsigned int *code, int ncode,
             if (hi > (unsigned int)maxstack) hi = (unsigned int)maxstack;
             for (unsigned int k = lo; k < hi; k++) anchored[k] = 1;
         }
-        /* upvalue 相关指令的 A 寄存器锚定：GETUPVAL/SETUPVAL/GETTABUP/SETTABUP 的 A 是目标寄存器，
-           与 upvalue 索引配合，必须锚定保持一致 */
-        if (op == 5 || op == 9 || op == 6 || op == 8) { /* GETUPVAL, SETUPVAL, GETTABUP, SETTABUP */
+        /* upvalue 相关指令的 A 寄存器锚定：
+           GETUPVAL(5) A=目标寄存器, GETTABUP(6) A=目标寄存器 → 锚定
+           SETUPVAL(9) A=upvalue索引, SETTABUP(8) A=upvalue索引 → 不锚定 */
+        if (op == 5 || op == 6) { /* GETUPVAL, GETTABUP */
             if (a < maxstack) anchored[a] = 1;
         }
         /* CLOSURE 后 upvalue 设置区：CLOSURE A 后面可能跟 MOVE/GETUPVAL/GETTABUP 设置 upvalue，

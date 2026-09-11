@@ -207,6 +207,8 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
                 anchored[uv_idx[i]] = 1;
             }
         }
+        /* 临时修复：有 upvalue 的 proto 锚定 R1（根因待查） */
+        if (nuv > 0 && maxstacksize > 1) anchored[1] = 1;
         reg_map = vm_make_regmap(rseed, anchored, maxstacksize);
         free(anchored);
     }
