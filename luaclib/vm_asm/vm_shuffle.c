@@ -87,13 +87,13 @@ static const unsigned char A_REMAP[54] = {
 static const unsigned char B_REMAP[54] = {
     1,2,2,0,0,0,0,1,1,1,1,0,1,             /*  0-12 MOVE..SELF (SELF B=对象寄存器, 可remap) */
     1,1,1,1,1,1,1,1,1,1,1,1,1,             /* 13-25 */
-    1,1,1,1,2,2,2,2,1,1,0,0,0,             /* 26-38 BNOT..RETURN (30 JMP无B, 31-33 EQ/LT/LE B=RK, 34 TEST B=寄存器, 35 TESTSET B=寄存器, 36/37 CALL B=参数数量, 38 RETURN B=返回值数量) */
+    1,1,1,1,2,1,1,1,1,1,0,0,0,             /* 26-38 BNOT..RETURN (30 JMP无B, 31-33 EQ/LT/LE B=RK, 34 TEST B=寄存器, 35 TESTSET B=寄存器, 36/37 CALL B=参数数量, 38 RETURN B=返回值数量) */
     2,2,0,2,0,2,0,2,0,0,0,0,0,0,0          /* 39-53 */
 };
 static const unsigned char C_REMAP[54] = {
     0,2,2,0,0,0,1,1,1,0,1,0,1,             /*  0-12 */
     1,1,1,1,1,1,1,1,1,1,1,1,0,             /* 13-25 */
-    0,0,0,1,2,2,2,2,0,0,0,0,2,             /* 26-38 BNOT..RETURN (30 JMP无C, 31-33 EQ/LT/LE C=RK, 34/35 TEST/TESTSET C=条件, 36/37 CALL C=返回值数量, 38 RETURN无C) */
+    0,0,0,1,2,1,1,1,0,0,0,0,2,             /* 26-38 BNOT..RETURN (30 JMP无C, 31-33 EQ/LT/LE C=RK, 34/35 TEST/TESTSET C=条件, 36/37 CALL C=返回值数量, 38 RETURN无C) */
     2,2,0,2,0,2,0,2,0,0,0,0,0,0,0          /* 39-53 */
 };
 
@@ -253,7 +253,14 @@ void vm_shuffle_fields(int op, int *a, int *b, int *c, int *bx,
     }
     if (k_map && sizek > 0) {
         if (op == 1 && *bx < sizek) *bx = k_map[*bx];        /* LOADK */
-        else if (op == 46 && *bx < sizek) *bx = k_map[*bx];  /* EXTRAARG (Ax) */
+        else if (op == 46) {  /* EXTRAARG: Ax = a | (bx << 8), 需同时 remap a 和 bx */
+            int ax = *a | (*bx << 8);
+            if (ax < sizek) {
+                ax = k_map[ax];
+                *a = ax & 0xFF;
+                *bx = ax >> 8;
+            }
+        }
         else {
             /* RK 字段的常量部分也需要 remap */
             if (B_REMAP[op] == 1 && *b >= 256) { int ki = *b - 256; if (ki < sizek) *b = 256 + k_map[ki]; }
