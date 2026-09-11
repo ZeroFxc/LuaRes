@@ -13,10 +13,14 @@
 #include "luac.h"
 #include "vm_asm.h"
 
+#define VM_EMBED_DEBUG 0  /* 0=关闭写文件调试, 1=开启 */
+
 char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compat, size_t *out_len);
 
 int vm_embed_process(lua_State *L) {
+#if VM_EMBED_DEBUG
     { FILE *df = fopen("_vm_dbg.txt", "w"); fprintf(df, "vm_embed_process called\n"); fclose(df); }
+#endif
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
 
