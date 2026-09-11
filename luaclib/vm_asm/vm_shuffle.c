@@ -76,7 +76,7 @@ int *vm_make_kmap(unsigned int seed, int sizek) {
    A_REMAP : A 字段是寄存器（1=可 remap）
    B/C_REMAP: 0=非寄存器（数量/标志/upvalue索引/未知扩展），1=寄存器/RK（<256 视为寄存器，>=256 为 RK 常量），2=该格式无此字段（iABx/iAsBx/iAx） */
 static const unsigned char A_REMAP[54] = {
-    1,1,1,1,1,1,1,1,0,0,1,1,1,            /*  0-12 MOVE..SELF (8 SETTABUP A 是 upvalue 索引, 9 SETUPVAL A 是 upvalue 索引) */
+    0,1,1,1,1,1,1,1,0,0,1,1,1,            /*  0-12 MOVE..SELF (MOVE A 临时禁用remap测试, 8 SETTABUP A 是 upvalue 索引, 9 SETUPVAL A 是 upvalue 索引) */
     1,1,1,1,1,1,1,1,1,1,1,1,              /* 13-24 ADD..SHR */
     1,1,1,1,1,                             /* 25-29 UNM..CONCAT */
     0,1,1,1,1,1,1,1,1,1,                   /* 30-39 JMP..FORLOOP (30 JMP A 无意义, 31-33 EQ/LT/LE A 是 RK, 34 TEST A 是寄存器, 35 TESTSET A 是寄存器) */
@@ -85,15 +85,15 @@ static const unsigned char A_REMAP[54] = {
     1,1,1,1,1,1,1                          /* 47-53 andlua 扩展 */
 };
 static const unsigned char B_REMAP[54] = {
-    1,2,2,0,0,0,0,1,1,1,1,0,1,             /*  0-12 (8 SETTABUP B 是 RK, 9 SETUPVAL B 是寄存器) */
+    1,2,2,0,0,0,0,1,1,1,1,0,1,             /*  0-12 MOVE..SELF (SELF B=对象寄存器, 可remap) */
     1,1,1,1,1,1,1,1,1,1,1,1,1,             /* 13-25 */
-    1,1,1,1,2,1,1,1,1,1,0,0,2,             /* 26-38 BNOT..RETURN (34 TEST B 是寄存器) */
+    1,1,1,1,2,2,2,2,1,1,0,0,0,             /* 26-38 BNOT..RETURN (30 JMP无B, 31-33 EQ/LT/LE B=RK, 34 TEST B=寄存器, 35 TESTSET B=寄存器, 36/37 CALL B=参数数量, 38 RETURN B=返回值数量) */
     2,2,0,2,0,2,0,2,0,0,0,0,0,0,0          /* 39-53 */
 };
 static const unsigned char C_REMAP[54] = {
     0,2,2,0,0,0,1,1,1,0,1,0,1,             /*  0-12 */
     1,1,1,1,1,1,1,1,1,1,1,1,0,             /* 13-25 */
-    0,0,0,1,2,1,1,1,0,0,0,2,               /* 26-38 */
+    0,0,0,1,2,2,2,2,0,0,0,0,2,             /* 26-38 BNOT..RETURN (30 JMP无C, 31-33 EQ/LT/LE C=RK, 34/35 TEST/TESTSET C=条件, 36/37 CALL C=返回值数量, 38 RETURN无C) */
     2,2,0,2,0,2,0,2,0,0,0,0,0,0,0          /* 39-53 */
 };
 
@@ -196,12 +196,36 @@ void vm_shuffle_fields(int op, int *a, int *b, int *c, int *bx,
                        const int *reg_map, int maxstack,
                        const int *k_map, int sizek) {
     if (reg_map && maxstack > 0) {
+#if VM_SHUFFLE_DEBUG
+        int dbg_a_old = *a, dbg_b_old = *b, dbg_c_old = *c;
+        int dbg_hit = 0;
+#endif
         /* A 字段：EQ/LT/LE (31/32/33) 的 A==0 表示比较顶部栈，不 remap */
-        if (A_REMAP[op] && *a < maxstack && !((op == 31 || op == 32 || op == 33) && *a == 0))
+        if (A_REMAP[op] && *a < maxstack && !((op == 31 || op == 32 || op == 33) && *a == 0)) {
             *a = reg_map[*a];
+#if VM_SHUFFLE_DEBUG
+            if (dbg_a_old == 1) dbg_hit = 1;
+#endif
+        }
         /* B_REMAP: 1=纯寄存器, 2=RK(寄存器或常量) */
-        if ((B_REMAP[op] == 1 || B_REMAP[op] == 2) && *b < 256 && *b < maxstack) *b = reg_map[*b];
-        if ((C_REMAP[op] == 1 || C_REMAP[op] == 2) && *c < 256 && *c < maxstack) *c = reg_map[*c];
+        if ((B_REMAP[op] == 1 || B_REMAP[op] == 2) && *b < 256 && *b < maxstack) {
+            *b = reg_map[*b];
+#if VM_SHUFFLE_DEBUG
+            if (dbg_b_old == 1) dbg_hit = 1;
+#endif
+        }
+        if ((C_REMAP[op] == 1 || C_REMAP[op] == 2) && *c < 256 && *c < maxstack) {
+            *c = reg_map[*c];
+#if VM_SHUFFLE_DEBUG
+            if (dbg_c_old == 1) dbg_hit = 1;
+#endif
+        }
+#if VM_SHUFFLE_DEBUG
+        if (dbg_hit) {
+            fprintf(stderr, "[VM_REG_DBG] op=%d A:%d->%d(AR=%d) B:%d->%d(BR=%d) C:%d->%d(CR=%d) ms=%d\n",
+                    op, dbg_a_old, *a, A_REMAP[op], dbg_b_old, *b, B_REMAP[op], dbg_c_old, *c, C_REMAP[op], maxstack);
+        }
+#endif
     }
     if (k_map && sizek > 0) {
         if (op == 1 && *bx < sizek) *bx = k_map[*bx];        /* LOADK */
