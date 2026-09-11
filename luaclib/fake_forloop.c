@@ -56,6 +56,9 @@ static int is_safe_insert(luac_Proto *p, int pos) {
     /* 不能在 JMP 之后（JMP之后通常是跳转目标，插入可能破坏跳转语义） */
     if (prev_op == 30) return 0;
 
+    /* 不能在 LOADBOOL 之后（tforloop_as_jump插入LOADBOOL+TFORLOOP配对，插入会破坏） */
+    if (prev_op == 3) return 0;
+
     /* 不能插入在 JMP/RETURN/TAILCALL 位置 */
     if (cur_op == 30 || cur_op == 38 || cur_op == 37) return 0;
 
@@ -106,7 +109,7 @@ static int inject_fake_forloop(luac_Proto *p, int pos, int base_reg) {
 static int process_function(lua_State *L, luac_Proto *p, int count) {
     int changes = 0;
     int old_max = p->maxstacksize;
-    int base_reg = old_max;  /* 用 old_max 开始的寄存器（不算几百） */
+    int base_reg = old_max;  /* 用 old_max 开始的寄存器 */
 
     /* 扩展 maxstacksize，需要 4 个寄存器 (A, A+1, A+2, A+3) */
     obf_ensure_stack(p, base_reg + 4);
