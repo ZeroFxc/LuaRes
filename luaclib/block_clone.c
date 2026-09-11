@@ -143,6 +143,9 @@ static int is_cloneable(luac_Proto *p, int start, int end) {
         if (op == LUAC_OP_TEST || op == LUAC_OP_TESTSET) return 0;
         /* Complex / unsupported */
         if (op == LUAC_OP_LOADKX) return 0;   /* needs EXTRAARG */
+        /* Arithmetic ops: skip to avoid register remapping conflicts
+           with for_loop_unroll + cfg_shuffle (root cause under investigation) */
+        if (op >= LUAC_OP_ADD && op <= LUAC_OP_SHR) return 0;
         if (op == LUAC_OP_CALL) return 0;       /* side effects */
         if (op == LUAC_OP_TFORCALL) return 0;
         if (op == LUAC_OP_CLOSURE) return 0;    /* upvalue setup */
