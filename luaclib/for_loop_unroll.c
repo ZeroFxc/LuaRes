@@ -81,7 +81,7 @@ static int unroll_one(luac_Proto *p, int forprep_pos, int forloop_pos) {
         new_ins[2] = LUAC_AsBx(LUAC_OP_JMP, 0, 1);           /* true -> MOVE */
         new_ins[3] = LUAC_AsBx(LUAC_OP_JMP, 0, 2);           /* false -> loop end */
         new_ins[4] = LUAC_ABC(LUAC_OP_MOVE, A + 3, A, 0);    /* loop var = idx */
-        new_ins[5] = LUAC_AsBx(LUAC_OP_JMP, 0, fl_sbx - 5);  /* jump back to loop body */
+        new_ins[5] = LUAC_AsBx(LUAC_OP_JMP, 0, fl_sbx - 5);  /* jump back to loop body (JMP后移5, 目标不变, sBx减5) */
 
         /* 替换 FORLOOP: 先在 forloop_pos+1 插入 5 条，再修改 forloop_pos */
         obf_code_insert(p, forloop_pos + 2, &new_ins[1], 5);  /* 1-based pos = forloop_pos+2 */
@@ -93,7 +93,7 @@ static int unroll_one(luac_Proto *p, int forprep_pos, int forloop_pos) {
     {
         unsigned int new_ins[2];
         new_ins[0] = LUAC_ABC(LUAC_OP_SUB, A, A, A + 2);   /* init -= step */
-        new_ins[1] = LUAC_AsBx(LUAC_OP_JMP, 0, fp_sbx);      /* jump to FORLOOP (sBx 不变) */
+        new_ins[1] = LUAC_AsBx(LUAC_OP_JMP, 0, fp_sbx);      /* jump to FORLOOP (展开后JMP和目标都后移1, sBx不变) */
 
         obf_code_insert(p, forprep_pos + 2, &new_ins[1], 1);  /* 1-based pos = forprep_pos+2 */
         p->code[forprep_pos] = new_ins[0];
