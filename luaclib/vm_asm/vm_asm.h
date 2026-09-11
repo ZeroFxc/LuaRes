@@ -11,6 +11,8 @@
 
 #include <stddef.h>
 
+#define VM_SHUFFLE_DEBUG 1  /* 1=开启R1 remap调试, 0=关闭 */
+
 /* Lua state (forward decl; lua.h included by consuming units via obf_util.h) */
 typedef struct lua_State lua_State;
 

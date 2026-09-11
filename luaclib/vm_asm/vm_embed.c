@@ -151,6 +151,7 @@ typedef struct {
 static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx);
 
 static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
+    buf_str(b, "-- [DBG_ENTRY] serialize_proto called depth=\n");
     size_t slen;
     char *src = rd_string(r, &slen); free(src);
     rd_int(r); rd_int(r);
@@ -197,8 +198,9 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     /* reg map: anchor scan (CALL/SETLIST/VARARG/RETURN/SELF/TFORCALL zones stay
        in place), non-anchored registers permute */
     int *reg_map = NULL;
+    unsigned char *anchored = NULL;
     if (ctx->reg_on && maxstacksize > 0) {
-        unsigned char *anchored = malloc(maxstacksize);
+        anchored = malloc(maxstacksize);
         vm_reg_anchor_scan(ins_arr, (int)ncode, anchored, maxstacksize, numparams);
         /* anchor all registers referenced by instack=1 upvalues (prevents remap from
            moving an upvalue-referenced register into/out of JMP close range) */
@@ -207,11 +209,44 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
                 anchored[uv_idx[i]] = 1;
             }
         }
-        /* 临时修复：有 upvalue 的 proto 锚定 R1（根因待查） */
-        if (nuv > 0 && maxstacksize > 1) anchored[1] = 1;
+        /* (R1锚定临时修复已移除，恢复调试) */
         reg_map = vm_make_regmap(rseed, anchored, maxstacksize);
-        free(anchored);
     }
+#if VM_SHUFFLE_DEBUG
+    {
+        char dbg[2048];
+        int pos = 0;
+        pos += snprintf(dbg+pos, sizeof(dbg)-pos, "-- [VM_RMAP] ms=%d np=%d nuv=%d reg_on=%d ncode=%d\n",
+                maxstacksize, numparams, nuv, ctx->reg_on, ncode);
+        if (anchored) {
+            pos += snprintf(dbg+pos, sizeof(dbg)-pos, "--   anchored=");
+            for (int i = 0; i < maxstacksize && i < 16; i++) {
+                pos += snprintf(dbg+pos, sizeof(dbg)-pos, "%d", anchored[i]);
+            }
+            pos += snprintf(dbg+pos, sizeof(dbg)-pos, "\n");
+        }
+        if (reg_map) {
+            pos += snprintf(dbg+pos, sizeof(dbg)-pos, "--   map=");
+            for (int i = 0; i < maxstacksize && i < 16; i++) {
+                pos += snprintf(dbg+pos, sizeof(dbg)-pos, "%d:%d,", i, reg_map[i]);
+            }
+            pos += snprintf(dbg+pos, sizeof(dbg)-pos, "\n");
+        }
+        /* 输出指令序列 */
+        pos += snprintf(dbg+pos, sizeof(dbg)-pos, "--   code=");
+        for (uint32_t i = 0; i < ncode && i < 20; i++) {
+            unsigned int ins = ins_arr[i];
+            unsigned int op = ins & 0x3F;
+            unsigned int a = (ins >> 6) & 0xFF;
+            unsigned int b = (ins >> 23) & 0x1FF;
+            unsigned int c = (ins >> 14) & 0x1FF;
+            pos += snprintf(dbg+pos, sizeof(dbg)-pos, "[%d]op%d a=%d b=%d c=%d ", i, op, a, b, c);
+        }
+        pos += snprintf(dbg+pos, sizeof(dbg)-pos, "\n");
+        buf_str(b, dbg);
+    }
+#endif
+    if (anchored) free(anchored);
     int *k_map = NULL;
     if (ctx->const_on && nk > 0) k_map = vm_make_kmap(cseed, (int)nk);
 
@@ -219,6 +254,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
     buf_str(b, "code={");
+    int uv_setup_remaining = 0;  /* CLOSURE 后面还剩多少条 upvalue 设置指令 */
     for (uint32_t i = 0; i < ncode; i++) {
         uint32_t ins = ins_arr[i];
         uint32_t raw_op = ins & 0x3F;
@@ -228,9 +264,38 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
         int c = (ins >> 14) & 0x1FF;
         int bop = (ins >> 23) & 0x1FF;
         int bx = (int)(ins >> 14);
+
+        /* CLOSURE 后面的 upvalue 设置区识别（启发式）：
+           CLOSURE(44) 后面跟 MOVE(0)/GETUPVAL(5)/GETTABUP(6) 设置 upvalue。
+           这些 MOVE 的 A 字段是 upvalue 索引（不是寄存器），不能被 remap。
+           启发式：CLOSURE 后面连续的 MOVE/GETUPVAL/GETTABUP 就是 upvalue 设置区，
+           直到遇到其他指令。upvalue 数量不超过 255（8 位索引）。 */
+        int uv_setup_move = 0;
+        if (raw_op == 44) {  /* CLOSURE */
+            uv_setup_remaining = 255;  /* 上限，实际由后续指令类型决定 */
+        } else if (uv_setup_remaining > 0) {
+            if (raw_op == 0 || raw_op == 5 || raw_op == 6) {
+                uv_setup_remaining--;
+                if (raw_op == 0) uv_setup_move = 1;  /* MOVE 的 A 是 upvalue 索引 */
+            } else {
+                uv_setup_remaining = 0;  /* upvalue 设置区结束 */
+            }
+        }
+#if VM_SHUFFLE_DEBUG
+        if (i >= 8 && i <= 16) {
+            char dbg[256];
+            snprintf(dbg, sizeof(dbg), "-- [UVDBG] i=%u op=%u a=%d uv_rem=%d uv_move=%d\n", i, raw_op, a, uv_setup_remaining, uv_setup_move);
+            buf_str(b, dbg);
+        }
+#endif
+
         /* 字段语义按原始 opcode 判定（dispatch remap 只改输出编号，不改变字段含义） */
         vm_shuffle_fields((int)raw_op, &a, &bop, &c, &bx,
                           reg_map, maxstacksize, k_map, (int)nk);
+        /* CLOSURE 后 MOVE 的 A 是 upvalue 索引，恢复原值（不 remap） */
+        if (uv_setup_move) {
+            a = (ins >> 6) & 0xFF;
+        }
         int32_t sbx = bx - 131071;
         char tmp[128];
         snprintf(tmp, sizeof(tmp), "%s{%u,%d,%d,%d,%d,%d}",
@@ -303,7 +368,15 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     for (uint32_t i = 0; i < nuv; i++) {
         uint8_t instack = uv_instack[i];
         uint8_t idx = uv_idx[i];
+        uint8_t old_idx = idx;
         if (instack && ctx->parent_reg) idx = (uint8_t)ctx->parent_reg[idx];
+#if VM_SHUFFLE_DEBUG
+        {
+            char dbg2[256];
+            snprintf(dbg2, sizeof(dbg2), "-- [VM_UV] uv[%d] instack=%d idx:%d->%d parent_reg=%p\n", i, instack, old_idx, idx, (void*)ctx->parent_reg);
+            buf_str(b, dbg2);
+        }
+#endif
         char tmp[64];
         snprintf(tmp, sizeof(tmp), "%s{instack=%d,idx=%d}", i ? "," : "", instack, idx);
         buf_str(b, tmp);

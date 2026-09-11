@@ -76,7 +76,7 @@ int *vm_make_kmap(unsigned int seed, int sizek) {
    A_REMAP : A 字段是寄存器（1=可 remap）
    B/C_REMAP: 0=非寄存器（数量/标志/upvalue索引/未知扩展），1=寄存器/RK（<256 视为寄存器，>=256 为 RK 常量），2=该格式无此字段（iABx/iAsBx/iAx） */
 static const unsigned char A_REMAP[54] = {
-    0,1,1,1,1,1,1,1,0,0,1,1,1,            /*  0-12 MOVE..SELF (MOVE A 临时禁用remap测试, 8 SETTABUP A 是 upvalue 索引, 9 SETUPVAL A 是 upvalue 索引) */
+    1,1,1,1,1,1,1,1,0,0,1,1,1,            /*  0-12 MOVE..SELF (8 SETTABUP A 是 upvalue 索引, 9 SETUPVAL A 是 upvalue 索引) */
     1,1,1,1,1,1,1,1,1,1,1,1,              /* 13-24 ADD..SHR */
     1,1,1,1,1,                             /* 25-29 UNM..CONCAT */
     0,1,1,1,1,1,1,1,1,1,                   /* 30-39 JMP..FORLOOP (30 JMP A 无意义, 31-33 EQ/LT/LE A 是 RK, 34 TEST A 是寄存器, 35 TESTSET A 是寄存器) */
@@ -207,14 +207,14 @@ void vm_shuffle_fields(int op, int *a, int *b, int *c, int *bx,
             if (dbg_a_old == 1) dbg_hit = 1;
 #endif
         }
-        /* B_REMAP: 1=纯寄存器, 2=RK(寄存器或常量) */
-        if ((B_REMAP[op] == 1 || B_REMAP[op] == 2) && *b < 256 && *b < maxstack) {
+        /* B_REMAP: 1=寄存器/RK, 2=该格式无此字段(iABx/iAsBx)，不remap */
+        if (B_REMAP[op] == 1 && *b < 256 && *b < maxstack) {
             *b = reg_map[*b];
 #if VM_SHUFFLE_DEBUG
             if (dbg_b_old == 1) dbg_hit = 1;
 #endif
         }
-        if ((C_REMAP[op] == 1 || C_REMAP[op] == 2) && *c < 256 && *c < maxstack) {
+        if (C_REMAP[op] == 1 && *c < 256 && *c < maxstack) {
             *c = reg_map[*c];
 #if VM_SHUFFLE_DEBUG
             if (dbg_c_old == 1) dbg_hit = 1;
@@ -232,8 +232,8 @@ void vm_shuffle_fields(int op, int *a, int *b, int *c, int *bx,
         else if (op == 46 && *bx < sizek) *bx = k_map[*bx];  /* EXTRAARG (Ax) */
         else {
             /* RK 字段的常量部分也需要 remap */
-            if ((B_REMAP[op] == 1 || B_REMAP[op] == 2) && *b >= 256) { int ki = *b - 256; if (ki < sizek) *b = 256 + k_map[ki]; }
-            if ((C_REMAP[op] == 1 || C_REMAP[op] == 2) && *c >= 256) { int ki = *c - 256; if (ki < sizek) *c = 256 + k_map[ki]; }
+            if (B_REMAP[op] == 1 && *b >= 256) { int ki = *b - 256; if (ki < sizek) *b = 256 + k_map[ki]; }
+            if (C_REMAP[op] == 1 && *c >= 256) { int ki = *c - 256; if (ki < sizek) *c = 256 + k_map[ki]; }
         }
     }
 }
