@@ -151,7 +151,9 @@ typedef struct {
 static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx);
 
 static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
+#if VM_SHUFFLE_DEBUG
     buf_str(b, "-- [DBG_ENTRY] serialize_proto called depth=\n");
+#endif
     size_t slen;
     char *src = rd_string(r, &slen); free(src);
     rd_int(r); rd_int(r);
