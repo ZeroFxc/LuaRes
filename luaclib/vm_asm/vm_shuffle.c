@@ -76,16 +76,16 @@ int *vm_make_kmap(unsigned int seed, int sizek) {
    A_REMAP : A 字段是寄存器（1=可 remap）
    B/C_REMAP: 0=非寄存器（数量/标志/upvalue索引/未知扩展），1=寄存器/RK（<256 视为寄存器，>=256 为 RK 常量），2=该格式无此字段（iABx/iAsBx/iAx） */
 static const unsigned char A_REMAP[54] = {
-    1,1,1,1,1,1,1,1,0,1,1,1,1,            /*  0-12 MOVE..SELF (8 SETTABUP A 是 upvalue 索引) */
+    1,1,1,1,1,1,1,1,0,0,1,1,1,            /*  0-12 MOVE..SELF (8 SETTABUP A 是 upvalue 索引, 9 SETUPVAL A 是 upvalue 索引) */
     1,1,1,1,1,1,1,1,1,1,1,1,              /* 13-24 ADD..SHR */
     1,1,1,1,1,                             /* 25-29 UNM..CONCAT */
-    0,0,0,0,0,1,1,1,1,1,                   /* 30-39 JMP..FORLOOP (30 JMP A 无意义, 31-33 EQ/LT/LE A 未使用, 34 TEST A 是条件标志) */
+    0,1,1,1,1,1,1,1,1,1,                   /* 30-39 JMP..FORLOOP (30 JMP A 无意义, 31-33 EQ/LT/LE A 是 RK, 34 TEST A 是寄存器, 35 TESTSET A 是寄存器) */
     1,1,1,1,1,                             /* 40-44 FORPREP..CLOSURE */
     1,0,                                    /* 45 VARARG, 46 EXTRAARG(iAx) */
     1,1,1,1,1,1,1                          /* 47-53 andlua 扩展 */
 };
 static const unsigned char B_REMAP[54] = {
-    1,2,2,0,0,0,0,1,1,0,1,0,1,             /*  0-12 (8 SETTABUP B 是 RK) */
+    1,2,2,0,0,0,0,1,1,1,1,0,1,             /*  0-12 (8 SETTABUP B 是 RK, 9 SETUPVAL B 是寄存器) */
     1,1,1,1,1,1,1,1,1,1,1,1,1,             /* 13-25 */
     1,1,1,1,2,1,1,1,1,1,0,0,2,             /* 26-38 BNOT..RETURN (34 TEST B 是寄存器) */
     2,2,0,2,0,2,0,2,0,0,0,0,0,0,0          /* 39-53 */
@@ -147,6 +147,25 @@ void vm_reg_anchor_scan(const unsigned int *code, int ncode,
             if (hi > (unsigned int)maxstack) hi = (unsigned int)maxstack;
             for (unsigned int k = lo; k < hi; k++) anchored[k] = 1;
         }
+        /* upvalue 相关指令的 A 寄存器锚定：GETUPVAL/SETUPVAL/GETTABUP/SETTABUP 的 A 是目标寄存器，
+           与 upvalue 索引配合，必须锚定保持一致 */
+        if (op == 5 || op == 9 || op == 6 || op == 8) { /* GETUPVAL, SETUPVAL, GETTABUP, SETTABUP */
+            if (a < maxstack) anchored[a] = 1;
+        }
+        /* CLOSURE 后 upvalue 设置区：CLOSURE A 后面可能跟 MOVE/GETUPVAL/GETTABUP 设置 upvalue，
+           这些指令的 A 寄存器与 CLOSURE 的 A 配合，必须锚定保持一致 */
+        if (op == 44) { /* CLOSURE */
+            if (a < maxstack) anchored[a] = 1;
+            for (int j = i + 1; j < ncode && j < i + 8; j++) {
+                unsigned int nop = code[j] & 0x3F;
+                if (nop == 0 || nop == 5 || nop == 6) { /* MOVE, GETUPVAL, GETTABUP */
+                    unsigned int na = (code[j] >> 6) & 0xFF;
+                    if (na < maxstack) anchored[na] = 1;
+                } else {
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -176,16 +195,20 @@ void vm_shuffle_fields(int op, int *a, int *b, int *c, int *bx,
                        const int *reg_map, int maxstack,
                        const int *k_map, int sizek) {
     if (reg_map && maxstack > 0) {
-        if (A_REMAP[op] && *a < maxstack) *a = reg_map[*a];
-        if (B_REMAP[op] == 1 && *b < 256 && *b < maxstack) *b = reg_map[*b];
-        if (C_REMAP[op] == 1 && *c < 256 && *c < maxstack) *c = reg_map[*c];
+        /* A 字段：EQ/LT/LE (31/32/33) 的 A==0 表示比较顶部栈，不 remap */
+        if (A_REMAP[op] && *a < maxstack && !((op == 31 || op == 32 || op == 33) && *a == 0))
+            *a = reg_map[*a];
+        /* B_REMAP: 1=纯寄存器, 2=RK(寄存器或常量) */
+        if ((B_REMAP[op] == 1 || B_REMAP[op] == 2) && *b < 256 && *b < maxstack) *b = reg_map[*b];
+        if ((C_REMAP[op] == 1 || C_REMAP[op] == 2) && *c < 256 && *c < maxstack) *c = reg_map[*c];
     }
     if (k_map && sizek > 0) {
         if (op == 1 && *bx < sizek) *bx = k_map[*bx];        /* LOADK */
         else if (op == 46 && *bx < sizek) *bx = k_map[*bx];  /* EXTRAARG (Ax) */
         else {
-            if (B_REMAP[op] == 1 && *b >= 256) { int ki = *b - 256; if (ki < sizek) *b = 256 + k_map[ki]; }
-            if (C_REMAP[op] == 1 && *c >= 256) { int ki = *c - 256; if (ki < sizek) *c = 256 + k_map[ki]; }
+            /* RK 字段的常量部分也需要 remap */
+            if ((B_REMAP[op] == 1 || B_REMAP[op] == 2) && *b >= 256) { int ki = *b - 256; if (ki < sizek) *b = 256 + k_map[ki]; }
+            if ((C_REMAP[op] == 1 || C_REMAP[op] == 2) && *c >= 256) { int ki = *c - 256; if (ki < sizek) *c = 256 + k_map[ki]; }
         }
     }
 }
