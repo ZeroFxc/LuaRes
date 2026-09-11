@@ -141,7 +141,31 @@ void vm_reg_anchor_scan(const unsigned int *code, int ncode,
             case 45: /* VARARG A B: 写 R[A..A+B-2], B=0 多变 */
                 lo = a; hi = (b == 0) ? (unsigned int)maxstack : a + b;
                 scan = 1; break;
-            default: break;
+            case 8: /* SETTABUP A B C: A=upvalue索引(不锚定), B=键, C=值 */
+                if (b < 256 && b < maxstack) anchored[b] = 1;
+                if (c < 256 && c < maxstack) anchored[c] = 1;
+                break;
+            case 9: /* SETUPVAL A B: A=upvalue索引(不锚定), B=源寄存器 */
+                if (b < 256 && b < maxstack) anchored[b] = 1;
+                break;
+            case 31: case 32: case 33: /* EQ/LT/LE A B C: A=取反标志(不锚定), B=源1, C=源2 */
+                if (b < 256 && b < maxstack) anchored[b] = 1;
+                if (c < 256 && c < maxstack) anchored[c] = 1;
+                break;
+            case 34: /* TEST A B C: A=源, B=源, C=取反标志(不锚定) */
+                if (a < maxstack) anchored[a] = 1;
+                if (b < 256 && b < maxstack) anchored[b] = 1;
+                break;
+            case 35: /* TESTSET A B C: A=目标, B=源, C=取反标志(不锚定) */
+                if (a < maxstack) anchored[a] = 1;
+                if (b < 256 && b < maxstack) anchored[b] = 1;
+                break;
+            default:
+                /* 普通指令：A=目标寄存器, B/C=源寄存器或常量(RK>=256) */
+                if (a < maxstack) anchored[a] = 1;
+                if (b < 256 && b < maxstack) anchored[b] = 1;
+                if (c < 256 && c < maxstack) anchored[c] = 1;
+                break;
         }
         if (scan) {
             if (hi > (unsigned int)maxstack) hi = (unsigned int)maxstack;

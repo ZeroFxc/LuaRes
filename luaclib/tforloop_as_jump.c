@@ -29,14 +29,16 @@ static int is_safe_jmp(luac_Proto *p, int pos) {
     unsigned int ins = p->code[pos];
     if ((ins & 0x3F) != 30) return 0;  /* OP_JMP */
     int A = (ins >> 6) & 0xFF;
-    if (A != 0) return 0;  /* JMP A>0 会 close upvalues，TFORLOOP 不会，不能替换 */
+    if (A != 0) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: A=%d\n", pos, A); return 0; }
     int sbx = (int)((ins >> 14) & 0x3FFFF) - 131071;
-    if (sbx >= 0) return 0;  /* 只处理回跳 JMP */
+    if (sbx >= 0) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: sbx=%d>=0\n", pos, sbx); return 0; }
 
-    /* 不能在条件指令之后（条件指令后必须是 JMP，插入会破坏配对） */
+    /* TFORLOOP 的跳转条件是 R(A+1) ~= nil，与条件指令（EQ/LT/LE/TEST/TESTSET）的结果无关。
+       所以只能替换无条件 JMP（前面不是条件指令的 JMP）。条件跳转后的 JMP 不能替换，
+       否则 TFORLOOP 会忽略条件指令的结果，总是跳转，导致死循环。 */
     if (pos > 0) {
         int prev_op = p->code[pos - 1] & 0x3F;
-        /* EQ/LT/LE/TEST/TESTSET 之后必须是 JMP */
+        /* EQ/LT/LE/TEST/TESTSET 之后必须是 JMP，且 JMP 是条件跳转，不能替换 */
         if (prev_op == 31 || prev_op == 32 || prev_op == 33 ||
             prev_op == 34 || prev_op == 35) return 0;
         /* LOADKX 之后必须是 EXTRAARG */
@@ -50,29 +52,34 @@ static int is_safe_jmp(luac_Proto *p, int pos) {
 
     /* 跳转目标不能是 EXTRAARG */
     int target = pos + 1 + sbx;
-    if (target < 0 || target >= p->sizecode) return 0;
+    if (target < 0 || target >= p->sizecode) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: target=%d out of range\n", pos, target); return 0; }
     int target_op = p->code[target] & 0x3F;
-    if (target_op == 46) return 0;  /* EXTRAARG */
+    if (target_op == 46) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: target_op=46 (EXTRAARG)\n", pos); return 0; }
 
     /* 跳转目标不能是跳转类或终止类指令（cfg_shuffle/for_loop_unroll 可能产生中间 JMP） */
     if (target_op == 30 || target_op == 39 || target_op == 40 || target_op == 42 ||
-        target_op == 38 || target_op == 37) return 0;
+        target_op == 38 || target_op == 37) { fprintf(stderr, "[TFJ_DBG] pos=%d skip: target_op=%d (jump/terminator)\n", pos, target_op); return 0; }
 
-
+    fprintf(stderr, "[TFJ_DBG] pos=%d ACCEPT: sbx=%d target=%d target_op=%d\n", pos, sbx, target, target_op);
     return 1;
 }
 
 static int convert_one(lua_State *L, luac_Proto *p, int pos, int high_reg) {
-    unsigned int ins = p->code[pos];
-    int sbx = (int)((ins >> 14) & 0x3FFFF) - 131071;
-
-    /* 先把 JMP 改成 TFORLOOP（保持原来的 sBx），然后插入 LOADBOOL。
-       这样 obf_code_insert 内部的 obf_adjust_jumps_insert 会自动修正 TFORLOOP 的 sBx。 */
-    p->code[pos] = LUAC_AsBx(42, high_reg, sbx);  /* OP_TFORLOOP */
-
-    /* 在 TFORLOOP 前插入 LOADBOOL R(high_reg+1), 1, 0 */
+    /* LOADBOOL 插入到 pos-1（如果 pos > 0），避免破坏条件指令+JMP 配对。
+       pos=0 时插入到 pos（JMP 之前）。
+       先插入 LOADBOOL，obf_code_insert 内部的 obf_adjust_jumps_insert 会自动修正 JMP 的 sBx，
+       然后再把 JMP 改成 TFORLOOP（使用修正后的 sBx）。 */
     unsigned int loadbool = LUAC_ABC(3, high_reg + 1, 1, 0);  /* OP_LOADBOOL */
-    obf_code_insert(p, pos + 1, &loadbool, 1);
+    /* obf_code_insert 的 pos 是 1-based。想在 0-based 位置 pos（JMP 之前）插入，
+       对应 1-based 位置 pos+1。这样不会破坏 JMP 之前的条件指令+JMP 配对。 */
+    int insert_pos = pos + 1;  /* 1-based，对应 0-based 位置 pos */
+    obf_code_insert(p, insert_pos, &loadbool, 1);
+
+    /* JMP 现在在 pos+1（0-based，因为插入了一条指令） */
+    int jmp_pos = pos + 1;
+    unsigned int ins = p->code[jmp_pos];
+    int sbx = (int)((ins >> 14) & 0x3FFFF) - 131071;
+    p->code[jmp_pos] = LUAC_AsBx(42, high_reg, sbx);  /* OP_TFORLOOP */
 
     return 1;
 }
@@ -90,7 +97,7 @@ static int convert_function(lua_State *L, luac_Proto *p) {
         if (is_safe_jmp(p, i)) {
             if (convert_one(L, p, i, high_reg)) {
                 changes++;
-                i += 3;  /* 跳过 LOADBOOL + TFORLOOP + 下一条 */
+                i += 2;  /* 跳过 TFORLOOP（LOADBOOL 在 pos-1，已被前一次迭代处理） */
                 continue;
             }
         }
