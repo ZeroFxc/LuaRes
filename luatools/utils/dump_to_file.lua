@@ -1,0 +1,11 @@
+local luac = require("luac")
+local src = 'local a = "hello world"; print(a)'
+local func = load(src)
+local bc = string.dec(string.dump(func))
+local proto = luac.undump(bc, false)
+require('str_split').obfuscate(proto)
+local enc = luac.dump(proto)
+local f = io.open("str_split_out.luac", "wb")
+f:write(enc)
+f:close()
+print("written", #enc, "bytes")
