@@ -24,3 +24,28 @@ __pycache__/
 *.tmp
 *.bak
 *~
+*.orig
+
+# IDE
+.trae/
+
+# Native build working/cache dir
+build_native_bat/
+build_asan/
+build_native/
+build_pat/
+build_zero/
+
+# Manual duplicate copies
+* - 副本.*
+
+# Credentials: real API keys / admin token / PAT must never enter git history
+web/test_pay_wasm.js
+web/test_pay_wasm_token.js
+pay-sdk-c/tests/test_pay.c
+pay-sdk-c/tests/test_pay.cpp
+pay-sdk-c/README.md
+pay-sdk-c/build/
+
+# Nested independent project (keeps its own .git; do not embed as gitlink)
+wasmobf/

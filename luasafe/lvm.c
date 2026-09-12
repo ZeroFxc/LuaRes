@@ -29,6 +29,7 @@
 #include "ltable.h"
 #include "ltm.h"
 #include "lvm.h"
+#define LUA_VM_DEBUG 0
 #if LUA_VM_DEBUG
 #include <windows.h>
 #endif

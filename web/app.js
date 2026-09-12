@@ -21,6 +21,8 @@ const MODULE_GROUPS = [
     { id: 'reg_shuffle_c', label: '寄存器洗牌', desc: '插入冗余 MOVE 链，高寄存器中转' },
     { id: 'proto_shuffle_c', label: 'Proto重排', desc: '打乱子函数Proto顺序+修正CLOSURE索引' },
     { id: 'live_range_split_c', label: '活跃范围分裂', desc: '寄存器值存高寄存器+ dummy覆盖+恢复' },
+    { id: 'unary_chain_c', label: '成对一元运算', desc: '插入UNM/NOT成对运算抵消，用临时寄存器替代原操作数，数据流出现取反再取反死代码' },
+    { id: 'self_expand_c', label: 'SELF展开', desc: 'SELF方法调用展开为GETTABLE+MOVE，方法调用模式消失' },
   ]},
   { name: '垃圾指令', modules: [
     { id: 'opaque_junk_c', label: '不透明垃圾', desc: 'TEST+JMP 跳过的垃圾指令' },
@@ -30,12 +32,21 @@ const MODULE_GROUPS = [
     { id: 'junk_move_c', label: 'MOVE 垃圾', desc: '插入无效 MOVE 指令' },
     { id: 'op48_junk_c', label: 'OP48 垃圾', desc: '自定义 48 号 opcode 垃圾指令' },
   ]},
-  { name: '字节码混淆', modules: [
+  { name: '字节码加密', modules: [
     { id: 'luac_obfuscate_c', label: '字节码加密', desc: '整体字节码 XOR 加密+运行时解密' },
+  ]},
+  { name: '控制流平坦化', modules: [
     { id: 'luac_flatten_c', label: '控制流平坦化', desc: '将顺序执行转为分发器循环' },
     { id: 'flatten_enhance_c', label: '分发增强', desc: '平坦化后状态值算术化+分发比较XOR混淆，需在平坦化后运行' },
+    { id: 'nested_flatten_c', label: '嵌套扁平化', desc: '把单层状态机拆成外层+内层两层嵌套状态机，状态变量耦合，需逐层还原' },
+    { id: 'indirect_dispatch_c', label: '间接状态转移', desc: '状态赋值改为查表解码 state=decode_table[hash]，转移图隐藏在表数据中' },
+    { id: 'exception_flow_c', label: '异常驱动控制流', desc: '部分状态转移用 pcall+error(code) 完成，状态值作为异常对象传递，无直接JMP连接' },
+    { id: 'exception_dispatcher_c', label: '异常分发器', desc: '整个flatten状态机包装为runner函数，外层while+pcall驱动，所有状态转移通过error抛出' },
+    { id: 'upvalue_channel_c', label: '闭包共享通道', desc: 'flatten状态寄存器提升为闭包共享upvalue，dispatcher通过GETUPVAL/SETUPVAL读写状态，状态不在寄存器中' },
+    { id: 'tailcall_chain_c', label: '尾调用链', desc: 'flatten状态转移改为TAILCALL自身闭包，控制流变成尾调用链无JMP循环，CFG变成调用图' },
+    { id: 'parallel_state_c', label: '并行状态机', desc: 'flatten拆成两个互相TAILCALL的dispatch(A/B)，交替执行共享state，每个block有两份副本，CFG变成二维调用图' },
   ]},
-  { name: '控制流', modules: [
+  { name: '控制流混淆', modules: [
     { id: 'condition_split_c', label: '条件拆分', desc: '单个判断拆为多重不透明谓词(4种模式)，与扁平化联动增强分发复杂度' },
     { id: 'loop_restructure_c', label: '循环重构', desc: '插入执行一次的循环模板混入正常代码' },
     { id: 'for_loop_unroll_c', label: 'for循环展开', desc: 'FORPREP+FORLOOP无损展开为普通指令，破坏反编译器for循环特征识别' },
@@ -43,11 +54,13 @@ const MODULE_GROUPS = [
     { id: 'tforloop_as_jump_c', label: 'TFORLOOP混淆跳转', desc: '回跳JMP改TFORLOOP+LOADBOOL，利用条件复制语义避免被一键还原' },
     { id: 'fake_forloop_c', label: '伪造FOR循环', desc: '插入循环次数为0的伪造FORPREP+FORLOOP对，反编译器输出无意义for但实际不执行' },
     { id: 'jmp_obfuscate_c', label: 'JMP偏移混淆', desc: '插入 no-op JMP 链混淆跳转偏移' },
+    { id: 'jmp_split_c', label: 'JMP分裂', desc: '长距离JMP分裂为两段短JMP+中转点，静态分析需跟随跳转链' },
     { id: 'indirect_call_c', label: '间接调用', desc: 'CALL 前经临时表存取值，函数调用间接化' },
     { id: 'call_rewrite_c', label: '参数/返回值混淆', desc: 'f(a,b)→f({a,b})内部解包，多返回值先打包再解包' },
     { id: 'upvalue_promote_c', label: 'upvalue升降', desc: 'IIFE包装把局部变量提升为upvalue，改变变量存储方式' },
     { id: 'block_clone_c', label: '基本块克隆', desc: '每个直线块克隆一份(寄存器重映射)，不透明谓词选择原版/克隆版，CFG节点翻倍' },
     { id: 'cfg_shuffle_c', label: 'CFG基本块重排', desc: '物理打乱基本块顺序，块间用JMP连接，反编译器按物理顺序解析看到混乱控制流' },
+    { id: 'fake_function_c', label: '伪造入口函数', desc: '主proto替换为假函数体，真实逻辑藏入子proto通过CLOSURE+CALL执行，反编译入口看到假代码' },
   ]},
   { name: '其他', modules: [
     { id: 'debug_strip_c', label: '调试信息剥离', desc: '移除 lineinfo/locvars/upvalue 名' },
@@ -66,12 +79,12 @@ const BUILTIN_IDS = new Set(MODULE_GROUPS.flatMap(g => g.modules.map(m => m.id))
 
 // Execution order (matches menu.lua FORWARD_ORDER)
 const EXEC_ORDER = [
-  'const_hide_c','const_shuffle_c','str_split_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c','call_rewrite_c','upvalue_promote_c','block_clone_c','cfg_shuffle_c','for_loop_unroll_c','tforcall_to_call_c','tforloop_as_jump_c','fake_forloop_c',
+  'const_hide_c','const_shuffle_c','str_split_c','str_encrypt_c','instruction_mutate_c','operator_substitute_c','unary_chain_c','self_expand_c','call_rewrite_c','upvalue_promote_c','block_clone_c','cfg_shuffle_c','jmp_split_c','for_loop_unroll_c','tforcall_to_call_c','tforloop_as_jump_c','fake_forloop_c',
   'num_obfuscate_c','bool_obfuscate_c','table_obfuscate_c',
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
-  'flatten_enhance_c','debug_strip_c','debug_mutate_c','antidec_c','proto_shuffle_c',
-  'live_range_split_c','op48_junk_c','vm_dispatch_shuffle_c','vm_reg_shuffle_c','vm_const_shuffle_c','vm_embed_c'
+  'flatten_enhance_c','nested_flatten_c','indirect_dispatch_c','exception_flow_c','exception_dispatcher_c','upvalue_channel_c','tailcall_chain_c','parallel_state_c','debug_strip_c','debug_mutate_c','antidec_c','proto_shuffle_c',
+  'live_range_split_c','op48_junk_c','vm_dispatch_shuffle_c','vm_reg_shuffle_c','vm_const_shuffle_c','fake_function_c','vm_embed_c'
 ];
 const EXEC_ORDER_MAP = new Map(EXEC_ORDER.map((id,i) => [id, i]));
 function sortModulesForExecution(mods){

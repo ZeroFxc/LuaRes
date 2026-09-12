@@ -49,6 +49,18 @@ int obf_regcheck_process(lua_State *L);
 int cfg_shuffle_process(lua_State *L);
 int vm_dispatch_shuffle_process(lua_State *L);
 int vm_shuffle_register(lua_State *L);
+int fake_function_process(lua_State *L);
+
+int nested_flatten_process(lua_State *L);
+int indirect_dispatch_process(lua_State *L);
+int exception_flow_process(lua_State *L);
+int exception_dispatcher_process(lua_State *L);
+int jmp_split_process(lua_State *L);
+int upvalue_channel_process(lua_State *L);
+int tailcall_chain_process(lua_State *L);
+int parallel_state_process(lua_State *L);
+int unary_chain_process(lua_State *L);
+int self_expand_process(lua_State *L);
 
 static int obf_srand_lua(lua_State *L) {
     unsigned int seed = (unsigned int)luaL_checkinteger(L, 1);
@@ -102,6 +114,17 @@ static const luaL_Reg obf_funcs[] = {
     {"regcheck_c", obf_regcheck_process},
     {"cfg_shuffle_c", cfg_shuffle_process},
     {"vm_dispatch_shuffle_c", vm_dispatch_shuffle_process},
+    {"nested_flatten_c", nested_flatten_process},
+    {"indirect_dispatch_c", indirect_dispatch_process},
+    {"exception_flow_c", exception_flow_process},
+    {"exception_dispatcher_c", exception_dispatcher_process},
+    {"jmp_split_c", jmp_split_process},
+    {"upvalue_channel_c", upvalue_channel_process},
+    {"tailcall_chain_c", tailcall_chain_process},
+    {"parallel_state_c", parallel_state_process},
+    {"unary_chain_c", unary_chain_process},
+    {"self_expand_c", self_expand_process},
+    {"fake_function_c", fake_function_process},
     {"srand", obf_srand_lua},
     {NULL, NULL}
 };

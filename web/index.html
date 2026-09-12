@@ -140,12 +140,33 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f111
 .insp-table .const-idx{color:#8b949e;width:40px}
 .insp-scroll{max-height:300px;overflow-y:auto;border:1px solid #2d333b;border-radius:6px}
 .insp-subproto{margin-left:16px;margin-top:8px;border-left:2px solid #30363d;padding-left:12px}
+
+/* Donate / 赞赏 */
+.header .donate-btn{font-size:12px;color:#d2a8ff;background:transparent;border:1px solid #d2a8ff55;padding:4px 14px;border-radius:6px;cursor:pointer;transition:all .2s}
+.header .donate-btn:hover{background:#2a1e3f}
+.header .group-btn{font-size:12px;color:#3fb950;background:transparent;border:1px solid #3fb95055;padding:4px 14px;border-radius:6px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+.header .group-btn:hover{background:#12261a}
+.donate-amounts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.donate-amount{padding:8px 12px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#c9d1d9;font-size:13px;cursor:pointer;transition:all .15s}
+.donate-amount:hover{border-color:#d2a8ff}
+.donate-amount.active{background:#d2a8ff22;border-color:#d2a8ff;color:#e6c6ff}
+.donate-custom input{width:100%;padding:8px 10px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#c9d1d9;font-size:13px;outline:none;margin-bottom:12px}
+.donate-custom input:focus{border-color:#d2a8ff}
+.donate-result{background:#0d1117;border:1px solid #2d333b;border-radius:8px;padding:12px;margin-top:12px}
+.donate-result .row{display:flex;align-items:center;gap:8px;font-size:12px;color:#8b949e;margin-bottom:8px;flex-wrap:wrap}
+.donate-result .row b{color:#c9d1d9;font-weight:500}
+.donate-result .payurl{color:#58a6ff;word-break:break-all;text-decoration:none}
+.donate-result .payurl:hover{text-decoration:underline}
+.donate-result .status-bar{margin-top:8px;margin-bottom:0}
+.donate-error{display:none;background:#f8514918;border:1px solid #f8514955;color:#f85149;border-radius:8px;padding:10px;margin-top:12px;font-size:12px;line-height:1.5;word-break:break-all}
 </style>
 </head>
 <body>
 <div class="header">
   <h1>Luac <span>字节码混淆工具</span></h1>
   <div class="right">
+    <a class="group-btn" href="https://qm.qq.com/q/cokAmdvmhi" target="_blank" rel="noopener">加群</a>
+    <button class="donate-btn" id="btnDonate">赞赏</button>
     <button class="help-btn" id="btnHelp">API 文档</button>
     <div class="badge" id="wasmStatus">WASM 加载中...</div>
   </div>
@@ -402,6 +423,34 @@ module.exports = {
   </div>
 </div>
 
+<!-- Donate Modal / 赞赏 -->
+<div class="modal-overlay" id="donateModal">
+  <div class="modal" style="max-width:460px">
+    <h3>赞赏支持 <span style="font-size:12px;color:#8b949e;font-weight:400">觉得工具好用？请开发者喝杯咖啡</span></h3>
+    <p style="font-size:12px;color:#8b949e;margin-bottom:14px;line-height:1.6">赞赏用于维持工具的开发与维护。订单由 PAY 支付中转系统创建，金额直接到开发者账户。</p>
+    <div class="donate-amounts" id="donateAmounts"></div>
+    <div class="donate-custom" id="donateCustomWrap" style="display:none">
+      <input type="number" id="donateCustom" min="0.01" step="0.01" placeholder="输入自定义金额（元）">
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btnDonateCreate" disabled>生成支付链接</button>
+      <button class="btn btn-secondary" id="btnDonateClose" style="flex:none">关闭</button>
+    </div>
+    <div class="donate-result" id="donateResult" style="display:none">
+      <div class="row">订单号：<b id="donateOrderId">-</b></div>
+      <div class="row" style="justify-content:space-between">
+        <button class="btn btn-primary btn-sm" id="btnDonateGoto" style="flex:none">跳转支付</button>
+        <span style="font-size:11px;color:#484f58">支付后本页面自动确认</span>
+      </div>
+      <div class="status-bar">
+        <div class="status-dot" id="donateDot"></div>
+        <span id="donateStatus">选择金额后点击生成支付链接</span>
+      </div>
+    </div>
+    <div class="donate-error" id="donateError"></div>
+  </div>
+</div>
+
 <!-- === WASM RUNTIME (injected by merger) === -->
 <script>
 // __WASM_JS_INJECT__
@@ -409,6 +458,15 @@ module.exports = {
 
 <script>
 // __APP_JS__
+</script>
+
+<!-- === PAY WASM RUNTIME (injected by merger) === -->
+<script>
+// __PAY_WASM_JS_INJECT__
+</script>
+
+<script>
+// __PAY_APP_JS__
 </script>
 </body>
 </html>

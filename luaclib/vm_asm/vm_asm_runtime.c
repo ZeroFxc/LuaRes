@@ -1,4 +1,4 @@
-﻿/*
+/*
 ** vm_asm_runtime.c - Runtime helper generators
 ** Generates: frame setup, upvalue cells, closure, call/return, vararg,
 **            for-loop helpers, coroutine yield/resume, pcall.

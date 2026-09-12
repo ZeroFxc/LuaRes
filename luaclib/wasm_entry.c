@@ -94,7 +94,18 @@ static const char *MODULE_LIST =
     "cfg_shuffle_c,"
     "vm_dispatch_shuffle_c,"
     "vm_reg_shuffle_c,"
-    "vm_const_shuffle_c";
+    "vm_const_shuffle_c,"
+    "nested_flatten_c,"
+    "indirect_dispatch_c,"
+    "exception_flow_c,"
+    "exception_dispatcher_c,"
+    "jmp_split_c,"
+    "upvalue_channel_c,"
+    "tailcall_chain_c,"
+    "parallel_state_c,"
+    "unary_chain_c,"
+    "self_expand_c,"
+    "fake_function_c";
 
 /*===========================================================================
 ** Helpers

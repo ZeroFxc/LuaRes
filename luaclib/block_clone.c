@@ -113,7 +113,7 @@ static int find_blocks(luac_Proto *p, Block **out_blocks) {
     }
 
     /* Build block list */
-    int cap = n / 2 + 4;
+    int cap = n + 4; /* each block has >=1 instruction, so at most n blocks */
     Block *blocks = (Block *)malloc(sizeof(Block) * cap);
     int count = 0;
     int cur = 0;
@@ -159,6 +159,10 @@ static int is_cloneable(luac_Proto *p, int start, int end) {
         if (op == LUAC_OP_VARARG) return 0;
         if (op == LUAC_OP_EXTRAARG) return 0;
         if (op == LUAC_OP_SELF) return 0;        /* writes A+1 */
+        if (op == LUAC_OP_LOADBOOL) {
+            int C = (p->code[i] >> 14) & 0x1FF;
+            if (C != 0) return 0; /* C!=0 skips next instruction, breaks clone layout */
+        }
         if (op == LUAC_OP_SETLIST) {
             int C = (p->code[i] >> 14) & 0x1FF;
             if (C == 0) return 0; /* needs EXTRAARG */
@@ -234,9 +238,14 @@ static int clone_blocks_in_proto(luac_Proto *p, int max_clones) {
     int *cidx = (int *)malloc(sizeof(int) * nblocks);
     int ncloneable = 0;
     for (int i = 0; i < nblocks; i++) {
-        if (is_cloneable(p, blocks[i].start, blocks[i].end)) {
-            cidx[ncloneable++] = i;
+        if (!is_cloneable(p, blocks[i].start, blocks[i].end)) continue;
+        /* Previous insn is LOADBOOL C!=0? It skips this block's first insn.
+           Inserting predicate before this block would change the skip target. */
+        if (blocks[i].start > 0) {
+            unsigned int prev = p->code[blocks[i].start - 1];
+            if ((prev & 0x3F) == LUAC_OP_LOADBOOL && ((prev >> 14) & 0x1FF) != 0) continue;
         }
+        cidx[ncloneable++] = i;
     }
 
     if (ncloneable == 0) { free(cidx); free(blocks); return 0; }

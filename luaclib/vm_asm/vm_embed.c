@@ -146,6 +146,7 @@ typedef struct {
     int const_on; unsigned int const_seed;
     int *idxp;             /* shared proto counter (deterministic per-proto seeds) */
     const int *parent_reg; /* parent proto reg map (for instack=1 upvalues) */
+    int parent_maxstack;   /* parent proto maxstacksize (parent_reg length) */
 } EmbedCtx;
 
 static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx);
@@ -371,7 +372,8 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
         uint8_t instack = uv_instack[i];
         uint8_t idx = uv_idx[i];
         uint8_t old_idx = idx;
-        if (instack && ctx->parent_reg) idx = (uint8_t)ctx->parent_reg[idx];
+        if (instack && ctx->parent_reg && idx < ctx->parent_maxstack)
+            idx = (uint8_t)ctx->parent_reg[idx];
 #if VM_SHUFFLE_DEBUG
         {
             char dbg2[256];
@@ -392,6 +394,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     buf_str(b, "p={");
     EmbedCtx sub = *ctx;
     sub.parent_reg = reg_map; /* children's instack=1 upvalues refer to OUR frame */
+    sub.parent_maxstack = maxstacksize;
     for (uint32_t i = 0; i < np; i++) {
         if (i) buf_char(b, ',');
         serialize_proto(r, b, depth + 1, &sub);

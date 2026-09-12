@@ -168,6 +168,21 @@ static void fix_jumps_replace(unsigned int *code,int code_len,
 
 static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
     if(!p->code||p->sizecode<3)return 0;
+
+    /* identify state register: most frequently read by EQ (flatten state machine) */
+    int eq_read_count[256] = {0};
+    for(int i=0;i<p->sizecode;i++){
+        int op=p->code[i]&0x3F;
+        if(op==LUAC_OP_EQ||op==LUAC_OP_LT||op==LUAC_OP_LE){
+            int B=(p->code[i]>>23)&0x1FF, C=(p->code[i]>>14)&0x1FF;
+            if(B<256) eq_read_count[B]++;
+            if(C<256) eq_read_count[C]++;
+        }
+    }
+    int state_reg=-1, max_eq=0;
+    for(int r=0;r<256;r++){ if(eq_read_count[r]>max_eq){max_eq=eq_read_count[r]; state_reg=r;} }
+    DBG("[UPVAL] detected state_reg=R%d (eq_read=%d)\n", state_reg, max_eq);
+
     int changed=0,pos=0,attempts=0;
     while(changed<count&&attempts<count*20&&pos<p->sizecode-2){
         attempts++;
@@ -181,7 +196,7 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             end++;
             if(end-start>12)break;
         }
-        if(end-start<2){DBG("[UPVAL] block too short at %d len=%d\n",pos,end-start);pos=end+1;continue;}
+        if(end-start<1){DBG("[UPVAL] block too short at %d len=%d\n",pos,end-start);pos=end+1;continue;}
         {
             int in_loop=0;
             for(int lj=0;lj<p->sizecode;lj++){
@@ -212,35 +227,32 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             if((p->code[i]&0x3F)==LUAC_OP_NEWTABLE){has_newtable=1;break;}
         }
         if(has_newtable){DBG("[UPVAL] block has NEWTABLE at %d, skip\n",start);pos=end+1;continue;}
-        /* 活跃变量分析：块中写入的寄存器若在块之后被读取，则跳过（IIFE不会把值传回父栈帧） */
-        int live_after=0;
-        for(int r=0;r<p->maxstacksize && !live_after;r++){
+        /* SETLIST B=0 depends on L->top, differs between parent and child proto */
+        int has_setlist_b0=0;
+        for(int i=start;i<end;i++){
+            if((p->code[i]&0x3F)==LUAC_OP_SETLIST && ((p->code[i]>>23)&0x1FF)==0){has_setlist_b0=1;break;}
+        }
+        if(has_setlist_b0){DBG("[UPVAL] block has SETLIST B=0 at %d, skip\n",start);pos=end+1;continue;}
+        /* 活跃变量分析：收集 live-out 寄存器，IIFE 通过返回值传回 */
+        int live_out_regs[32];
+        int n_live_out=0;
+        for(int r=0;r<p->maxstacksize && n_live_out<32;r++){
+            if(r==state_reg) continue; /* state reg is passed via JMP, not return value */
             int written_in_block=0;
             for(int i=start;i<end;i++){
                 if(ins_modifies_reg(p->code[i],r)){written_in_block=1;break;}
             }
             if(!written_in_block)continue;
             for(int i=end;i<p->sizecode;i++){
-                if(ins_reads_reg(p->code[i],r)){live_after=1;break;}
+                if(ins_reads_reg(p->code[i],r)){live_out_regs[n_live_out++]=r;break;}
                 if(ins_modifies_reg(p->code[i],r))break; /* 被重新赋值，不再依赖块中的值 */
             }
         }
-        if(live_after){
-            DBG("[UPVAL] block [%d,%d) has live-out register, skip\n",start,end);
-            /* Find which register is live-out */
-            for(int r=0;r<p->maxstacksize;r++){
-                int written_in_block=0;
-                for(int i=start;i<end;i++){
-                    if(ins_modifies_reg(p->code[i],r)){written_in_block=1;break;}
-                }
-                if(!written_in_block)continue;
-                for(int i=end;i<p->sizecode;i++){
-                    if(ins_reads_reg(p->code[i],r)){DBG("  live-out reg R%d first read at pos %d (op=%d)\n",r,i,p->code[i]&0x3F);break;}
-                    if(ins_modifies_reg(p->code[i],r)){DBG("  reg R%d re-written at pos %d (op=%d) before read\n",r,i,p->code[i]&0x3F);break;}
-                }
-            }
+        if(n_live_out>4){
+            DBG("[UPVAL] block [%d,%d) has %d live-out regs (>1), skip\n",start,end,n_live_out);
             pos=end+1;continue;
         }
+        if(n_live_out>0) DBG("[UPVAL] block [%d,%d) WILL RETURN live_out R%d\n",start,end,live_out_regs[0]);
         /* 前向数据流分析：第一次出现是读才算外部变量（处理先读后写） */
         int ext_regs[32],next=0;
         for(int r=0;r<p->maxstacksize;r++){
@@ -343,15 +355,31 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             child->upval_instack[i+1]=1;child->upval_idx[i+1]=ext_regs[i];
         }
 
-        /* 子 proto 指令：GETUPVAL + 基本块 + RETURN */
+        /* maxstacksize for child proto */
+        int mr=2;
+        for(int i=start;i<end;i++){
+            int A=(p->code[i]>>6)&0xFF,B=(p->code[i]>>23)&0x1FF,C=(p->code[i]>>14)&0x1FF;
+            if(A+1>mr)mr=A+1;
+            if(B<256&&B+1>mr)mr=B+1;
+            if(C<256&&C+1>mr)mr=C+1;
+        }
+        for(int i=0;i<next;i++)if(ext_regs[i]+1>mr)mr=ext_regs[i]+1;
+
+        /* 子 proto 指令：GETUPVAL + 基本块 + MOVE live-out + RETURN */
         free(child->code);
-        int total_ins=next+block_len+1;
+        int ret_tmp = mr;
+        int total_ins=next+block_len+n_live_out+1;
         child->code=malloc(sizeof(unsigned int)*total_ins);
         child->sizecode=total_ins;
         for(int i=0;i<next;i++)
             child->code[i]=LUAC_ABC(LUAC_OP_GETUPVAL,ext_regs[i],i+1,0);
         memcpy(&child->code[next],&p->code[start],sizeof(unsigned int)*block_len);
-        child->code[next+block_len]=LUAC_ABC(LUAC_OP_RETURN,0,1,0);
+        int ci=next+block_len;
+        for(int i=0;i<n_live_out;i++)
+            child->code[ci++]=LUAC_ABC(LUAC_OP_MOVE,ret_tmp+i,live_out_regs[i],0);
+        child->code[ci]=LUAC_ABC(LUAC_OP_RETURN,ret_tmp,n_live_out+1,0);
+        child->maxstacksize=ret_tmp+n_live_out;
+        DBG("[UPVAL] child: ret_tmp=%d maxstack=%d total_ins=%d\n", ret_tmp, child->maxstacksize, total_ins);
 
         /* 剥离调试信息：code 长度已变，旧 lineinfo/locvars 不匹配会导致 dump 越界崩溃 */
         free(child->lineinfo); child->lineinfo=NULL; child->sizelineinfo=0;
@@ -362,16 +390,7 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         child->sizelocvars=0;
         child->lineinfo_tbl=LUA_NOREF; child->locvars_tbl=LUA_NOREF;
 
-        /* maxstacksize */
-        int mr=2;
-        for(int i=start;i<end;i++){
-            int A=(p->code[i]>>6)&0xFF,B=(p->code[i]>>23)&0x1FF,C=(p->code[i]>>14)&0x1FF;
-            if(A+1>mr)mr=A+1;
-            if(B<256&&B+1>mr)mr=B+1;
-            if(C<256&&C+1>mr)mr=C+1;
-        }
-        for(int i=0;i<next;i++)if(ext_regs[i]+1>mr)mr=ext_regs[i]+1;
-        child->maxstacksize=mr;
+
 
         int proto_idx=obf_add_subproto(L,p,child);
         child=p->p[proto_idx];  /* raw 指针可能已被 luac_push_proto 转移所有权，改用 userdata 指针 */
@@ -403,10 +422,13 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             DBG("  child upval[%d]: instack=%d idx=%d\n",ui,child->upval_instack[ui],child->upval_idx[ui]);
         }
 
-        int replace_count=2;
-        unsigned int *replace=malloc(sizeof(unsigned int)*2);
+        int replace_count=2+n_live_out;
+        unsigned int *replace=malloc(sizeof(unsigned int)*replace_count);
         replace[0]=LUAC_ABx(LUAC_OP_CLOSURE,Rtmp,proto_idx);
-        replace[1]=LUAC_ABC(LUAC_OP_CALL,Rtmp,1,1);
+        replace[1]=LUAC_ABC(LUAC_OP_CALL,Rtmp,1,n_live_out+1);
+        DBG("[UPVAL] parent: Rtmp=%d CALL recv=%d\n", Rtmp, n_live_out+1);
+        for(int i=n_live_out-1;i>=0;i--)
+            replace[2+i]=LUAC_ABC(LUAC_OP_MOVE,live_out_regs[i],Rtmp+i,0);
 
         int delta=replace_count-block_len;
         if(delta>0){
