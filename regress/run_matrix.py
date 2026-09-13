@@ -29,18 +29,17 @@ CASEDIR = os.path.join(ROOT, "regress", "cases")
 TMPDIR = os.path.join(ROOT, "regress", "tmp")
 os.makedirs(TMPDIR, exist_ok=True)
 
-# 与 web/app.js EXEC_ORDER 保持一致
-EXEC_ORDER = [
- "const_hide_c","const_shuffle_c","str_split_c","str_encrypt_c","instruction_mutate_c",
- "operator_substitute_c","call_rewrite_c","upvalue_promote_c","block_clone_c","cfg_shuffle_c",
- "for_loop_unroll_c","tforcall_to_call_c","tforloop_as_jump_c","fake_forloop_c",
- "num_obfuscate_c","bool_obfuscate_c","table_obfuscate_c",
- "opaque_predicate_c","const_poison_c","opaque_junk_c","junk_jmp_c",
- "junk_loadk_c","junk_move_c","luac_obfuscate_c","luac_flatten_c",
- "flatten_enhance_c","debug_strip_c","debug_mutate_c","antidec_c","proto_shuffle_c",
- "live_range_split_c","op48_junk_c","vm_dispatch_shuffle_c","vm_reg_shuffle_c",
- "vm_const_shuffle_c","vm_embed_c",
-]
+# 权威执行顺序始终从 web/app.js 的 EXEC_ORDER 动态解析。
+# 之前这里硬编码了一份列表，新增模块(unary_chain/self_expand/jmp_split 等)后未同步，
+# sort_mods 把缺失模块当成 idx=999 排到末尾，使测试按错误顺序应用模块，得出大量假失败。
+def _load_exec_order():
+    p = os.path.join(ROOT, "web", "app.js")
+    txt = open(p, "r", encoding="utf-8").read()
+    m = re.search(r"EXEC_ORDER\s*=\s*\[(.*?)\]", txt, re.S)
+    if not m:
+        raise RuntimeError("EXEC_ORDER not found in web/app.js")
+    return re.findall(r"'([a-z0-9_]+_c)'", m.group(1))
+EXEC_ORDER = _load_exec_order()
 VM4 = {"vm_dispatch_shuffle_c","vm_reg_shuffle_c","vm_const_shuffle_c","vm_embed_c"}
 ORDER_IDX = {m:i for i,m in enumerate(EXEC_ORDER)}
 
@@ -79,7 +78,10 @@ def run_one(case_path, mods, seed=None, hard_timeout=12, extra_opts=None,
         err = (p.stderr or b"").decode("utf-8","replace")[-400:]
         return {"verdict":"GEN_CRASH","ms":ms,"code":p.returncode,"err":err,"mods":mods,"seed":seed}
     try:
-        with open(resfile,"r",encoding="utf-8") as f: r=json.load(f)
+        # 混淆后输出可能含任意字节(字符串被破坏时), 必须容错: bytes 读入、
+        # 非法 UTF-8 替换、允许字符串内控制字符, 否则会把 MISMATCH 误判成 GEN_CRASH
+        raw = open(resfile, "rb").read().decode("utf-8", "replace")
+        r = json.loads(raw, strict=False)
     except Exception as e:
         return {"verdict":"GEN_CRASH","ms":ms,"code":p.returncode,"err":"bad json: "+str(e),"mods":mods}
     finally:

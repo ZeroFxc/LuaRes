@@ -78,7 +78,7 @@ static long long get_int_const(luac_Proto *p, int idx) {
     return 0;
 }
 
-static int convert_proto(luac_Proto *p) {
+static int convert_proto(lua_State *L, luac_Proto *p) {
     if (!p->code || p->sizecode < 10) return 0;
     int n = p->sizecode;
 
@@ -180,6 +180,8 @@ static int convert_proto(luac_Proto *p) {
         }
     }
 
+    /* 先固化 p 的子节点为稳定 userdata，再浅拷贝快照 */
+    obf_ensure_subproto_table(L, p);
     /* 复制子 proto 列表（共享指针） */
     d->sizep = p->sizep;
     if (p->sizep > 0) {
@@ -235,18 +237,23 @@ static int convert_proto(luac_Proto *p) {
         int op = ins & 0x3F;
         int a = (ins >> 6) & 0xFF;
 
-        if (op == LUAC_OP_EQ) {
+        /* The flatten dispatcher compares state with EQ (match) and, after
+        ** the binary-search rewrite, also LT (left/right descent). Every such
+        ** comparison reads state in its B field; once state is moved into an
+        ** upvalue below, LT/LE must be rewritten exactly like EQ or they read
+        ** the now-uninitialized state register ("compare nil with number"). */
+        if (op == LUAC_OP_EQ || op == LUAC_OP_LT || op == LUAC_OP_LE) {
             int b = (ins >> 23) & 0x1FF;
             if (b == state_reg) {
                 nc[ni] = LUAC_ABC(LUAC_OP_GETUPVAL, tmp, state_upval, 0);
                 rev_map[ni] = -1;
                 ni++;
-                ins = (ins & ~(0x1FF << 23)) | ((unsigned)tmp << 23);
+                ins = (ins & ~(0x1FFu << 23)) | ((unsigned)tmp << 23);
             } else if (is_nested && b == outer_reg) {
                 nc[ni] = LUAC_ABC(LUAC_OP_GETUPVAL, tmp_outer, outer_upval, 0);
                 rev_map[ni] = -1;
                 ni++;
-                ins = (ins & ~(0x1FF << 23)) | ((unsigned)tmp_outer << 23);
+                ins = (ins & ~(0x1FFu << 23)) | ((unsigned)tmp_outer << 23);
             }
         }
 
@@ -298,7 +305,7 @@ static int convert_proto(luac_Proto *p) {
             if (op == LUAC_OP_GETTABLE) {
                 int b = (ins >> 23) & 0x1FF;
                 if (b == table_reg && a != state_reg) {
-                    ins = (ins & ~(0x1FF << 23)) | ((unsigned)table_local << 23);
+                    ins = (ins & ~(0x1FFu << 23)) | ((unsigned)table_local << 23);
                 }
             }
         }
@@ -324,7 +331,7 @@ static int convert_proto(luac_Proto *p) {
             if (old_target < 0 || old_target > n) continue;
             int new_target = pos_map[old_target];
             int new_sbx = new_target - i - 1;
-            d->code[i] = (d->code[i] & 0xFFF) | ((unsigned)(new_sbx + 131071) << 14);
+            d->code[i] = (d->code[i] & 0x3FFF) | ((unsigned)(new_sbx + 131071) << 14);
         }
     }
 
@@ -357,13 +364,11 @@ static int convert_proto(luac_Proto *p) {
     int outer_var = is_nested ? state_var + 1 : -1;
     int disp_reg = is_nested ? outer_var + 1 : state_var + 1;
 
-    p->p = realloc(p->p, sizeof(luac_Proto *) * (p->sizep + 1));
-    p->p[p->sizep] = d;
-    int disp_idx = p->sizep;
-    p->sizep++;
-
+    /* upval_idx 必须在 add_subproto 之前设置：push_proto 会转移裸结构并置空其指针字段 */
     d->upval_idx[state_upval] = state_var;
     if (is_nested) d->upval_idx[outer_upval] = outer_var;
+    /* 走 add_subproto 同步 p_tbl 镜像，避免 dump 丢子 proto */
+    int disp_idx = obf_add_subproto(L, p, d);
 
     /* 父函数代码 */
     int upval_count = p->sizeupvalues + extra_upvals;
@@ -371,7 +376,7 @@ static int convert_proto(luac_Proto *p) {
     /* table_safe：在 upvalue 设置和参数传递范围之外，避免被覆盖 */
     int table_safe = is_indirect ? (disp_reg + upval_count + old_numparams + extra_args) : -1;
     int init_count = is_indirect ? init_end + 2 : (is_nested ? 2 : 1);
-    int nlen = init_count + 1 + upval_count + old_numparams + extra_args + 2;
+    int nlen = init_count + 1 + upval_count + old_numparams + extra_args + 4; /* +vararg +pad */
     unsigned int *np = (unsigned int *)malloc(sizeof(unsigned int) * nlen);
     int pni = 0;
 
@@ -405,7 +410,13 @@ static int convert_proto(luac_Proto *p) {
         /* 额外传递 table（从安全寄存器） */
         np[pni++] = LUAC_ABC(LUAC_OP_MOVE, disp_reg + 1 + old_numparams, table_safe, 0);
     }
-    np[pni++] = LUAC_ABC(LUAC_OP_CALL, disp_reg, old_numparams + 1 + extra_args, 0);
+    if (p->is_vararg) {
+        /* 转发全部可变参数：VARARG B=0 + CALL B=0（多值到栈顶） */
+        np[pni++] = LUAC_ABC(LUAC_OP_VARARG, disp_reg + 1 + old_numparams + extra_args, 0, 0);
+        np[pni++] = LUAC_ABC(LUAC_OP_CALL, disp_reg, 0, 0);
+    } else {
+        np[pni++] = LUAC_ABC(LUAC_OP_CALL, disp_reg, old_numparams + 1 + extra_args, 0);
+    }
     np[pni++] = LUAC_ABC(LUAC_OP_RETURN, disp_reg, 0, 0);
 
     free(p->code);
@@ -461,12 +472,12 @@ static int convert_proto(luac_Proto *p) {
     return 1;
 }
 
-static void process_recursive(luac_Proto *p, int *total) {
+static void process_recursive(lua_State *L, luac_Proto *p, int *total) {
     if (p->p) {
         for (int i = 0; i < p->sizep; i++)
-            process_recursive(p->p[i], total);
+            process_recursive(L, p->p[i], total);
     }
-    *total += convert_proto(p);
+    *total += convert_proto(L, p);
 }
 
 int upvalue_channel_process(lua_State *L) {
@@ -474,7 +485,7 @@ int upvalue_channel_process(lua_State *L) {
     luac_sync_proto(L, 1);  /* 同步所有子 proto 的 code/k 到 C 结构 */
     obf_invalidate_all_caches(L, p);
     int total = 0;
-    process_recursive(p, &total);
+    process_recursive(L, p, &total);
     lua_pushinteger(L, total);
     return 1;
 }

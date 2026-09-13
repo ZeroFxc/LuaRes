@@ -6,6 +6,9 @@
 #include <time.h>
 #include <stdlib.h>
 #include "obf_util.h"
+#ifndef BINARY_DISPATCH
+#define BINARY_DISPATCH 1 /* 1=binary-search O(log n) dispatcher, 0=legacy linear EQ chain */
+#endif
 
 /* FLATTEN_DEBUG=1: print block structure, conditional handling, state machine */
 #ifndef FLATTEN_DEBUG
@@ -43,6 +46,53 @@ static int block_id_at(Block *blocks, int nblocks, int pos) {
         if (pos >= blocks[i].start && pos <= blocks[i].stop) return blocks[i].id;
     }
     return -1;
+}
+
+/* ---- O(log n) binary-search dispatcher ------------------------------------
+** Block ids are the compact ordered range 0..nblocks-1, so the dispatcher is
+** a balanced comparison tree rather than a linear EQ chain. A linear chain
+** costs O(nblocks) compares per state transition and stalled (indistinguishable
+** from an infinite loop) once upstream inflation pushed block counts into the
+** thousands; the tree costs O(log nblocks). State is always a valid block id,
+** so every search ends at a match JMP (no fall-through failure path needed). */
+typedef struct {
+    unsigned int *code; int *nip; luac_Proto *p;
+    int state_reg, cmp_reg;
+    int *match_jmp;  /* [id] JMP-to-block slot, fixed to the block offset later */
+    int *left_jmp;   /* [id] JMP-to-left-subtree slot */
+    int *right_jmp;  /* [id] JMP-to-right-subtree slot */
+} DispTree;
+
+static int emit_disp_node(DispTree *t, int lo, int hi) {
+    if (lo > hi) return -1;
+    int mid = lo + (hi - lo) / 2;
+    unsigned int *nc = t->code;
+    int node = *t->nip;
+    int kid = get_int_const(t->p, mid);
+    nc[(*t->nip)++] = LUAC_ABx(LUAC_OP_LOADK, t->cmp_reg, kid);
+    /* state == mid -> block[mid] */
+    nc[(*t->nip)++] = LUAC_ABC(LUAC_OP_EQ, 1, t->state_reg, t->cmp_reg);
+    t->match_jmp[mid] = *t->nip; nc[(*t->nip)++] = 0;
+    int hasL = (lo <= mid - 1);
+    int hasR = (mid + 1 <= hi);
+    if (hasL) {
+        /* state < mid -> left subtree */
+        nc[(*t->nip)++] = LUAC_ABC(LUAC_OP_LT, 1, t->state_reg, t->cmp_reg);
+        t->left_jmp[mid] = *t->nip; nc[(*t->nip)++] = 0;
+    } else {
+        t->left_jmp[mid] = -1;
+    }
+    if (hasR) {
+        /* state > mid -> right subtree (physically follows left subtree) */
+        t->right_jmp[mid] = *t->nip; nc[(*t->nip)++] = 0;
+    } else {
+        t->right_jmp[mid] = -1;
+    }
+    int lr = emit_disp_node(t, lo, mid - 1);
+    int rr = emit_disp_node(t, mid + 1, hi);
+    if (hasL) nc[t->left_jmp[mid]] = LUAC_AsBx(LUAC_OP_JMP, 0, lr - t->left_jmp[mid] - 1);
+    if (hasR) nc[t->right_jmp[mid]] = LUAC_AsBx(LUAC_OP_JMP, 0, rr - t->right_jmp[mid] - 1);
+    return node;
 }
 
 static void flatten_function(luac_Proto *p) {
@@ -96,7 +146,7 @@ static void flatten_function(luac_Proto *p) {
                         if (orig_target >= 0 && orig_target <= p->sizecode) {
                             int new_target = orig_to_new[orig_target];
                             int new_sbx = new_target - i - 1;
-                            new_code[i] = (new_code[i] & 0xFFF) | ((new_sbx + 131071) << 14);
+                            new_code[i] = (new_code[i] & 0x3FFFu) | ((unsigned int)(new_sbx + 131071) << 14);
                         }
                     }
                 }
@@ -220,23 +270,32 @@ static void flatten_function(luac_Proto *p) {
 
     int dispatcher_start = ni;
 
-    /* dispatch table */
+    /* binary-search dispatcher over ordered block ids (O(log nblocks));
+    ** match JMPs are fixed to block offsets later (same as before), while the
+    ** left/right subtree links are fixed as the tree is emitted. */
+#if BINARY_DISPATCH
+    {
+        int *tree_lj = (int *)malloc(sizeof(int) * nblocks);
+        int *tree_rj = (int *)malloc(sizeof(int) * nblocks);
+        DispTree _dt = { new_code, &ni, p, state_reg, cmp_reg, dispatch_jmp_pos, tree_lj, tree_rj };
+        emit_disp_node(&_dt, 0, nblocks - 1);
+        free(tree_lj);
+        free(tree_rj);
+    }
+#else
+    /* legacy linear EQ dispatch chain (kept only for A/B root-cause checks) */
     for (int b = 0; b < nblocks; b++) {
         int kid = get_int_const(p, blocks[b].id);
-#if FLATTEN_DEBUG
-        FDBG("[flatten] dispatch block %d id=%d kid=%d %s\n", b, blocks[b].id, kid, kid > 255 ? "(LOADKX path)" : "(direct C)");
-#endif
         if (kid <= 255) {
             new_code[ni++] = LUAC_ABC(LUAC_OP_EQ, 1, state_reg, kid + 0x100);
         } else {
-            /* constant index > 255: load into temp register first, then compare registers */
-            new_code[ni++] = LUAC_ABx(LUAC_OP_LOADKX, cmp_reg, 0);
-            new_code[ni++] = LUAC_Ax(LUAC_OP_EXTRAARG, kid);
+            new_code[ni++] = LUAC_ABx(LUAC_OP_LOADK, cmp_reg, kid);
             new_code[ni++] = LUAC_ABC(LUAC_OP_EQ, 1, state_reg, cmp_reg);
         }
         dispatch_jmp_pos[b] = ni;
-        new_code[ni++] = 0; /* placeholder JMP */
+        new_code[ni++] = 0;
     }
+#endif
 #if FLATTEN_DEBUG
     FDBG("[flatten] sizek=%d state_reg=%d\n", p->sizek, state_reg);
 #endif
@@ -348,7 +407,7 @@ static void flatten_function(luac_Proto *p) {
                 new_code[ni++] = 0xDEAD;
                 /* fix FORPREP sBx to point to target state load */
                 int fp_new_sbx = (fp_target_id >= 0) ? (fp_pos + 1 - fp_pos - 1) : 0;
-                new_code[fp_pos] = (ins & 0xFFF) | ((fp_new_sbx + 131071) << 14);
+                new_code[fp_pos] = (ins & 0x3FFFu) | ((unsigned int)(fp_new_sbx + 131071) << 14);
             } else if (op == LUAC_OP_FORLOOP || op == LUAC_OP_TFORLOOP) {
                 /* 条件循环跳转：保留 FORLOOP/TFORLOOP，sBx 直接指向循环体块起始(向后跳转，保留close语义)
                    else 分支放在 FORLOOP 后面(fall through) */
@@ -408,7 +467,7 @@ static void flatten_function(luac_Proto *p) {
         int sbx = target - pos - 1;
         int op = new_code[pos] & 0x3F;
         if (op == LUAC_OP_FORLOOP || op == LUAC_OP_TFORLOOP) {
-            new_code[pos] = (new_code[pos] & 0xFFF) | ((sbx + 131071) << 14);
+            new_code[pos] = (new_code[pos] & 0x3FFFu) | ((unsigned int)(sbx + 131071) << 14);
         } else {
             int orig_a = back_jmp_a[i];
             new_code[pos] = LUAC_AsBx(LUAC_OP_JMP, orig_a, sbx);
@@ -445,7 +504,7 @@ static void flatten_function(luac_Proto *p) {
                 int target_orig = orig_pos + old_sbx + 1;
                 if (target_orig >= 0 && target_orig <= n && pos_map[target_orig] >= 0) {
                     int new_sbx = pos_map[target_orig] - i - 1;
-                    new_code[i] = (new_code[i] & 0xFFF) | ((new_sbx + 131071) << 14);
+                    new_code[i] = (new_code[i] & 0x3FFFu) | ((unsigned int)(new_sbx + 131071) << 14);
                 }
             }
         }

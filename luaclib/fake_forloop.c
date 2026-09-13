@@ -96,7 +96,8 @@ static int inject_fake_forloop(luac_Proto *p, int pos, int base_reg) {
     ins[4] = LUAC_ABC(4, A + 3, 0, 0);         /* LOADNIL R(A+3) only: B is count-1, must be 0 */
     ins[5] = LUAC_AsBx(39, A, -2);             /* FORLOOP A, -2 (跳回 ins[4]) */
 
-    /* 插入到 pos 位置（1-based） */
+    /* 插入到 pos 位置（1-based）；obf_code_insert 内部已修正跨插入点跳转，
+       不可再次调用 obf_adjust_jumps_insert（双重修正会把旧跳转改过头）。 */
     obf_code_insert(p, pos + 1, ins, 6);
 
 #if FAKE_FORLOOP_DEBUG

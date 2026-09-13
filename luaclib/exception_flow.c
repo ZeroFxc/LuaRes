@@ -136,7 +136,7 @@ static luac_Proto *create_error_subproto(long long code) {
     return sp;
 }
 
-static void exception_flow_function(luac_Proto *p) {
+static void exception_flow_function(lua_State *L, luac_Proto *p) {
     if (!p->code || p->sizecode < 10) { EDBG("[excflow] skip: sizecode=%d\n", p->sizecode); return; }
     int n = p->sizecode;
 
@@ -182,6 +182,8 @@ static void exception_flow_function(luac_Proto *p) {
 
     /* select up to max_replace random transitions */
     int max_replace = 8;
+    /* never read past the ntrans valid entries: tpos/tsid only hold that many */
+    int replace = ntrans < max_replace ? ntrans : max_replace;
     /* Fisher-Yates partial shuffle */
     for (int i = ntrans - 1; i > 0; i--) {
         int j = obf_rand() % (i + 1);
@@ -189,8 +191,8 @@ static void exception_flow_function(luac_Proto *p) {
         long long tmp2 = tsid[i]; tsid[i] = tsid[j]; tsid[j] = tmp2;
     }
     /* sort selected by position descending so insertions don't shift later positions */
-    for (int i = 0; i < max_replace; i++) {
-        for (int j = i + 1; j < max_replace; j++) {
+    for (int i = 0; i < replace; i++) {
+        for (int j = i + 1; j < replace; j++) {
             if (tpos[j] > tpos[i]) {
                 int tmp = tpos[i]; tpos[i] = tpos[j]; tpos[j] = tmp;
                 long long tmp2 = tsid[i]; tsid[i] = tsid[j]; tsid[j] = tmp2;
@@ -216,19 +218,18 @@ static void exception_flow_function(luac_Proto *p) {
     /* process from back to front so positions stay valid */
     int replaced_pos[64];
     int nreplaced = 0;
-    for (int r = 0; r < max_replace; r++) {
+    for (int r = 0; r < replace; r++) {
         int pos = tpos[r];
         long long sid = tsid[r];
         int orig_jmp_a = (p->code[pos+1] >> 6) & 0xFF; /* preserve close level */
         EDBG("[excflow] replace r=%d pos=%d sid=%lld orig_jmp_a=%d\n", r, pos, sid, orig_jmp_a);
         replaced_pos[nreplaced++] = pos;
 
-        /* create sub proto and append to parent */
+        /* create error sub proto. Must use obf_add_subproto to mirror the Lua
+           p_tbl; a raw realloc append is dropped by sync_p_from_table before
+           dump, leaving CLOSURE Bx out of bounds (heap overflow / crash). */
         luac_Proto *sub = create_error_subproto(sid);
-        p->p = realloc(p->p, sizeof(luac_Proto *) * (p->sizep + 1));
-        p->p[p->sizep] = sub;
-        int sub_idx = p->sizep;
-        p->sizep++;
+        int sub_idx = obf_add_subproto(L, p, sub);
 
         /* replacement: 11 instructions (use LOADK for const names since RK may overflow) */
         unsigned int repl[11];
@@ -299,7 +300,7 @@ int exception_flow_process(lua_State *L) {
     obf_invalidate_all_caches(L, p);
 
     /* only process main proto — sub-protos are not flattened, no state machine */
-    exception_flow_function(p);
+    exception_flow_function(L, p);
 
     lua_pushinteger(L, 1);
     return 1;

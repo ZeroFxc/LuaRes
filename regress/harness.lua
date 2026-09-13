@@ -124,9 +124,12 @@ if not chunk then
   result.run_err="load: "..tostring(lerr); write_result(); return
 end
 print = cap
-debug.sethook(timeout_hook, "", 100000)
-local rok, rerr = pcall(chunk)
-debug.sethook()
+-- Run in a fresh coroutine (independent stack) so residues generation left on
+-- this state's stack cannot be read as uninitialized registers by the chunk.
+local co = coroutine.create(chunk)
+debug.sethook(co, timeout_hook, "", 100000)
+local rok, rerr = coroutine.resume(co)
+debug.sethook(co)
 print = old_print
 
 result.output = table.concat(lines,"\n")

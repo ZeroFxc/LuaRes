@@ -23,6 +23,31 @@
 #define PDBG(...)
 #endif
 
+/* A cross-closure TAILCALL is not equivalent to an in-frame JMP: Lua closes
+** open upvalues (luaF_close) and rebuilds the call frame on every TAILCALL.
+** If one local of this function is captured (instack) by two or more inner
+** CLOSUREs, they must share the SAME open upvalue object. A switch that lands
+** between those CLOSUREs closes it early, so the later closure binds a fresh
+** upvalue and the shared variable splits (counter reads back its initial value).
+** Such a proto cannot be rewritten across closures; leave its flat JMP machine. */
+static int has_shared_captured_local(luac_Proto *p) {
+    int cap[256] = {0};
+    for (int i = 0; i < p->sizecode; i++) {
+        if ((p->code[i] & 0x3F) != LUAC_OP_CLOSURE) continue;
+        int bx = (p->code[i] >> 14) & 0x3FFFF;
+        if (bx < 0 || bx >= p->sizep || !p->p) continue;
+        luac_Proto *sub = p->p[bx];
+        if (!sub) continue;
+        for (int u = 0; u < sub->sizeupvalues; u++) {
+            if (sub->upval_instack && sub->upval_instack[u]) {
+                int r = sub->upval_idx ? sub->upval_idx[u] : 0;
+                if (r >= 0 && r < 256) { cap[r]++; if (cap[r] >= 2) return 1; }
+            }
+        }
+    }
+    return 0;
+}
+
 static int find_state_reg(luac_Proto *p, int disp_start) {
     int eq_counts[256] = {0};
     int loadk_at_target[256] = {0};
@@ -152,14 +177,16 @@ static luac_Proto *build_dispatch(luac_Proto *p, int state_reg, int disp_start,
     int tmp = p->maxstacksize;
     int tmp2 = p->maxstacksize + 1;
     int tmp3 = p->maxstacksize + 2;
-    d->maxstacksize = p->maxstacksize + 2 + p->numparams;
+    d->maxstacksize = p->maxstacksize + 2 + p->numparams + (p->is_vararg ? 1 : 0);
 
     int state_upval = p->sizeupvalues;
 
-    int cap = n * 3;
+    /* a state LOADK+JMP pair expands to LOADK+SETUPVAL+GETUPVAL+numparams
+     * MOVEs+TAILCALL, so size for the worst case, not a fixed n*3 */
+    int cap = n * (p->numparams + 6) + 16;
     unsigned int *nc = (unsigned int *)malloc(sizeof(unsigned int) * cap);
     int ni = 0;
-    int *pos_map = (int *)malloc(sizeof(int) * (n + 1));
+    int *pos_map = (int *)calloc(n + 1, sizeof(int));
     int *rev_map = (int *)malloc(sizeof(int) * cap);
     for (int i = 0; i < cap; i++) rev_map[i] = -1;
 
@@ -170,13 +197,16 @@ static luac_Proto *build_dispatch(luac_Proto *p, int state_reg, int disp_start,
         int op = ins & 0x3F;
         int a = (ins >> 6) & 0xFF;
 
-        if (op == LUAC_OP_EQ) {
+        /* Binary-search dispatcher compares state with EQ (match) and LT
+        ** (descent); once state moves into the upvalue below, both must read it
+        ** via GETUPVAL or LT reads the vacated state register (nil). */
+        if (op == LUAC_OP_EQ || op == LUAC_OP_LT || op == LUAC_OP_LE) {
             int b = (ins >> 23) & 0x1FF;
             if (b == state_reg) {
                 nc[ni] = LUAC_ABC(LUAC_OP_GETUPVAL, tmp, state_upval, 0);
                 rev_map[ni] = -1;
                 ni++;
-                ins = (ins & ~(0x1FF << 23)) | ((unsigned)tmp << 23);
+                ins = (ins & ~(0x1FFu << 23)) | ((unsigned)tmp << 23);
             }
         }
 
@@ -197,9 +227,16 @@ static luac_Proto *build_dispatch(luac_Proto *p, int state_reg, int disp_start,
                 rev_map[ni] = -1;
                 ni++;
             }
-            nc[ni] = LUAC_ABC(LUAC_OP_TAILCALL, tmp2, p->numparams + 1, 0);
+            if (p->is_vararg) {
+                nc[ni] = LUAC_ABC(LUAC_OP_VARARG, tmp3 + p->numparams, 0, 0);
+                rev_map[ni] = -1; ni++;
+                nc[ni] = LUAC_ABC(LUAC_OP_TAILCALL, tmp2, 0, 0);
+            } else {
+                nc[ni] = LUAC_ABC(LUAC_OP_TAILCALL, tmp2, p->numparams + 1, 0);
+            }
             rev_map[ni] = -1;
             ni++;
+            pos_map[i + 1] = ni; /* consumed successor JMP: keep mapping dense */
             i++;
             continue;
         }
@@ -225,7 +262,7 @@ static luac_Proto *build_dispatch(luac_Proto *p, int state_reg, int disp_start,
             if (old_target < 0 || old_target > n) continue;
             int new_target = pos_map[old_target];
             int new_sbx = new_target - i - 1;
-            d->code[i] = (d->code[i] & 0xFFF) | ((unsigned)(new_sbx + 131071) << 14);
+            d->code[i] = (d->code[i] & 0x3FFF) | ((unsigned)(new_sbx + 131071) << 14);
         }
     }
 
@@ -268,12 +305,14 @@ static luac_Proto *build_dispatch_from_state_upval(luac_Proto *p, int state_upva
 
     int tmp2 = p->maxstacksize;
     int tmp3 = p->maxstacksize + 1;
-    d->maxstacksize = p->maxstacksize + 1 + p->numparams;
+    d->maxstacksize = p->maxstacksize + 1 + p->numparams + (p->is_vararg ? 1 : 0);
 
-    int cap = n * 2;
+    /* U/T transition pair expands to SETUPVAL+GETUPVAL+numparams MOVEs+
+     * TAILCALL; size for worst case rather than fixed n*2 */
+    int cap = n * (p->numparams + 6) + 16;
     unsigned int *nc = (unsigned int *)malloc(sizeof(unsigned int) * cap);
     int ni = 0;
-    int *pos_map = (int *)malloc(sizeof(int) * (n + 1));
+    int *pos_map = (int *)calloc(n + 1, sizeof(int));
     int *rev_map = (int *)malloc(sizeof(int) * cap);
     for (int i = 0; i < cap; i++) rev_map[i] = -1;
 
@@ -296,9 +335,16 @@ static luac_Proto *build_dispatch_from_state_upval(luac_Proto *p, int state_upva
                     nc[ni] = LUAC_ABC(LUAC_OP_MOVE, tmp3 + j, j, 0);
                     rev_map[ni] = -1; ni++;
                 }
-                nc[ni] = LUAC_ABC(LUAC_OP_TAILCALL, tmp2, p->numparams + 1, 0);
+                if (p->is_vararg) {
+                    nc[ni] = LUAC_ABC(LUAC_OP_VARARG, tmp3 + p->numparams, 0, 0);
+                    rev_map[ni] = -1; ni++;
+                    nc[ni] = LUAC_ABC(LUAC_OP_TAILCALL, tmp2, 0, 0);
+                } else {
+                    nc[ni] = LUAC_ABC(LUAC_OP_TAILCALL, tmp2, p->numparams + 1, 0);
+                }
                 rev_map[ni] = -1; ni++;
-                i++; /* 跳过 JMP */
+                pos_map[i + 1] = ni; /* consumed successor JMP: keep mapping dense */
+                    i++; /* 跳过 JMP */
                 continue;
             }
         }
@@ -327,7 +373,13 @@ static luac_Proto *build_dispatch_from_state_upval(luac_Proto *p, int state_upva
                     nc[ni] = LUAC_ABC(LUAC_OP_MOVE, tmp3 + k, k, 0);
                     rev_map[ni] = -1; ni++;
                 }
-                nc[ni] = LUAC_ABC(LUAC_OP_TAILCALL, tmp2, p->numparams + 1, 0);
+                if (p->is_vararg) {
+                    nc[ni] = LUAC_ABC(LUAC_OP_VARARG, tmp3 + p->numparams, 0, 0);
+                    rev_map[ni] = -1; ni++;
+                    nc[ni] = LUAC_ABC(LUAC_OP_TAILCALL, tmp2, 0, 0);
+                } else {
+                    nc[ni] = LUAC_ABC(LUAC_OP_TAILCALL, tmp2, p->numparams + 1, 0);
+                }
                 rev_map[ni] = -1; ni++;
                 i = j - 1; /* 跳过已处理的指令 */
                 continue;
@@ -353,7 +405,7 @@ static luac_Proto *build_dispatch_from_state_upval(luac_Proto *p, int state_upva
             if (old_target < 0 || old_target > n) continue;
             int new_target = pos_map[old_target];
             int new_sbx = new_target - i - 1;
-            d->code[i] = (d->code[i] & 0xFFF) | ((unsigned)(new_sbx + 131071) << 14);
+            d->code[i] = (d->code[i] & 0x3FFF) | ((unsigned)(new_sbx + 131071) << 14);
         }
     }
     free(pos_map); free(rev_map);
@@ -383,7 +435,7 @@ static luac_Proto *build_dispatch_from_state_upval(luac_Proto *p, int state_upva
 }
 
 /* U 模式变换：把现有 dispatch 拆成两个（A/B） */
-static int convert_u_mode(luac_Proto *p, luac_Proto *parent, int idx_in_parent) {
+static int convert_u_mode(lua_State *L, luac_Proto *p, luac_Proto *parent, int idx_in_parent) {
     if (!parent || idx_in_parent < 0) return 0;
     if (is_parallel_mode(parent)) return 0; /* 已经是 parallel 模式 */
 
@@ -394,6 +446,21 @@ static int convert_u_mode(luac_Proto *p, luac_Proto *parent, int idx_in_parent) 
 
     int partner_upval = p->sizeupvalues;
 
+    /* 根因修复（移动语义时序）：luac_push_proto 是移动语义——proto 转 userdata 后
+       原裸结构的 code/p/upval_instack/upval_idx 等指针全部被置 NULL。下面
+       replace/add_subproto 内部会 obf_ensure_subproto_table(parent)；若 parent 的
+       p_tbl 尚未建立，首次 ensure 会把 parent 的所有子 proto（包含当前 p 自身）
+       移动成 userdata 并掏空旧裸结构，随后再用旧指针访问 p->upval_instack 就会
+       解引用 NULL（GEN_CRASH）。upvalue_channel 先外壳化恰好制造了"新 parent->p
+       且 parent 未建表"的时序（纯 parallel 流程 parent 早已建表，故不触发）。
+       因此先建好 parent 表、把本地 p 刷新为稳定 userdata 地址，再固化 p 的子节点；
+       之后所有 ensure 均为 no-op，p 全程有效。 */
+    obf_ensure_subproto_table(L, parent);
+    if (idx_in_parent >= 0 && idx_in_parent < parent->sizep)
+        p = parent->p[idx_in_parent];
+    /* 固化 p 的子节点为稳定 userdata，dispatcher 浅拷贝 p->p 快照才不会被后续
+       add_subproto 的所有权转移掏空（DumpCode code==NULL 崩溃根因） */
+    obf_ensure_subproto_table(L, p);
     luac_Proto *disp_A = build_dispatch_from_state_upval(p, state_upval, state_tmp, partner_upval);
     luac_Proto *disp_B = build_dispatch_from_state_upval(p, state_upval, state_tmp, partner_upval);
 
@@ -433,18 +500,16 @@ static int convert_u_mode(luac_Proto *p, luac_Proto *parent, int idx_in_parent) 
     int disp_B_reg = old_numparams + 4 + reg_offset;
     int old_sizeup = p->sizeupvalues; /* dispatch 的原 upvalue 数量（不含 partner） */
 
-    /* 把 A 和 B 加入父 proto 的子 proto 列表，替换原来的 dispatch */
-    parent->p[idx_in_parent] = disp_A;
-    parent->p = realloc(parent->p, sizeof(luac_Proto *) * (parent->sizep + 1));
-    int B_idx = parent->sizep;
-    parent->p[parent->sizep++] = disp_B;
-
+    /* 字段必须在挂载前设置（push_proto 转移并置空裸结构指针字段）。
+       A 替换原 dispatch 槽、B 追加；均同步 p_tbl 镜像，避免 dump 丢子 proto。 */
     disp_A->upval_idx[partner_upval] = B_ref_var;
     disp_B->upval_idx[partner_upval] = A_ref_var;
+    obf_replace_subproto(L, parent, idx_in_parent, disp_A);
+    int B_idx = obf_add_subproto(L, parent, disp_B);
 
     /* 重建父 proto 代码 */
     int upval_count = old_sizeup + 1; /* 原 upvalue + partner */
-    int nlen = 10 + 2 * old_sizeup + old_numparams + (is_nested ? 1 : 0);
+    int nlen = 11 + 2 * old_sizeup + old_numparams + (is_nested ? 1 : 0) + 4;
     unsigned int *np = (unsigned int *)malloc(sizeof(unsigned int) * nlen);
     int pni = 0;
 
@@ -474,11 +539,16 @@ static int convert_u_mode(luac_Proto *p, luac_Proto *parent, int idx_in_parent) 
     }
     np[pni++] = LUAC_ABC(LUAC_OP_MOVE, disp_B_reg + 1 + old_sizeup, A_ref_var, 0);
     np[pni++] = LUAC_ABC(LUAC_OP_MOVE, B_ref_var, disp_B_reg, 0);
-    /* 传递参数 */
+    /* 传递参数（含可变参数转发） */
     for (int i = 0; i < old_numparams; i++) {
         np[pni++] = LUAC_ABC(LUAC_OP_MOVE, disp_A_reg + 1 + i, i, 0);
     }
-    np[pni++] = LUAC_ABC(LUAC_OP_TAILCALL, disp_A_reg, old_numparams + 1, 0);
+    if (parent->is_vararg) {
+        np[pni++] = LUAC_ABC(LUAC_OP_VARARG, disp_A_reg + 1 + old_numparams, 0, 0);
+        np[pni++] = LUAC_ABC(LUAC_OP_TAILCALL, disp_A_reg, 0, 0);
+    } else {
+        np[pni++] = LUAC_ABC(LUAC_OP_TAILCALL, disp_A_reg, old_numparams + 1, 0);
+    }
 
     free(parent->code);
     parent->code = np;
@@ -489,9 +559,23 @@ static int convert_u_mode(luac_Proto *p, luac_Proto *parent, int idx_in_parent) 
     return 1;
 }
 
-static int convert_proto(luac_Proto *p, luac_Proto *parent, int idx_in_parent) {
+static int proto_has_dynamic_multret(luac_Proto *p) {
+    for (int i = 0; i < p->sizecode; i++) {
+        unsigned int ins = p->code[i];
+        int op = ins & 0x3F;
+        int c = (ins >> 14) & 0x1FF;
+        int b = (ins >> 23) & 0x1FF;
+        if ((op == LUAC_OP_CALL || op == LUAC_OP_TAILCALL) && c == 0) return 1;
+        if (op == LUAC_OP_VARARG && b == 0) return 1;
+    }
+    return 0;
+}
+
+static int convert_proto(lua_State *L, luac_Proto *p, luac_Proto *parent, int idx_in_parent) {
     if (!p->code || p->sizecode < 4) return 0;
     if (is_parallel_mode(p)) return 0;
+    if (has_shared_captured_local(p)) return 0; /* TAILCALL would split shared upvalues */
+    if (proto_has_dynamic_multret(p)) return 0; /* TAILCALL resets L->top, breaks multret */
 
     /* 先尝试 U 模式（dispatch 子 proto，state 在 upvalue） */
     {
@@ -507,7 +591,7 @@ static int convert_proto(luac_Proto *p, luac_Proto *parent, int idx_in_parent) {
                 PDBG("[parallel] nested mode detected (instack=%d), skip to avoid WASM stack overflow\n", instack_count);
                 return 0;
             }
-            return convert_u_mode(p, parent, idx_in_parent);
+            return convert_u_mode(L, p, parent, idx_in_parent);
         }
     }
 
@@ -531,6 +615,7 @@ static int convert_proto(luac_Proto *p, luac_Proto *parent, int idx_in_parent) {
     int state_upval = p->sizeupvalues;
     int partner_upval = p->sizeupvalues + 1;
 
+    obf_ensure_subproto_table(L, p);
     luac_Proto *disp_A = build_dispatch(p, state_reg, disp_start, init_kidx, partner_upval);
     luac_Proto *disp_B = build_dispatch(p, state_reg, disp_start, init_kidx, partner_upval);
 
@@ -562,22 +647,19 @@ static int convert_proto(luac_Proto *p, luac_Proto *parent, int idx_in_parent) {
     int disp_A_reg = old_numparams + 3;
     int disp_B_reg = old_numparams + 4;
 
-    /* 把 A 和 B 加入子 proto 列表 */
-    p->p = realloc(p->p, sizeof(luac_Proto *) * (p->sizep + 2));
-    int A_idx = p->sizep;
-    p->p[p->sizep++] = disp_A;
-    int B_idx = p->sizep;
-    p->p[p->sizep++] = disp_B;
-
-    /* 设置 upvalue 索引 */
+    /* 字段先于挂载设置，再走 add_subproto 同步 p_tbl 镜像 */
     disp_A->upval_idx[state_upval] = state_var;
     disp_A->upval_idx[partner_upval] = B_ref_var;
     disp_B->upval_idx[state_upval] = state_var;
     disp_B->upval_idx[partner_upval] = A_ref_var;
+    int A_idx = obf_add_subproto(L, p, disp_A);
+    int B_idx = obf_add_subproto(L, p, disp_B);
 
     /* 构建父函数代码 */
     int upval_count = p->sizeupvalues + 2;
-    int nlen = 10 + 2 * p->sizeupvalues + old_numparams;
+    /* exact count is 11 + 2*sizeupvalues + numparams (LOADK,2*CLOSURE,
+     * 2*upval loops, 6 MOVEs, param moves, TAILCALL); pad to be safe */
+    int nlen = 11 + 2 * p->sizeupvalues + old_numparams + 4;
     unsigned int *np = (unsigned int *)malloc(sizeof(unsigned int) * nlen);
     int pni = 0;
 
@@ -602,12 +684,17 @@ static int convert_proto(luac_Proto *p, luac_Proto *parent, int idx_in_parent) {
     np[pni++] = LUAC_ABC(LUAC_OP_MOVE, disp_B_reg + 2 + p->sizeupvalues, A_ref_var, 0);
     /* 设置 B_ref 变量 */
     np[pni++] = LUAC_ABC(LUAC_OP_MOVE, B_ref_var, disp_B_reg, 0);
-    /* 传递参数 */
+    /* 传递参数（含可变参数转发） */
     for (int i = 0; i < old_numparams; i++) {
         np[pni++] = LUAC_ABC(LUAC_OP_MOVE, disp_A_reg + 1 + i, i, 0);
     }
     /* TAILCALL A */
-    np[pni++] = LUAC_ABC(LUAC_OP_TAILCALL, disp_A_reg, old_numparams + 1, 0);
+    if (p->is_vararg) {
+        np[pni++] = LUAC_ABC(LUAC_OP_VARARG, disp_A_reg + 1 + old_numparams, 0, 0);
+        np[pni++] = LUAC_ABC(LUAC_OP_TAILCALL, disp_A_reg, 0, 0);
+    } else {
+        np[pni++] = LUAC_ABC(LUAC_OP_TAILCALL, disp_A_reg, old_numparams + 1, 0);
+    }
 
     free(p->code);
     p->code = np;
@@ -618,12 +705,16 @@ static int convert_proto(luac_Proto *p, luac_Proto *parent, int idx_in_parent) {
     return 1;
 }
 
-static void process_recursive(luac_Proto *p, luac_Proto *parent, int idx_in_parent, int *total) {
+static void process_recursive(lua_State *L, luac_Proto *p, luac_Proto *parent, int idx_in_parent, int *total) {
     if (p->p) {
-        for (int i = 0; i < p->sizep; i++)
-            process_recursive(p->p[i], p, i, total);
+        /* Fix the child count BEFORE converting: a child's conversion reallocs
+         * p->p and appends disp_A/disp_B; iterating the growing sizep would
+         * re-enter the freshly built dispatch protos and cascade. */
+        int orig_sizep = p->sizep;
+        for (int i = 0; i < orig_sizep; i++)
+            process_recursive(L, p->p[i], p, i, total);
     }
-    *total += convert_proto(p, parent, idx_in_parent);
+    *total += convert_proto(L, p, parent, idx_in_parent);
 }
 
 int parallel_state_process(lua_State *L) {
@@ -631,7 +722,7 @@ int parallel_state_process(lua_State *L) {
     luac_sync_proto(L, 1);
     obf_invalidate_all_caches(L, p);
     int total = 0;
-    process_recursive(p, NULL, -1, &total);
+    process_recursive(L, p, NULL, -1, &total);
     lua_pushinteger(L, total);
     return 1;
 }

@@ -115,7 +115,7 @@ static int get_int_const_idx(luac_Proto *p, long long val) {
 
 /* ---- 核心：把一个 flatten 后的 proto 转为 while+pcall dispatcher ---- */
 
-static int convert_proto(luac_Proto *p) {
+static int convert_proto(lua_State *L, luac_Proto *p) {
     if (!p->code || p->sizecode < 10) return 0;
     int n = p->sizecode;
 
@@ -253,12 +253,16 @@ static int convert_proto(luac_Proto *p) {
     int *pos_map = (int *)malloc(sizeof(int) * (n + 1));
     int ni = 0;
     ti = 0;
-    for (int i = 0; i <= n; i++) {
+    /* walk manually: a transition occupies TWO old slots (LOADK+JMP) and
+     * becomes THREE new slots, so BOTH pos_map[i] and pos_map[i+1] must be
+     * defined (the skipped JMP slot maps to just past the new block) */
+    for (int i = 0; i <= n; ) {
         pos_map[i] = ni;
-        if (i < n) {
-            if (ti < tcount && i == tpos[ti]) { ni += 3; i++; ti++; }
-            else ni++;
-        }
+        if (i < n && ti < tcount && i == tpos[ti]) {
+            ni += 3;
+            pos_map[i + 1] = ni;
+            i += 2; ti++;
+        } else { ni++; i++; }
     }
     /* 修正所有 JMP/FORLOOP/FORPREP/TFORLOOP */
     for (int i = 0; i < r->sizecode; i++) {
@@ -278,7 +282,7 @@ static int convert_proto(luac_Proto *p) {
             if (old_target < 0 || old_target > n) continue;
             int new_target = pos_map[old_target];
             int new_sbx = new_target - i - 1;
-            r->code[i] = (r->code[i] & 0xFFF) | ((unsigned)(new_sbx + 131071) << 14);
+            r->code[i] = (r->code[i] & 0x3FFF) | ((unsigned)(new_sbx + 131071) << 14);
         }
     }
     free(pos_map);
@@ -310,11 +314,8 @@ static int convert_proto(luac_Proto *p) {
     int kpcall = get_string_const_idx(p, "pcall");
     int kinit = get_int_const_idx(p, init_state);
 
-    /* 把 runner 加到 parent 的子 proto 列表 */
-    p->p = realloc(p->p, sizeof(luac_Proto *) * (p->sizep + 1));
-    p->p[p->sizep] = r;
-    int runner_idx = p->sizep;
-    p->sizep++;
+    /* 把 runner 加到子 proto 列表（走 add_subproto 同步 p_tbl 镜像） */
+    int runner_idx = obf_add_subproto(L, p, r);
 
     /* 构建新代码 */
     unsigned int np[16];
@@ -350,17 +351,17 @@ static int convert_proto(luac_Proto *p) {
     return 1;
 }
 
-static void process_recursive(luac_Proto *p, int *total) {
+static void process_recursive(lua_State *L, luac_Proto *p, int *total) {
     if (p->p) for (int i = 0; i < p->sizep; i++)
-        process_recursive(p->p[i], total);
-    *total += convert_proto(p);
+        process_recursive(L, p->p[i], total);
+    *total += convert_proto(L, p);
 }
 
 int exception_dispatcher_process(lua_State *L) {
     luac_Proto *p = obf_check_proto(L);
     obf_invalidate_all_caches(L, p);
     int total = 0;
-    process_recursive(p, &total);
+    process_recursive(L, p, &total);
     lua_pushinteger(L, total);
     return 1;
 }

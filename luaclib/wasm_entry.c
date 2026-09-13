@@ -577,6 +577,11 @@ static int g_run_output_ref = LUA_NOREF;
 
 static void timeout_hook(lua_State *L, lua_Debug *ar) {
     (void)ar;
+    /* Full GC each hook tick. In wasm32 the incremental marker can visit a
+       half-built proto graph while a large obfuscated chunk is loading or
+       running (memory access out of bounds); full collection only ever sees a
+       consistent object graph. */
+    lua_gc(L, LUA_GCCOLLECT, 0);
     double now = emscripten_get_now();
     if (now - g_run_start_ms > (double)g_run_timeout_ms) {
         g_run_timed_out = 1;
@@ -631,6 +636,27 @@ char *wasm_run_bytecode(const unsigned char *bc, int bc_len, int *out_len) {
     }
     *out_len = 0;
 
+    /* Root fix: run the obfuscated chunk in a FRESH thread with its own stack.
+       Generation reuses g_L and leaves GC objects (proto userdata / tables) in
+       high stack slots; luaD_precall does not clear a new call frame, so when
+       the rewritten chunk is run on g_L itself, its high registers can read
+       those leftovers ("attempt to compare / do arithmetic on a table", and it
+       keeps failing on every run until the page is reloaded = state rebuilt).
+       A new thread owns a freshly allocated, zero-initialized stack while still
+       sharing globals and the registry (all standard + andlua extensions stay
+       available), removing the residue at its source rather than patching the
+       bytecode. */
+    lua_State *R = lua_newthread(g_L);
+    int run_thread_ref = luaL_ref(g_L, LUA_REGISTRYINDEX); /* keep thread alive */
+
+    /* Stop the incremental GC for the whole load+run. Lua 5.3's incremental
+       marker interleaves with lundump allocations; on wasm32 with a large
+       proto graph it can mark a half-constructed object and trap with
+       "memory access out of bounds". We collect explicitly (full GC) after
+       load and from the timeout hook, and restart the incremental collector on
+       every exit path. */
+    lua_gc(g_L, LUA_GCSTOP, 0);
+
     /* create output capture table */
     lua_newtable(g_L);
     g_run_output_ref = luaL_ref(g_L, LUA_REGISTRYINDEX);
@@ -652,12 +678,12 @@ char *wasm_run_bytecode(const unsigned char *bc, int bc_len, int *out_len) {
         lua_setfield(g_L, -2, "write");
         lua_pop(g_L, 1);
 
-        /* load bytecode */
-        int load_ok = (luaL_loadbuffer(g_L, (const char *)bc, (size_t)bc_len, "=obf_output") == LUA_OK);
+        /* load bytecode into the fresh thread R (independent stack) */
+        int load_ok = (luaL_loadbuffer(R, (const char *)bc, (size_t)bc_len, "=obf_output") == LUA_OK);
         if (!load_ok) {
-            const char *err = lua_tostring(g_L, -1);
+            const char *err = lua_tostring(R, -1);
             set_error("load error: %s", err ? err : "?");
-            lua_pop(g_L, 1);
+            lua_pop(R, 1);
             /* restore */
             lua_rawgeti(g_L, LUA_REGISTRYINDEX, old_print);
             lua_setglobal(g_L, "print");
@@ -669,23 +695,29 @@ char *wasm_run_bytecode(const unsigned char *bc, int bc_len, int *out_len) {
             luaL_unref(g_L, LUA_REGISTRYINDEX, old_write);
             luaL_unref(g_L, LUA_REGISTRYINDEX, g_run_output_ref);
             g_run_output_ref = LUA_NOREF;
+            luaL_unref(g_L, LUA_REGISTRYINDEX, run_thread_ref);
+            lua_gc(g_L, LUA_GCRESTART, 0);
             return NULL;
         }
 
-        /* pcall with timeout hook */
+        /* Full collection after load: consistent object graph before execution. */
+        lua_gc(R, LUA_GCCOLLECT, 0);
+
+        /* pcall with timeout hook (on the fresh thread R) */
         g_run_start_ms = emscripten_get_now();
         g_run_timed_out = 0;
-        lua_sethook(g_L, timeout_hook, LUA_MASKCOUNT, 100000);
-        int pcall_ok = (lua_pcall(g_L, 0, 0, 0) == LUA_OK);
-        lua_sethook(g_L, NULL, 0, 0);
+        lua_sethook(R, timeout_hook, LUA_MASKCOUNT, 100000);
+        int pcall_ok = (lua_pcall(R, 0, 0, 0) == LUA_OK);
+        lua_sethook(R, NULL, 0, 0);
         if (!pcall_ok) {
-            const char *err = lua_tostring(g_L, -1);
-            /* append error to output */
+            const char *err = lua_tostring(R, -1);
+            lua_pop(R, 1);
+            /* append error to output (shared registry table) via g_L */
             lua_rawgeti(g_L, LUA_REGISTRYINDEX, g_run_output_ref);
             int len = (int)lua_rawlen(g_L, -1);
             lua_pushstring(g_L, err ? err : "runtime error");
             lua_rawseti(g_L, -2, ++len);
-            lua_pop(g_L, 2); /* error + output table */
+            lua_pop(g_L, 1); /* output table */
         }
 
         /* restore print and io.write */
@@ -701,12 +733,13 @@ char *wasm_run_bytecode(const unsigned char *bc, int bc_len, int *out_len) {
         lua_pop(g_L, 1);
         lua_pushcfunction(g_L, run_print);
         lua_setglobal(g_L, "print");
-        if (luaL_loadbuffer(g_L, (const char *)bc, (size_t)bc_len, "=obf_output") == LUA_OK) {
+        if (luaL_loadbuffer(R, (const char *)bc, (size_t)bc_len, "=obf_output") == LUA_OK) {
+            lua_gc(R, LUA_GCCOLLECT, 0); /* full collection after load */
             g_run_start_ms = emscripten_get_now();
             g_run_timed_out = 0;
-            lua_sethook(g_L, timeout_hook, LUA_MASKCOUNT, 100000);
-            lua_pcall(g_L, 0, 0, 0);
-            lua_sethook(g_L, NULL, 0, 0);
+            lua_sethook(R, timeout_hook, LUA_MASKCOUNT, 100000);
+            lua_pcall(R, 0, 0, 0);
+            lua_sethook(R, NULL, 0, 0);
         }
         lua_rawgeti(g_L, LUA_REGISTRYINDEX, old_print);
         lua_setglobal(g_L, "print");
@@ -729,6 +762,8 @@ char *wasm_run_bytecode(const unsigned char *bc, int bc_len, int *out_len) {
         lua_pop(g_L, 1);
         luaL_unref(g_L, LUA_REGISTRYINDEX, g_run_output_ref);
         g_run_output_ref = LUA_NOREF;
+        luaL_unref(g_L, LUA_REGISTRYINDEX, run_thread_ref);
+        lua_gc(g_L, LUA_GCRESTART, 0);
         set_error("run: malloc failed");
         return NULL;
     }
@@ -749,8 +784,10 @@ char *wasm_run_bytecode(const unsigned char *bc, int bc_len, int *out_len) {
     lua_pop(g_L, 1); /* output table */
     luaL_unref(g_L, LUA_REGISTRYINDEX, g_run_output_ref);
     g_run_output_ref = LUA_NOREF;
+    luaL_unref(g_L, LUA_REGISTRYINDEX, run_thread_ref);
 
     g_errbuf[0] = '\0';
+    lua_gc(g_L, LUA_GCRESTART, 0);
     return out;
 }
 

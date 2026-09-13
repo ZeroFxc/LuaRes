@@ -1165,8 +1165,21 @@ static int proto_newindex(lua_State *L) {
 }
 
 void luac_push_proto(lua_State *L, luac_Proto *f) {
+    /* Idempotency root-fix: shell builders shallow-copy a parent's p[] into a new
+       dispatch proto, so one sub-proto may be referenced by several parents. The
+       first push moves a raw struct into userdata and hollows the raw copy; if the
+       SAME already-userdata pointer is pushed again when another parent is first
+       ensured, memcpy+hollow would null its code/p and leave other sharing parent
+       slots pointing at a hollow shell -> DumpCode/sync NULL deref. When f is
+       already a live userdata, return that same object untouched. */
+    if (f->is_ud) {
+        lua_rawgetp(L, LUA_REGISTRYINDEX, (const void *)f);
+        if (!lua_isnil(L, -1)) return;   /* shared: retrieve same userdata */
+        lua_pop(L, 1);                   /* not registered (should not happen) */
+    }
     luac_Proto *p = (luac_Proto *)lua_newuserdata(L, sizeof(luac_Proto));
     memcpy(p, f, sizeof(luac_Proto));
+    p->is_ud = 1;
     /* reset table refs - the new userdata owns the C struct,
        but tables will be lazily created */
     p->code_tbl = LUA_NOREF;
@@ -1175,6 +1188,11 @@ void luac_push_proto(lua_State *L, luac_Proto *f) {
     p->lineinfo_tbl = LUA_NOREF;
     p->locvars_tbl = LUA_NOREF;
     p->upvalues_tbl = LUA_NOREF;
+    /* register stable userdata address -> itself for idempotent re-push */
+    luaL_getmetatable(L, "luac.Proto");
+    lua_setmetatable(L, -2);
+    lua_pushvalue(L, -1);
+    lua_rawsetp(L, LUA_REGISTRYINDEX, (const void *)p);
     /* The original f's arrays are now owned by p (the userdata).
        Set f's pointers to NULL so caller doesn't double-free. */
     f->code = NULL;
@@ -1184,8 +1202,6 @@ void luac_push_proto(lua_State *L, luac_Proto *f) {
     f->locvar_name = NULL; f->locvar_name_len = NULL; f->locvar_startpc = NULL; f->locvar_endpc = NULL;
     f->upval_name = NULL; f->upval_name_len = NULL; f->upval_instack = NULL; f->upval_idx = NULL;
     f->source = NULL; f->source_len = 0;
-    luaL_getmetatable(L, "luac.Proto");
-    lua_setmetatable(L, -2);
 }
 
 /*===========================================================================

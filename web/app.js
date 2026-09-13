@@ -18,7 +18,6 @@ const MODULE_GROUPS = [
     { id: 'table_obfuscate_c', label: '表混淆', desc: 'NEWTABLE/SETTABLE 常量隐藏' },
     { id: 'opaque_predicate_c', label: '不透明谓词', desc: '插入恒真/恒假条件分支' },
     { id: 'const_poison_c', label: '常量投毒', desc: '插入无效常量干扰反编译' },
-    { id: 'reg_shuffle_c', label: '寄存器洗牌', desc: '插入冗余 MOVE 链，高寄存器中转' },
     { id: 'proto_shuffle_c', label: 'Proto重排', desc: '打乱子函数Proto顺序+修正CLOSURE索引' },
     { id: 'live_range_split_c', label: '活跃范围分裂', desc: '寄存器值存高寄存器+ dummy覆盖+恢复' },
     { id: 'unary_chain_c', label: '成对一元运算', desc: '插入UNM/NOT成对运算抵消，用临时寄存器替代原操作数，数据流出现取反再取反死代码' },
@@ -26,7 +25,6 @@ const MODULE_GROUPS = [
   ]},
   { name: '垃圾指令', modules: [
     { id: 'opaque_junk_c', label: '不透明垃圾', desc: 'TEST+JMP 跳过的垃圾指令' },
-    { id: 'junk_c', label: '纯花指令', desc: '独立花指令注入(MOVE/LOADBOOL/NEWTABLE 等)' },
     { id: 'junk_jmp_c', label: '跳转垃圾', desc: '插入无意义 JMP 指令' },
     { id: 'junk_loadk_c', label: 'LOADK 垃圾', desc: '插入无效 LOADK 加载到废弃寄存器' },
     { id: 'junk_move_c', label: 'MOVE 垃圾', desc: '插入无效 MOVE 指令' },
@@ -47,15 +45,11 @@ const MODULE_GROUPS = [
     { id: 'parallel_state_c', label: '并行状态机', desc: 'flatten拆成两个互相TAILCALL的dispatch(A/B)，交替执行共享state，每个block有两份副本，CFG变成二维调用图' },
   ]},
   { name: '控制流混淆', modules: [
-    { id: 'condition_split_c', label: '条件拆分', desc: '单个判断拆为多重不透明谓词(4种模式)，与扁平化联动增强分发复杂度' },
-    { id: 'loop_restructure_c', label: '循环重构', desc: '插入执行一次的循环模板混入正常代码' },
     { id: 'for_loop_unroll_c', label: 'for循环展开', desc: 'FORPREP+FORLOOP无损展开为普通指令，破坏反编译器for循环特征识别' },
     { id: 'tforcall_to_call_c', label: 'TFORCALL转CALL', desc: '泛型for迭代器调用转普通CALL，断裂TFORCALL+TFORLOOP配对' },
     { id: 'tforloop_as_jump_c', label: 'TFORLOOP混淆跳转', desc: '回跳JMP改TFORLOOP+LOADBOOL，利用条件复制语义避免被一键还原' },
     { id: 'fake_forloop_c', label: '伪造FOR循环', desc: '插入循环次数为0的伪造FORPREP+FORLOOP对，反编译器输出无意义for但实际不执行' },
-    { id: 'jmp_obfuscate_c', label: 'JMP偏移混淆', desc: '插入 no-op JMP 链混淆跳转偏移' },
     { id: 'jmp_split_c', label: 'JMP分裂', desc: '长距离JMP分裂为两段短JMP+中转点，静态分析需跟随跳转链' },
-    { id: 'indirect_call_c', label: '间接调用', desc: 'CALL 前经临时表存取值，函数调用间接化' },
     { id: 'call_rewrite_c', label: '参数/返回值混淆', desc: 'f(a,b)→f({a,b})内部解包，多返回值先打包再解包' },
     { id: 'upvalue_promote_c', label: 'upvalue升降', desc: 'IIFE包装把局部变量提升为upvalue，改变变量存储方式' },
     { id: 'block_clone_c', label: '基本块克隆', desc: '每个直线块克隆一份(寄存器重映射)，不透明谓词选择原版/克隆版，CFG节点翻倍' },
@@ -715,7 +709,7 @@ btnProcessRun.addEventListener('click', async () => {
       setStatus('运行完成', 'ready');
     } catch(e){
       log('运行错误: ' + e.message, 'err');
-      runOutputText.textContent = '运行错误: ' + e.message;
+      runOutputText.textContent = '运行错误: ' + e.message
       runOutput.style.display = 'block';
       setStatus('运行失败', 'error');
     }
@@ -753,7 +747,7 @@ btnRun.addEventListener('click', () => {
     setStatus('运行完成', 'ready');
   } catch(e){
     log('运行错误: ' + e.message, 'err');
-    runOutputText.textContent = '运行错误: ' + e.message;
+    runOutputText.textContent = '运行错误: ' + e.message
     runOutput.style.display = 'block';
     setStatus('运行失败', 'error');
   }

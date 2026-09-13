@@ -346,7 +346,7 @@ static void nested_flatten_function(luac_Proto *p) {
             int orig_target = orig_i + 1 + sbx;
             if (orig_target >= 0 && orig_target < n && pos_map[orig_target] >= 0) {
                 int new_sbx = pos_map[orig_target] - i - 1;
-                nc[i] = (nc[i] & 0x3FFF) | (((new_sbx + 131071) & 0x3FFFF) << 14);
+                nc[i] = (nc[i] & 0x3FFFu) | (((unsigned int)(new_sbx + 131071) & 0x3FFFFu) << 14);
             }
         }
     }

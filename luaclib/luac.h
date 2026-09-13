@@ -50,6 +50,10 @@ typedef struct luac_Proto {
     /* cached Lua tables (registry refs) */
     int code_tbl, p_tbl, k_tbl;
     int lineinfo_tbl, locvars_tbl, upvalues_tbl;
+    /* 1 => this struct is itself a live Lua userdata (already luac_push_proto'd).
+       Raw calloc/luac_alloc protos start at 0. Used to make push idempotent so a
+       sub-proto shared by several parents is never moved/hollowed twice. */
+    unsigned char is_ud;
 } luac_Proto;
 
 /* constant tags (matching Lua 5.3) */

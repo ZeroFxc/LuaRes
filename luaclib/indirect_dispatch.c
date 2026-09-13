@@ -129,26 +129,28 @@ static void indirect_dispatch_function(luac_Proto *p) {
     if (tmp2_reg + 1 > 255) { free(pos); free(vals); return; }
     obf_ensure_stack(p, tmp2_reg + 1);
 
-    /* ---- build new code ---- */
+    /* ---- build new code ----
+     * 可证明正确的不变量：decode 表在【每次被读取(state GETTABLE)的前一刻】刚重建完成。
+     * Lua CALL 的 callee 栈帧从 R(A) 物理向上延伸，可越过【调用者编译期 maxstacksize】
+     * 覆盖放在高寄存器的 table/tmp（Lua 栈数组按需 growstack，不受调用者 maxstacksize
+     * 约束）；而 flatten 状态机用 JMP 在基本块间跳转，旧方案"静态地在每条 CALL 之后重建"
+     * 会被运行时跳转路径跳过 -> 到达 state 查表时 table 已被某次 CALL 覆盖为残留值
+     * （表现为低概率、随栈布局变化的 index nil / 值串扰）。
+     * 因此不依赖 CALL 位置或控制流分析：在每个 state 查找点【就地】重建整张静态映射表，
+     * 然后立即查表。这样无论沿哪条 JMP 路径到达、之前被哪个 callee 帧覆盖，用表前一刻
+     * 表必然有效，从根上消除时序/路径依赖。 */
     int table_build_size = 1 + nuniq * 3; /* NEWTABLE + per-entry LOADK+LOADK+SETTABLE */
-    int max_new = n + nloadk * 1 + table_build_size + 64; /* each LOADK grows by 1 */
+    /* 每个 state LOADK(1 条) -> 建表(table_build_size) + LOADK hash + GETTABLE */
+    int max_new = n + nloadk * (table_build_size + 1) + 16;
     unsigned int *nc = (unsigned int *)malloc(sizeof(unsigned int) * max_new);
     int ni = 0;
 
-    /* build decode_table */
-    nc[ni++] = LUAC_ABC(LUAC_OP_NEWTABLE, table_reg, 0, 0);
-    for (int u = 0; u < nuniq; u++) {
-        int kh = get_int_const_idx(p, hash_of[u]);
-        int kv = get_int_const_idx(p, uniq[u]);
-        nc[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp_reg, kh);
-        nc[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp2_reg, kv);
-        nc[ni++] = LUAC_ABC(LUAC_OP_SETTABLE, table_reg, tmp_reg, tmp2_reg);
-    }
-
     /* helper: hash of a value */
     #define HASH_OF(v) ({ long long _h = 0; for (int _u=0;_u<nuniq;_u++) if (uniq[_u]==(v)) {_h=hash_of[_u];break;} _h; })
+    /* emit a fresh, fully populated decode table (constant pool is shared/dedup) */
+    #define EMIT_BUILD_TABLE() do {         nc[ni++] = LUAC_ABC(LUAC_OP_NEWTABLE, table_reg, 0, 0);         for (int _bu = 0; _bu < nuniq; _bu++) {             int _kh = get_int_const_idx(p, hash_of[_bu]);             int _kv = get_int_const_idx(p, uniq[_bu]);             nc[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp_reg, _kh);             nc[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp2_reg, _kv);             nc[ni++] = LUAC_ABC(LUAC_OP_SETTABLE, table_reg, tmp_reg, tmp2_reg);         }     } while (0)
 
-    /* copy original code, replacing LOADK state_reg, K(N) with lookup */
+    /* copy original code, replacing LOADK state_reg, K(N) with rebuild+lookup */
     int *pos_map = (int *)malloc(sizeof(int) * (n + 1));
     int *rev_pos_map = (int *)malloc(sizeof(int) * max_new);
     for (int i = 0; i <= n; i++) pos_map[i] = -1;
@@ -161,7 +163,9 @@ static void indirect_dispatch_function(luac_Proto *p) {
             long long v = vals[loadk_idx];
             long long h = HASH_OF(v);
             int kh = get_int_const_idx(p, h);
-            /* LOADK tmp, K(hash); GETTABLE state_reg, table_reg, tmp */
+            /* rebuild table immediately before it is read, then:
+               LOADK tmp,K(hash); GETTABLE state_reg = table[tmp] */
+            EMIT_BUILD_TABLE();
             nc[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp_reg, kh);
             nc[ni++] = LUAC_ABC(LUAC_OP_GETTABLE, state_reg, table_reg, tmp_reg);
             loadk_idx++;
@@ -169,18 +173,6 @@ static void indirect_dispatch_function(luac_Proto *p) {
         }
         rev_pos_map[ni] = i;
         nc[ni++] = p->code[i];
-        /* CALL may clobber high regs (callee's stack frame starts at R(A));
-           rebuild decode table so table_reg is valid again */
-        if ((p->code[i] & 0x3F) == LUAC_OP_CALL) {
-            nc[ni++] = LUAC_ABC(LUAC_OP_NEWTABLE, table_reg, 0, 0);
-            for (int u = 0; u < nuniq; u++) {
-                int kh = get_int_const_idx(p, hash_of[u]);
-                int kv = get_int_const_idx(p, uniq[u]);
-                nc[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp_reg, kh);
-                nc[ni++] = LUAC_ABx(LUAC_OP_LOADK, tmp2_reg, kv);
-                nc[ni++] = LUAC_ABC(LUAC_OP_SETTABLE, table_reg, tmp_reg, tmp2_reg);
-            }
-        }
     }
     pos_map[n] = ni;
 
@@ -195,7 +187,7 @@ static void indirect_dispatch_function(luac_Proto *p) {
             int orig_target = orig_i + 1 + sbx;
             if (orig_target >= 0 && orig_target < n && pos_map[orig_target] >= 0) {
                 int new_sbx = pos_map[orig_target] - i - 1;
-                nc[i] = (nc[i] & 0x3FFF) | (((new_sbx + 131071) & 0x3FFFF) << 14);
+                nc[i] = (nc[i] & 0x3FFF) | (((unsigned)(new_sbx + 131071) & 0x3FFFFu) << 14);
             }
         }
     }
@@ -207,6 +199,7 @@ static void indirect_dispatch_function(luac_Proto *p) {
 
     free(pos); free(vals); free(pos_map); free(rev_pos_map);
     #undef HASH_OF
+    #undef EMIT_BUILD_TABLE
 }
 
 int indirect_dispatch_process(lua_State *L) {

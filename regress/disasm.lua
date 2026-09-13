@@ -28,7 +28,7 @@ local function dis(proto,depth,name)
     local c=math.floor(ins/16384)%512; local b=math.floor(ins/8388608)%512
     local bx=math.floor(ins/16384)%262144; local sbx=bx-131071
     local extra=""
-    if op==1 or op==2 then extra="Bx="..bx
+    if op==1 or op==2 then extra="A="..a.." Bx="..bx
     elseif op==30 or op==39 or op==40 or op==42 then extra="A="..a.." sBx="..sbx.." ->"..(i-1+1+sbx)
     else extra=string.format("A=%d B=%d C=%d",a,b,c) end
     io.write(string.format("%s  [%03d] %-9s %s\n",pref,i-1,opn(op),extra))

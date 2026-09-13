@@ -15,9 +15,16 @@ static char *junk_string(int len) {
 
 static void poison_header(luac_Proto *p, int is_main) {
     if (is_main) {
+        /* maxstacksize only needs to be >= the registers the code uses;
+           inflating it is runtime-safe (just a bigger frame). */
         if (p->maxstacksize < 250) p->maxstacksize = 250;
-        p->numparams = 255;
-        p->is_vararg = 250;
+        /* numparams / is_vararg are RUNTIME fields: luaD_precall fills
+           missing args up to numparams and selects vararg handling from
+           is_vararg. Poisoning them corrupts execution and only stayed
+           latent because the inflated maxstacksize happened to absorb the
+           255 phantom parameters; any later pass that shrinks maxstacksize
+           (e.g. fake_function) then overruns the stack. Keep real values and
+           poison only the pure debug fields below. */
         p->linedefined = (int)0xDEADBEEF;
         p->lastlinedefined = -1;
     } else {

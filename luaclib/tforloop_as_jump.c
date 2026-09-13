@@ -103,38 +103,65 @@ static int convert_one(lua_State *L, luac_Proto *p, int pos, int high_reg) {
     return 1;
 }
 
+static int proto_has_candidate(luac_Proto *p) {
+    int high_reg = (int)p->maxstacksize + 2;
+    if (high_reg + 2 > 250) return 0;  /* no room under register cap */
+    for (int q = 0; q < p->sizecode; q++)
+        if (is_safe_jmp(p, q)) return 1;
+    return 0;
+}
+
 static int convert_function(lua_State *L, luac_Proto *p) {
     int changes = 0;
     int old_max = p->maxstacksize;
-    int high_reg = old_max + 2;  /* 用高寄存器，留 2 个位置给 R(A) 和 R(A+1) */
-    if (high_reg + 2 > 250) return 0;  /* no room for R(A),R(A+1) under register cap */
-
-    /* 扩展 maxstacksize */
+    int high_reg = old_max + 2;  /* high regs: R(A),R(A+1) */
+    if (high_reg + 2 > 250) return 0;
+    /* 无候选零副作用：不抬高 maxstacksize（事后抬栈会让依赖 ci->top 的前置模块
+       变长指令错位，见 process 处说明）。 */
+    if (!proto_has_candidate(p)) return 0;
     obf_ensure_stack(p, high_reg + 2);
 
     int i = 0;
-        while (i < p->sizecode) {
+    while (i < p->sizecode) {
         if (is_safe_jmp(p, i)) {
             if (convert_one(L, p, i, high_reg)) {
                 changes++;
-                i += 2;  /* 跳过 TFORLOOP（LOADBOOL 在 pos-1，已被前一次迭代处理） */
+                i += 2;
                 continue;
             }
         }
         i++;
     }
-
     return changes;
 }
 
 int tforloop_as_jump_process(lua_State *L) {
-    luac_Proto *p = obf_check_proto(L);
-    obf_invalidate_all_caches(L, p);
+    luac_Proto *root = obf_check_proto(L);
+    int total = 0;
 
-    int n = convert_function(L, p);
-    if (p->p) for (int i = 0; i < p->sizep; i++)
-        n += convert_function(L, p->p[i]);
+    /* 根因修复（原问题2：tforloop_as_jump + 多常量模块 -> _ENV/算术 nil）：
+       只对"本 proto 确有可替换回跳 JMP"的 proto 失效其【本层】缓存并转换；
+       无候选的 proto 完全不碰——不递归失效其子孙缓存、不抬高其 maxstacksize。
+       旧实现在 changes=0 时仍对整棵树 obf_invalidate_all_caches（递归），把权威
+       从 Lua 缓存表切到可能过时的 C 镜像，前置 const_hide/str_encrypt 等模块的
+       修改在重建中丢失，运行即 arithmetic on nil / _ENV 被索引成 number。
+       堆堆栈遍历，规避 WASM 64KB 栈限制。 */
+    int cap = 16, cnt = 0;
+    luac_Proto **stk = (luac_Proto **)luac_alloc(sizeof(luac_Proto *) * cap);
+    stk[cnt++] = root;
+    while (cnt > 0) {
+        luac_Proto *cur = stk[--cnt];
+        if (cur->p) for (int i = 0; i < cur->sizep; i++) {
+            if (cnt >= cap) { cap *= 2; stk = (luac_Proto **)realloc(stk, sizeof(luac_Proto *) * cap); }
+            stk[cnt++] = cur->p[i];
+        }
+        if (proto_has_candidate(cur)) {
+            obf_invalidate_self_caches(L, cur);
+            total += convert_function(L, cur);
+        }
+    }
+    free(stk);
 
-    lua_pushinteger(L, n);
+    lua_pushinteger(L, total);
     return 1;
 }

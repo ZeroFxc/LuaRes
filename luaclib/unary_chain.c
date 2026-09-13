@@ -59,7 +59,9 @@ static int process_proto(luac_Proto *p) {
         if (b >= 256 || b >= p->maxstacksize) continue;
         if (!is_arith_op(op)) continue;
         if (!can_insert_before(p->code, i)) continue;
-        if ((rand() % 100) >= 40) continue;
+        /* use the seedable shared PRNG; libc rand() ignored luac.srand and made
+           fixed-seed output nondeterministic */
+        if ((obf_rand() % 100) >= 40) continue;
         inject[i] = 1;
         count++;
     }
@@ -82,7 +84,7 @@ static int process_proto(luac_Proto *p) {
             /* UNM tmp, tmp */
             nc[ni++] = LUAC_ABC(LUAC_OP_UNM, tmp_reg, tmp_reg, 0);
             /* 原指令，B 改成 tmp_reg */
-            unsigned int new_ins = (ins & ~(0x1FF << 23)) | ((unsigned)tmp_reg << 23);
+            unsigned int new_ins = (ins & ~(0x1FFu << 23)) | ((unsigned)tmp_reg << 23);
             nc[ni++] = new_ins;
             UDBG("[unary] old_pos=%d -> new_pos=%d B=%d tmp=%d\n", i, pos_map[i], b, tmp_reg);
         } else {
@@ -114,7 +116,7 @@ static int process_proto(luac_Proto *p) {
             if (old_target_orig < 0 || old_target_orig > n) continue;
             int new_target = pos_map[old_target_orig];
             int new_sbx = new_target - i - 1;
-            nc[i] = (nc[i] & 0xFFF) | ((unsigned)(new_sbx + 131071) << 14);
+            nc[i] = (nc[i] & 0x3FFF) | ((unsigned)(new_sbx + 131071) << 14);
         }
     }
 

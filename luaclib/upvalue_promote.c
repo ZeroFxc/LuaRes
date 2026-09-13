@@ -169,20 +169,6 @@ static void fix_jumps_replace(unsigned int *code,int code_len,
 static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
     if(!p->code||p->sizecode<3)return 0;
 
-    /* identify state register: most frequently read by EQ (flatten state machine) */
-    int eq_read_count[256] = {0};
-    for(int i=0;i<p->sizecode;i++){
-        int op=p->code[i]&0x3F;
-        if(op==LUAC_OP_EQ||op==LUAC_OP_LT||op==LUAC_OP_LE){
-            int B=(p->code[i]>>23)&0x1FF, C=(p->code[i]>>14)&0x1FF;
-            if(B<256) eq_read_count[B]++;
-            if(C<256) eq_read_count[C]++;
-        }
-    }
-    int state_reg=-1, max_eq=0;
-    for(int r=0;r<256;r++){ if(eq_read_count[r]>max_eq){max_eq=eq_read_count[r]; state_reg=r;} }
-    DBG("[UPVAL] detected state_reg=R%d (eq_read=%d)\n", state_reg, max_eq);
-
     int changed=0,pos=0,attempts=0;
     while(changed<count&&attempts<count*20&&pos<p->sizecode-2){
         attempts++;
@@ -213,14 +199,21 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             }
             if(in_loop){pos=end+1;continue;}
         }
-        int has_call_ret=0;
+        /* 原理性安全约束：IIFE child 是嵌在父帧【中部】Rtmp 处的固定栈窗口，窗口之上还
+         * 活着父帧的高寄存器（后续 flatten 状态寄存器 / indirect_dispatch decode 表等）。
+         * 普通调用的 callee 帧在【调用者帧顶之上】由 luaD_growstack 动态扩展、不覆盖活动
+         * 值；但 child 内调用的 callee 帧从 child 的 R(A) 物理向上延伸 A+callee->maxstacksize，
+         * 一旦突破窗口就会覆盖父帧高寄存器（残留随调用路径非确定，表现为偶发 index nil）。
+         * 选块阶段 CLOSURE 本身是控制流边界、不会进入块，因此块内 CALL/TAILCALL 的 callee
+         * 不可能由块内 CLOSURE 静态确定 proto/栈深（只能来自 upvalue/全局/表字段），无法给
+         * 出可证明安全的窗口上界 -> 含任意 CALL/TAILCALL 的块不提升。这是正确性边界，非降级。
+         * （旧实现误用 C 字段(返回值数,bits14)判定，漏放 B 字段(bits23,参数)携带的调用。） */
+        int has_any_call=0;
         for(int i=start;i<end;i++){
             int op=p->code[i]&0x3F;
-            if((op==LUAC_OP_CALL||op==LUAC_OP_TAILCALL)&&((p->code[i]>>14)&0x1FF)>1){
-                has_call_ret=1;break;
-            }
+            if(op==LUAC_OP_CALL||op==LUAC_OP_TAILCALL){has_any_call=1;break;}
         }
-        if(has_call_ret){DBG("[UPVAL] block has call with ret at %d\n",start);pos=end+1;continue;}
+        if(has_any_call){DBG("[UPVAL] block contains CALL/TAILCALL with unbounded callee frame at %d, skip\n",start);pos=end+1;continue;}
         /* 块中包含 NEWTABLE 时跳过：表创建必须留在父栈帧，IIFE 不会把表引用传回 */
         int has_newtable=0;
         for(int i=start;i<end;i++){
@@ -233,11 +226,24 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
             if((p->code[i]&0x3F)==LUAC_OP_SETLIST && ((p->code[i]>>23)&0x1FF)==0){has_setlist_b0=1;break;}
         }
         if(has_setlist_b0){DBG("[UPVAL] block has SETLIST B=0 at %d, skip\n",start);pos=end+1;continue;}
+        /* CALL/TAILCALL B=0: 参数个数到动态 L->top，隐式读取 [A+1,top) 寄存器区间；
+           这些参数若在块外写入则无法经 upvalue 逐寄存器捕获，跨 IIFE 栈帧不成立 -> 不提升 */
+        int has_call_b0=0;
+        for(int i=start;i<end;i++){
+            int cop=p->code[i]&0x3F;
+            if((cop==LUAC_OP_CALL||cop==LUAC_OP_TAILCALL)&&((p->code[i]>>23)&0x1FF)==0){has_call_b0=1;break;}
+        }
+        if(has_call_b0){DBG("[UPVAL] block has CALL/TAILCALL B=0 at %d, skip\n",start);pos=end+1;continue;}
+        /* VARARG 依赖调用者 ... : IIFE child 是固定0参非 vararg 函数，搬入后 ... 为空 -> 不提升 */
+        int has_vararg=0;
+        for(int i=start;i<end;i++){
+            if((p->code[i]&0x3F)==LUAC_OP_VARARG){has_vararg=1;break;}
+        }
+        if(has_vararg){DBG("[UPVAL] block has VARARG at %d, skip\n",start);pos=end+1;continue;}
         /* 活跃变量分析：收集 live-out 寄存器，IIFE 通过返回值传回 */
         int live_out_regs[32];
         int n_live_out=0;
         for(int r=0;r<p->maxstacksize && n_live_out<32;r++){
-            if(r==state_reg) continue; /* state reg is passed via JMP, not return value */
             int written_in_block=0;
             for(int i=start;i<end;i++){
                 if(ins_modifies_reg(p->code[i],r)){written_in_block=1;break;}
@@ -358,10 +364,14 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         /* maxstacksize for child proto */
         int mr=2;
         for(int i=start;i<end;i++){
+            int cop=p->code[i]&0x3F;
             int A=(p->code[i]>>6)&0xFF,B=(p->code[i]>>23)&0x1FF,C=(p->code[i]>>14)&0x1FF;
             if(A+1>mr)mr=A+1;
             if(B<256&&B+1>mr)mr=B+1;
             if(C<256&&C+1>mr)mr=C+1;
+            /* 隐式高寄存器：SELF 写 R(A),R(A+1)；数值 for 的 FORPREP/FORLOOP 占 R(A..A+3) */
+            if(cop==LUAC_OP_SELF&&A+2>mr)mr=A+2;
+            if((cop==LUAC_OP_FORPREP||cop==LUAC_OP_FORLOOP)&&A+4>mr)mr=A+4;
         }
         for(int i=0;i<next;i++)if(ext_regs[i]+1>mr)mr=ext_regs[i]+1;
 
@@ -378,7 +388,17 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         for(int i=0;i<n_live_out;i++)
             child->code[ci++]=LUAC_ABC(LUAC_OP_MOVE,ret_tmp+i,live_out_regs[i],0);
         child->code[ci]=LUAC_ABC(LUAC_OP_RETURN,ret_tmp,n_live_out+1,0);
-        child->maxstacksize=ret_tmp+n_live_out;
+        /* 根因修复：child 逐字复制父基本块、寄存器编号沿用父帧空间，块内指令的运行期
+         * 栈峰值（CALL/TAILCALL 的 callee 帧深度 A+callee->maxstacksize、FORLOOP 的
+         * A..A+3、SELF 的 A/A+1 等隐式高寄存器）父编译器已计入 p->maxstacksize。
+         * 只统计静态操作数会低估 child 帧，IIFE 内调用的 callee 帧会越过父帧为 child
+         * 预留的区间，向上覆盖后续模块（flatten 状态寄存器 / indirect_dispatch decode
+         * 表等）放在高寄存器的活动值，且残留随运行路径非确定。此处取父栈宽为下界。 */
+        {
+            int child_static_need=ret_tmp+n_live_out;
+            int child_frame_need=p->maxstacksize;
+            child->maxstacksize=child_static_need>child_frame_need?child_static_need:child_frame_need;
+        }
         DBG("[UPVAL] child: ret_tmp=%d maxstack=%d total_ins=%d\n", ret_tmp, child->maxstacksize, total_ins);
 
         /* 剥离调试信息：code 长度已变，旧 lineinfo/locvars 不匹配会导致 dump 越界崩溃 */
@@ -395,7 +415,7 @@ static int promote_in_proto(lua_State *L, luac_Proto *p, int count){
         int proto_idx=obf_add_subproto(L,p,child);
         child=p->p[proto_idx];  /* raw 指针可能已被 luac_push_proto 转移所有权，改用 userdata 指针 */
         int old_max=p->maxstacksize;
-        if(old_max+1>250){DBG("[UPVAL] skip: old_max+1>250 at %d\n",start);pos=end+1;continue;}
+        if(old_max+1+child->maxstacksize>250){DBG("[UPVAL] skip: frame need>250 at %d\n",start);pos=end+1;continue;}
         int Rtmp=old_max;
         obf_ensure_stack(p,Rtmp+1+child->maxstacksize);
         DBG("[UPVAL] proto_idx=%d Rtmp=%d child_maxstack=%d parent_maxstack=%d->%d\n",

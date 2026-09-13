@@ -25,6 +25,7 @@
 static luac_Proto *dup_proto(luac_Proto *src) {
     luac_Proto *dst = luac_alloc(sizeof(luac_Proto));
     memcpy(dst, src, sizeof(luac_Proto));
+    dst->is_ud = 0; /* independent raw copy, gets pushed on its own */
 
     /* 拷贝 code */
     if (src->code && src->sizecode > 0) {

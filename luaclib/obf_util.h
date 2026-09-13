@@ -46,6 +46,8 @@ void obf_invalidate_code_cache(lua_State *L, luac_Proto *p);
 
 /* Invalidate all cached Lua tables (code, k, p, lineinfo, etc.) */
 void obf_invalidate_all_caches(lua_State *L, luac_Proto *p);
+/* Invalidate ONLY this proto's own cached tables (no recursion into children) */
+void obf_invalidate_self_caches(lua_State *L, luac_Proto *p);
 
 
 /*===========================================================================
@@ -62,8 +64,18 @@ void obf_visit_protos_post(luac_Proto *p, obf_proto_visitor fn, void *ud);
 /* Compile Lua source to a proto (uses string.dump + undump internally) */
 int obf_compile_subproto(lua_State *L, const char *src, luac_Proto **out);
 
+/* Ensure p's children are stable userdata and the p_tbl mirror exists.
+** Must be called BEFORE a freshly built sub-proto shallow-copies p->p[]:
+** add/replace later turn raw children into userdata (transferring + nulling
+** their arrays), which would otherwise leave the copied snapshot dangling. */
+void obf_ensure_subproto_table(lua_State *L, luac_Proto *p);
+
 /* Add a sub-proto to p, returns its 0-based index */
 int obf_add_subproto(lua_State *L, luac_Proto *p, luac_Proto *sub);
+
+/* Replace an existing sub-proto slot idx with a raw struct, mirroring the
+** Lua-side p_tbl so dump/sync stay consistent. Returns idx, -1 on bad idx. */
+int obf_replace_subproto(lua_State *L, luac_Proto *p, int idx, luac_Proto *sub);
 
 /* Add a string constant to p->k, returns 0-based index */
 int obf_add_k_string(luac_Proto *p, const char *s, size_t len);

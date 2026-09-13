@@ -44,7 +44,11 @@ static int is_enc_rk(int rk, int *str_idx, int str_count) {
 static int encrypt_strings_only(luac_Proto *p, int *str_idx, int str_count,
                                   int *enc_key_idx) {
     if (str_count == 0) return 0;
-    unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)(size_t)p;
+    /* Deterministic PRNG (seeded through luac.srand/obf_srand). Must NOT mix in
+       time() or the proto pointer: that injected wall-clock + ASLR entropy, so a
+       fixed seed produced different bytecode every run (nondeterministic, and the
+       varying decrypt constants sometimes produced wrong runtime output). */
+    unsigned int seed = obf_rand();
     int count = 0;
     for (int i = 0; i < str_count; i++) {
         int idx = str_idx[i];
@@ -311,8 +315,8 @@ static int install_decryptor(lua_State *L, luac_Proto *main_p,
     if (idx < 0) return 0;
 
     /* generate random 16-byte binary key (non-printable, unguessable) */
-    static unsigned int rng_state = 0;
-    if (rng_state == 0) rng_state = (unsigned int)time(NULL) ^ (unsigned int)(size_t)main_p;
+    /* deterministic seed from the shared, seedable PRNG (no time/ASLR entropy) */
+    unsigned int rng_state = obf_rand();
     for (int i = 0; i < 16; i++) {
         rng_state = rng_state * 1103515245 + 12345;
         g_rndkey[i] = (char)((rng_state >> 16) & 0xFF);
