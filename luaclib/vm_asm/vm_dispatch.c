@@ -40,11 +40,11 @@ static int g_ds_has_explicit = 0;
 
 void vm_dispatch_set(unsigned int seed, int mode) {
     g_ds_seed = seed;
-    g_ds_mode = (mode >= 0 && mode <= 4) ? mode : 0;
+    g_ds_mode = (mode >= 0 && mode <= 5) ? mode : 0;
 }
 void vm_dispatch_set_explicit(unsigned int seed, int mode) {
     g_ds_seed = seed;
-    g_ds_mode = (mode >= 0 && mode <= 4) ? mode : 0;
+    g_ds_mode = (mode >= 0 && mode <= 5) ? mode : 0;
     g_ds_has_explicit = 1;
 }
 void vm_dispatch_reset(void) {
@@ -270,6 +270,74 @@ char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
         return vmbuf_detach(&b, len);
     }
 
+    if (mode == 5) {
+        /* ---------- VMP-style decentralized: rolling-key handler chain ---------- */
+        /* No while loop, no if/elseif dispatch, no central dispatch-table lookup.
+         * Each handler ends by decrypting the next handler opcode from nxt_table
+         * using a rolling key, then tail-calls it. Jump targets are encrypted,
+         * static analysis cannot recover the control-flow graph. */
+        const char *_idc5 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789";
+        char hname[32], nname[32];
+        unsigned int _r5 = seed * 2654435761u + 0x9e3779b9u;
+        int _hl = 6 + (_r5 % 7);
+        hname[0] = '_';
+        for (int _i = 1; _i < _hl; _i++) { _r5 = _r5 * 1103515245u + 12345u; hname[_i] = _idc5[_r5 % 63]; }
+        hname[_hl] = '\0';
+        int _nl = 6 + (_r5 % 7);
+        nname[0] = '_';
+        for (int _i = 1; _i < _nl; _i++) { _r5 = _r5 * 1103515245u + 12345u; nname[_i] = _idc5[_r5 % 63]; }
+        nname[_nl] = '\0';
+
+        vmbuf_printf(&b, "  local function RK(x, R, K) if x < 256 then return R[x] end return K[x - 255] end\n");
+        /* encrypted next-handler table */
+        vmbuf_printf(&b, "  local %s = {}\n", nname);
+        vmbuf_puts(&b, "  do\n");
+        vmbuf_puts(&b, "    for _i = 1, #code do\n");
+        vmbuf_puts(&b, "      local _rk = (_i * 0x9e3779b1 + 0x5bd1e995) % 0x100000000\n");
+        vmbuf_printf(&b, "      %s[_i] = (_i < #code) and (code[_i+1][1] ~ _rk) or 0\n", nname);
+        vmbuf_puts(&b, "    end\n");
+        vmbuf_puts(&b, "  end\n");
+        /* handler pool */
+        vmbuf_printf(&b, "  local %s = {}\n", hname);
+
+        int order5[64];
+        int nused5 = 0;
+        for (int i = 0; i < nops; i++) {
+            if (BODY_OF(i)) order5[nused5++] = i;
+        }
+
+        for (int i = 0; i < nused5; i++) {
+            const VmOp *op = &ops[order5[i]];
+            int opcode = remap ? remap[op->op] : op->op;
+            const char *body = BODY_OF(order5[i]);
+            int has_ret = (strstr(body, "return") != NULL);
+
+            vmbuf_printf(&b, "  %s[%d] = function()\n", hname, opcode);
+            vmbuf_puts(&b, "    local ins = code[pc]\n");
+            vmbuf_puts(&b, "    local a = ins[2] or 0; local b = ins[3] or 0; local c = ins[4] or 0\n");
+            vmbuf_puts(&b, "    local bx = ins[5] or 0; local sbx = bx - 131071\n");
+            vmbuf_puts(&b, "    ");
+            vm_emit_body(&b, body, R, K, UV, PC, "code", "top", "proto",
+                         "a", "b", "c", "bx", "sbx", 0);
+            vmbuf_putc(&b, '\n');
+            if (!has_ret) {
+                /* rolling key from pc (body may have jumped), decrypt next handler */
+                vmbuf_puts(&b, "    local rk = (pc * 0x9e3779b1 + 0x5bd1e995) % 0x100000000\n");
+                vmbuf_printf(&b, "    local nxt = %s[pc] ~ rk\n", nname);
+                vmbuf_printf(&b, "    %s = %s + 1\n", PC, PC);
+                vmbuf_printf(&b, "    if %s <= #code then return %s[nxt]() end\n", PC, hname);
+                vmbuf_puts(&b, "    return\n");
+            }
+            vmbuf_puts(&b, "  end\n");
+        }
+
+        /* entry: first handler is direct (only entry is visible, rest is rolling-key protected) */
+        vmbuf_printf(&b, "  if %s <= #code then return %s[code[%s][1]]() end\n", PC, hname, PC);
+        vmbuf_puts(&b, "  closeuv(0)\n");
+
+        return vmbuf_detach(&b, len);
+    }
+
     /* ---------- if/elseif chain (mode 0 ordered, mode 1 shuffled) ---------- */
     vmbuf_printf(&b, "  local function RK(x, R, K) if x < 256 then return R[x] end return K[x - 255] end\n");
 
@@ -329,7 +397,7 @@ int vm_dispatch_shuffle_process(lua_State *L) {
         seed = vm_dispatch_get_seed();
         mode = vm_dispatch_get_mode();
     } else {
-        if (mode < 0 || mode > 4) mode = 0;
+        if (mode < 0 || mode > 5) mode = 0;
         if (seed == 0) seed = (unsigned int)time(NULL);  /* each round differs */
         vm_dispatch_set(seed, mode);
     }

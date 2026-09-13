@@ -62,7 +62,7 @@ const MODULE_GROUPS = [
     { id: 'debug_mutate_c', label: '调试信息变异', desc: '伪造 locvar/upval 名和 lineinfo，不剥离' },
   ]},
   { name: '虚拟机组装', modules: [
-    { id: 'vm_dispatch_shuffle_c', label: 'VM分发重映射', desc: '随机重映射opcode编号，主循环分发四选一（switch乱序/查表/算术/尾调用链去中心化），每轮结果不同，最后执行' },
+    { id: 'vm_dispatch_shuffle_c', label: 'VM分发重映射', desc: '随机重映射opcode编号，主循环分发五选一（switch乱序/查表/算术/尾调用链/VMP滚动密钥真正去中心化），每轮结果不同，最后执行' },
     { id: 'vm_reg_shuffle_c', label: 'VM寄存器槽打乱', desc: 'VM内部寄存器槽重命名：载荷寄存器编号与解释器寄存器表访问下标同步remap，跟分发重映射共用seed派生' },
     { id: 'vm_const_shuffle_c', label: 'VM常量池打乱', desc: '生成的VM常量池表顺序打乱+载荷常量索引同步remap，字符串/数字/表交错排列，跟opcode remap对称' },
     { id: 'vm_embed_c', label: '自包含VM打包', desc: '成品式：把字节码转为纯Lua自包含解释器，零外部依赖，最后执行' },
@@ -215,6 +215,7 @@ function renderModules(){
                 <option value="2">查表</option>
                 <option value="3">算术槽</option>
                 <option value="4">尾调用链(去中心化)</option>
+                <option value="5">VMP滚动密钥(真正去中心化)</option>
               </select></span>
               <span>seed <input id="ds_seed" type="number" min="0" value="${dsFreshSeed()}" style="width:64px;font-size:11px;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:4px" title="0=每轮随机；打开页面自动刷新"></span>
             </div>` : ''}
