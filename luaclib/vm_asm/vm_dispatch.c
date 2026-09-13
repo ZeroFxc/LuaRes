@@ -8,6 +8,10 @@
 **   mode 1: if/elseif chain with shuffled branch order
 **   mode 2: table lookup   _dispatch[op](a,b,c,bx,sbx,...)
 **   mode 3: arithmetic slot ((op*A+B)%nops)+1 -> table lookup
+**   mode 4: tail-call threaded (decentralized) — no while loop;
+**           each opcode handler is a closure inside execute() and ends
+**           with `return _dispatch[code[pc][1]]()`, forming a handler
+**           chain. RETURN/TAILCALL bodies already `return` and exit the chain.
 **
 ** Modes 2/3 emit a module-level dispatch table of handler closures bound
 ** only to module-level runtime helpers (docall & friends); the VM state
@@ -36,11 +40,11 @@ static int g_ds_has_explicit = 0;
 
 void vm_dispatch_set(unsigned int seed, int mode) {
     g_ds_seed = seed;
-    g_ds_mode = (mode >= 0 && mode <= 3) ? mode : 0;
+    g_ds_mode = (mode >= 0 && mode <= 4) ? mode : 0;
 }
 void vm_dispatch_set_explicit(unsigned int seed, int mode) {
     g_ds_seed = seed;
-    g_ds_mode = (mode >= 0 && mode <= 3) ? mode : 0;
+    g_ds_mode = (mode >= 0 && mode <= 4) ? mode : 0;
     g_ds_has_explicit = 1;
 }
 void vm_dispatch_reset(void) {
@@ -215,6 +219,45 @@ char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
         return vmbuf_detach(&b, len);
     }
 
+    if (mode == 4) {
+        /* ---------- tail-call threaded (decentralized, no while loop) ---------- */
+        vmbuf_printf(&b, "  local function RK(x, R, K) if x < 256 then return R[x] end return K[x - 255] end\n");
+        vmbuf_puts(&b, "  local _dispatch = {}\n");
+
+        int order4[64];
+        int nused4 = 0;
+        for (int i = 0; i < nops; i++) {
+            if (BODY_OF(i)) order4[nused4++] = i;
+        }
+
+        for (int i = 0; i < nused4; i++) {
+            const VmOp *op = &ops[order4[i]];
+            int opcode = remap ? remap[op->op] : op->op;
+            const char *body = BODY_OF(order4[i]);
+            int has_ret = (strstr(body, "return") != NULL);
+
+            vmbuf_printf(&b, "  _dispatch[%d] = function()\n", opcode);
+            vmbuf_puts(&b, "    local ins = code[pc]\n");
+            vmbuf_puts(&b, "    local a = ins[2] or 0; local b = ins[3] or 0; local c = ins[4] or 0\n");
+            vmbuf_puts(&b, "    local bx = ins[5] or 0; local sbx = bx - 131071\n");
+            vmbuf_puts(&b, "    ");
+            vm_emit_body(&b, body, R, K, UV, PC, "code", "top", "proto",
+                         "a", "b", "c", "bx", "sbx", 0);
+            vmbuf_putc(&b, '\n');
+            if (!has_ret) {
+                vmbuf_printf(&b, "    %s = %s + 1\n", PC, PC);
+                vmbuf_printf(&b, "    if %s <= #code then return _dispatch[code[%s][1]]() end\n", PC, PC);
+                vmbuf_puts(&b, "    return\n");
+            }
+            vmbuf_puts(&b, "  end\n");
+        }
+
+        vmbuf_printf(&b, "  if %s <= #code then return _dispatch[code[%s][1]]() end\n", PC, PC);
+        vmbuf_puts(&b, "  closeuv(0)\n");
+
+        return vmbuf_detach(&b, len);
+    }
+
     /* ---------- if/elseif chain (mode 0 ordered, mode 1 shuffled) ---------- */
     vmbuf_printf(&b, "  local function RK(x, R, K) if x < 256 then return R[x] end return K[x - 255] end\n");
 
@@ -274,7 +317,7 @@ int vm_dispatch_shuffle_process(lua_State *L) {
         seed = vm_dispatch_get_seed();
         mode = vm_dispatch_get_mode();
     } else {
-        if (mode < 0 || mode > 3) mode = 0;
+        if (mode < 0 || mode > 4) mode = 0;
         if (seed == 0) seed = (unsigned int)time(NULL);  /* each round differs */
         vm_dispatch_set(seed, mode);
     }

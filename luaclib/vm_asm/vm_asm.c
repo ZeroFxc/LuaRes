@@ -75,7 +75,7 @@ int vm_assemble(VmAsmOpts *opts) {
     p = vm_gen_opcodes(remap, opts->luajit_compat, &l); vmbuf_puts(&out, p); free(p);
 
     /* 2b. dispatch mode: module-level cells + runtime copy + dispatch prelude */
-    if (opts->dispatch_mode) {
+    if (opts->dispatch_mode == 2 || opts->dispatch_mode == 3) {
         p = vm_gen_runtime(vR, vK, vUV, vPC, vTOP, vPROTO,
                            opts->include_coroutine, opts->luajit_compat, &l);
         vmbuf_puts(&out, p); free(p);
@@ -173,7 +173,7 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
     p = vm_gen_opcodes(remap, opts->luajit_compat, &l); vmbuf_puts(&out, p); free(p);
 
     /* 2b. dispatch mode: module-level cells + runtime copy + dispatch prelude */
-    if (opts->dispatch_mode) {
+    if (opts->dispatch_mode == 2 || opts->dispatch_mode == 3) {
         p = vm_gen_runtime(vR, vK, vUV, vPC, vTOP, vPROTO,
                            opts->include_coroutine, opts->luajit_compat, &l);
         vmbuf_puts(&out, p); free(p);

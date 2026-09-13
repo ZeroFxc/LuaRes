@@ -37,7 +37,7 @@ typedef struct {
 /* Assembly options */
 typedef struct {
     int remap;            /* randomize opcode numbering */
-    int dispatch_mode;    /* 0=ordered chain, 1=shuffled chain, 2=table, 3=arithmetic */
+    int dispatch_mode;    /* 0=ordered chain, 1=shuffled chain, 2=table, 3=arithmetic, 4=tail-call threaded(decentralized) */
     int obfuscate_names;  /* randomize local variable names */
     int include_coroutine;/* include coroutine support */
     int include_debug;    /* include debug library */
