@@ -221,8 +221,20 @@ char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
 
     if (mode == 4) {
         /* ---------- tail-call threaded (decentralized, no while loop) ---------- */
+        /* random dispatch-table identifier (seed-derived, avoids static _dispatch name) */
+        const char *_idc = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789";
+        char dname[32];
+        unsigned int _r4 = seed * 2654435761u + 0x9e3779b9u;
+        int _dlen4 = 6 + (_r4 % 7);  /* 6-12 chars */
+        dname[0] = '_';
+        for (int _i4 = 1; _i4 < _dlen4; _i4++) {
+            _r4 = _r4 * 1103515245u + 12345u;
+            dname[_i4] = _idc[_r4 % 63];
+        }
+        dname[_dlen4] = '\0';
+
         vmbuf_printf(&b, "  local function RK(x, R, K) if x < 256 then return R[x] end return K[x - 255] end\n");
-        vmbuf_puts(&b, "  local _dispatch = {}\n");
+        vmbuf_printf(&b, "  local %s = {}\n", dname);
 
         int order4[64];
         int nused4 = 0;
@@ -236,7 +248,7 @@ char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
             const char *body = BODY_OF(order4[i]);
             int has_ret = (strstr(body, "return") != NULL);
 
-            vmbuf_printf(&b, "  _dispatch[%d] = function()\n", opcode);
+            vmbuf_printf(&b, "  %s[%d] = function()\n", dname, opcode);
             vmbuf_puts(&b, "    local ins = code[pc]\n");
             vmbuf_puts(&b, "    local a = ins[2] or 0; local b = ins[3] or 0; local c = ins[4] or 0\n");
             vmbuf_puts(&b, "    local bx = ins[5] or 0; local sbx = bx - 131071\n");
@@ -246,13 +258,13 @@ char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
             vmbuf_putc(&b, '\n');
             if (!has_ret) {
                 vmbuf_printf(&b, "    %s = %s + 1\n", PC, PC);
-                vmbuf_printf(&b, "    if %s <= #code then return _dispatch[code[%s][1]]() end\n", PC, PC);
+                vmbuf_printf(&b, "    if %s <= #code then return %s[code[%s][1]]() end\n", PC, dname, PC);
                 vmbuf_puts(&b, "    return\n");
             }
             vmbuf_puts(&b, "  end\n");
         }
 
-        vmbuf_printf(&b, "  if %s <= #code then return _dispatch[code[%s][1]]() end\n", PC, PC);
+        vmbuf_printf(&b, "  if %s <= #code then return %s[code[%s][1]]() end\n", PC, dname, PC);
         vmbuf_puts(&b, "  closeuv(0)\n");
 
         return vmbuf_detach(&b, len);
@@ -305,11 +317,11 @@ char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
 int vm_dispatch_shuffle_process(lua_State *L) {
     unsigned int seed = 0;
     int mode = 0;
-    if (lua_gettop(L) >= 1 && lua_istable(L, 1)) {
-        lua_getfield(L, 1, "seed");
+    if (lua_gettop(L) >= 2 && lua_istable(L, 2)) {
+        lua_getfield(L, 2, "seed");
         if (lua_isnumber(L, -1)) seed = (unsigned int)lua_tointeger(L, -1);
         lua_pop(L, 1);
-        lua_getfield(L, 1, "mode");
+        lua_getfield(L, 2, "mode");
         if (lua_isnumber(L, -1)) mode = (int)lua_tointeger(L, -1);
         lua_pop(L, 1);
     }
