@@ -24,7 +24,7 @@ char *vm_gen_loader(size_t *len) {
         "    sub_uvs[i] = sp.upvalues\n"
         "  end\n"
         "  local proto = {\n"
-        "    code = chunk.code, k = k, p = subs, sub_uvs = sub_uvs,\n"
+        "    code = chunk.code, code_packed = chunk.code_packed, k = k, p = subs, sub_uvs = sub_uvs,\n"
         "    upvalues = chunk.upvalues,\n"
         "    num_params = chunk.num_params,\n"
         "    is_vararg = chunk.is_vararg,\n"

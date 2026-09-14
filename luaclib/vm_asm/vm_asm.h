@@ -42,6 +42,7 @@ typedef struct {
     int include_coroutine;/* include coroutine support */
     int include_debug;    /* include debug library */
     int luajit_compat;    /* generate LuaJIT (5.1) compatible code */
+    int packed_code;       /* store instructions as packed byte string instead of Lua tables */
     unsigned int seed;
     /* output */
     char *out;
@@ -104,7 +105,7 @@ char *vm_gen_dispatch_prelude(const VmOp *ops, int nops, const int *remap, int m
                               int luajit_compat, unsigned int seed, size_t *len);
 char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
                       const char *R, const char *K, const char *UV, const char *PC,
-                      int luajit_compat, unsigned int seed, size_t *len);
+                      int luajit_compat, unsigned int seed, int packed, size_t *len);
 int *vm_dispatch_make_remap(unsigned int seed, int nops);
 void vm_dispatch_set(unsigned int seed, int mode);
 void vm_dispatch_set_explicit(unsigned int seed, int mode);
@@ -112,6 +113,8 @@ void vm_dispatch_reset(void);
 int vm_dispatch_has_explicit(void);
 unsigned int vm_dispatch_get_seed(void);
 int vm_dispatch_get_mode(void);
+int packed_code_get(void);
+void packed_code_set(int on);
 char *vm_gen_loader(size_t *len);
 char *vm_gen_stdlib(int include_debug, size_t *len);
 char *vm_gen_api(size_t *len);

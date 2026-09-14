@@ -147,6 +147,7 @@ typedef struct {
     int *idxp;             /* shared proto counter (deterministic per-proto seeds) */
     const int *parent_reg; /* parent proto reg map (for instack=1 upvalues) */
     int parent_maxstack;   /* parent proto maxstacksize (parent_reg length) */
+    int packed_code;       /* store instructions as packed byte string */
 } EmbedCtx;
 
 static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx);
@@ -256,6 +257,25 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     buf_str(b, "{\n");
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
+    if (ctx->packed_code) {
+        buf_str(b, "code_packed=\"");
+        for (uint32_t _pi = 0; _pi < ncode; _pi++) {
+            uint32_t _ins = ins_arr[_pi];
+            uint32_t _rop = _ins & 0x3F;
+            uint32_t _op = ctx->op_remap ? ctx->op_remap[_rop] : _rop;
+            int _a = (_ins >> 6) & 0xFF;
+            int _c = (_ins >> 14) & 0x1FF;
+            int _bop = (_ins >> 23) & 0x1FF;
+            int _bx = (int)(_ins >> 14);
+            vm_shuffle_fields((int)_rop, &_a, &_bop, &_c, &_bx, reg_map, maxstacksize, k_map, (int)nk);
+            unsigned char _pkt[9];
+            _pkt[0]=_op; _pkt[1]=_a; _pkt[2]=_bop&0xFF; _pkt[3]=(_bop>>8)&0xFF;
+            _pkt[4]=_c&0xFF; _pkt[5]=(_c>>8)&0xFF; _pkt[6]=_bx&0xFF; _pkt[7]=(_bx>>8)&0xFF; _pkt[8]=(_bx>>16)&0xFF;
+            char _esc[8];
+            for (int _j = 0; _j < 9; _j++) { snprintf(_esc, sizeof(_esc), "\\x%02x", _pkt[_j]); buf_str(b, _esc); }
+        }
+        buf_char(b, '"'); buf_char(b, ','); buf_char(b, '\n');
+    } else {
     buf_str(b, "code={");
     int uv_setup_remaining = 0;  /* CLOSURE 后面还剩多少条 upvalue 设置指令 */
     for (uint32_t i = 0; i < ncode; i++) {
@@ -306,6 +326,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
         buf_str(b, tmp);
     }
     buf_str(b, "},\n");
+    }
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
     /* emit constants in shuffled order (kvs already read) */
@@ -457,6 +478,7 @@ char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compa
     if (ctx.const_on && ctx.const_seed == 0) { ctx.const_seed = (unsigned int)time(NULL); vm_const_shuffle_set(ctx.const_seed); }
     int pidx = 0;
     ctx.idxp = &pidx;
+    ctx.packed_code = 1;  /* HARDCODED for test */
 
     Buf chunk; buf_init(&chunk);
     serialize_proto(&r, &chunk, 1, &ctx);
@@ -469,6 +491,7 @@ char *vm_embed_generate(const unsigned char *bc, size_t bc_len, int luajit_compa
     opts.dispatch_mode = dmode;
     opts.remap = (dmode > 0);
     opts.seed = dseed;
+    opts.packed_code = ctx.packed_code;
     if (vm_assemble_runtime(&opts) != 0) {
         free(chunk.data);
         return NULL;

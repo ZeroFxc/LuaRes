@@ -65,6 +65,7 @@ const MODULE_GROUPS = [
     { id: 'vm_dispatch_shuffle_c', label: 'VM分发重映射', desc: '随机重映射opcode编号，主循环分发五选一（switch乱序/查表/算术/尾调用链/VMP滚动密钥真正去中心化），每轮结果不同，最后执行' },
     { id: 'vm_reg_shuffle_c', label: 'VM寄存器槽打乱', desc: 'VM内部寄存器槽重命名：载荷寄存器编号与解释器寄存器表访问下标同步remap，跟分发重映射共用seed派生' },
     { id: 'vm_const_shuffle_c', label: 'VM常量池打乱', desc: '生成的VM常量池表顺序打乱+载荷常量索引同步remap，字符串/数字/表交错排列，跟opcode remap对称' },
+    { id: 'packed_code_c', label: '指令压缩存储', desc: '自包含VM中指令从Lua表改为C端9字节压缩字符串+Lua运行时解码，避免luajit编译18位bx字段精度丢失' },
     { id: 'vm_embed_c', label: '自包含VM打包', desc: '成品式：把字节码转为纯Lua自包含解释器，零外部依赖，最后执行' },
   ]},
 ];
@@ -78,7 +79,7 @@ const EXEC_ORDER = [
   'opaque_predicate_c','const_poison_c','opaque_junk_c','junk_jmp_c',
   'junk_loadk_c','junk_move_c','luac_obfuscate_c','luac_flatten_c',
   'flatten_enhance_c','nested_flatten_c','indirect_dispatch_c','exception_flow_c','exception_dispatcher_c','upvalue_channel_c','tailcall_chain_c','parallel_state_c','debug_strip_c','debug_mutate_c','antidec_c','proto_shuffle_c',
-  'live_range_split_c','op48_junk_c','vm_dispatch_shuffle_c','vm_reg_shuffle_c','vm_const_shuffle_c','fake_function_c','vm_embed_c'
+  'live_range_split_c','op48_junk_c','vm_dispatch_shuffle_c','vm_reg_shuffle_c','vm_const_shuffle_c','packed_code_c','fake_function_c','vm_embed_c'
 ];
 const EXEC_ORDER_MAP = new Map(EXEC_ORDER.map((id,i) => [id, i]));
 function sortModulesForExecution(mods){

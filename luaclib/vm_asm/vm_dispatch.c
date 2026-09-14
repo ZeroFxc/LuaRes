@@ -172,7 +172,8 @@ char *vm_gen_dispatch_prelude(const VmOp *ops, int nops, const int *remap, int m
 /* ---------- main dispatch loop generator ---------- */
 char *vm_gen_dispatch(const VmOp *ops, int nops, const int *remap, int mode,
                       const char *R, const char *K, const char *UV, const char *PC,
-                      int luajit_compat, unsigned int seed, size_t *len) {
+                      int luajit_compat, unsigned int seed, int packed, size_t *len) {
+    (void)packed;
     VmBuf b; vmbuf_init(&b);
 
 #define BODY_OF(i) ((luajit_compat && ops[(i)].body_compat) ? ops[(i)].body_compat : ops[(i)].body)

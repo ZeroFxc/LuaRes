@@ -50,6 +50,7 @@ int cfg_shuffle_process(lua_State *L);
 int vm_dispatch_shuffle_process(lua_State *L);
 int vm_shuffle_register(lua_State *L);
 int fake_function_process(lua_State *L);
+int packed_code_process(lua_State *L);
 
 int nested_flatten_process(lua_State *L);
 int indirect_dispatch_process(lua_State *L);
@@ -114,6 +115,7 @@ static const luaL_Reg obf_funcs[] = {
     {"regcheck_c", obf_regcheck_process},
     {"cfg_shuffle_c", cfg_shuffle_process},
     {"vm_dispatch_shuffle_c", vm_dispatch_shuffle_process},
+    {"packed_code_c", packed_code_process},
     {"nested_flatten_c", nested_flatten_process},
     {"indirect_dispatch_c", indirect_dispatch_process},
     {"exception_flow_c", exception_flow_process},
