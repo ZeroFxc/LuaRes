@@ -258,7 +258,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
     for (int i = 0; i < depth; i++) buf_str(b, "  ");
 
     if (ctx->packed_code) {
-        buf_str(b, "code_packed=\"");
+        buf_str(b, "code_packed={");
         for (uint32_t _pi = 0; _pi < ncode; _pi++) {
             uint32_t _ins = ins_arr[_pi];
             uint32_t _rop = _ins & 0x3F;
@@ -268,13 +268,12 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
             int _bop = (_ins >> 23) & 0x1FF;
             int _bx = (int)(_ins >> 14);
             vm_shuffle_fields((int)_rop, &_a, &_bop, &_c, &_bx, reg_map, maxstacksize, k_map, (int)nk);
-            unsigned char _pkt[9];
-            _pkt[0]=_op; _pkt[1]=_a; _pkt[2]=_bop&0xFF; _pkt[3]=(_bop>>8)&0xFF;
-            _pkt[4]=_c&0xFF; _pkt[5]=(_c>>8)&0xFF; _pkt[6]=_bx&0xFF; _pkt[7]=(_bx>>8)&0xFF; _pkt[8]=(_bx>>16)&0xFF;
-            char _esc[8];
-            for (int _j = 0; _j < 9; _j++) { snprintf(_esc, sizeof(_esc), "\\x%02x", _pkt[_j]); buf_str(b, _esc); }
+            if (_pi) buf_char(b, ',');
+            char _tmp[64];
+            snprintf(_tmp, sizeof(_tmp), "%u,%d,%d,%d,%d", _op, _a, _bop, _c, _bx);
+            buf_str(b, _tmp);
         }
-        buf_char(b, '"'); buf_char(b, ','); buf_char(b, '\n');
+        buf_str(b, "},\n");
     } else {
     buf_str(b, "code={");
     int uv_setup_remaining = 0;  /* CLOSURE 后面还剩多少条 upvalue 设置指令 */

@@ -122,15 +122,12 @@ int vm_assemble(VmAsmOpts *opts) {
     if (opts->packed_code) {
         vmbuf_printf(&out, "  code = %s.code_packed\n", vPROTO);
         vmbuf_puts(&out, "  do\n");
-        vmbuf_puts(&out, "    local _clen = #code / 9\n");
+        vmbuf_puts(&out, "    local _clen = #code / 5\n");
         vmbuf_puts(&out, "    local _dt = {}\n");
         vmbuf_puts(&out, "    for _di = 1, _clen do\n");
-        vmbuf_puts(&out, "      local _off = (_di - 1) * 9 + 1\n");
-        vmbuf_puts(&out, "      local _b0 = code:byte(_off + 2); local _b1 = code:byte(_off + 3)\n");
-        vmbuf_puts(&out, "      local _c0 = code:byte(_off + 4); local _c1 = code:byte(_off + 5)\n");
-        vmbuf_puts(&out, "      local _x0 = code:byte(_off + 6); local _x1 = code:byte(_off + 7); local _x2 = code:byte(_off + 8)\n");
-        vmbuf_puts(&out, "      local _bx = _x0 + _x1 * 256 + _x2 * 65536\n");
-        vmbuf_puts(&out, "      _dt[_di] = {code:byte(_off), code:byte(_off + 1), _b0 + _b1 * 256, _c0 + _c1 * 256, _bx, _bx - 131071}\n");
+        vmbuf_puts(&out, "      local _base = (_di - 1) * 5\n");
+        vmbuf_puts(&out, "      local _bx = code[_base + 5]\n");
+        vmbuf_puts(&out, "      _dt[_di] = {code[_base + 1], code[_base + 2], code[_base + 3], code[_base + 4], _bx, _bx - 131071}\n");
         vmbuf_puts(&out, "    end\n");
         vmbuf_puts(&out, "    code = _dt\n");
         vmbuf_puts(&out, "  end\n");
@@ -239,15 +236,12 @@ int vm_assemble_runtime(VmAsmOpts *opts) {
     if (opts->packed_code) {
         vmbuf_printf(&out, "  code = %s.code_packed\n", vPROTO);
         vmbuf_puts(&out, "  do\n");
-        vmbuf_puts(&out, "    local _clen = #code / 9\n");
+        vmbuf_puts(&out, "    local _clen = #code / 5\n");
         vmbuf_puts(&out, "    local _dt = {}\n");
         vmbuf_puts(&out, "    for _di = 1, _clen do\n");
-        vmbuf_puts(&out, "      local _off = (_di - 1) * 9 + 1\n");
-        vmbuf_puts(&out, "      local _b0 = code:byte(_off + 2); local _b1 = code:byte(_off + 3)\n");
-        vmbuf_puts(&out, "      local _c0 = code:byte(_off + 4); local _c1 = code:byte(_off + 5)\n");
-        vmbuf_puts(&out, "      local _x0 = code:byte(_off + 6); local _x1 = code:byte(_off + 7); local _x2 = code:byte(_off + 8)\n");
-        vmbuf_puts(&out, "      local _bx = _x0 + _x1 * 256 + _x2 * 65536\n");
-        vmbuf_puts(&out, "      _dt[_di] = {code:byte(_off), code:byte(_off + 1), _b0 + _b1 * 256, _c0 + _c1 * 256, _bx, _bx - 131071}\n");
+        vmbuf_puts(&out, "      local _base = (_di - 1) * 5\n");
+        vmbuf_puts(&out, "      local _bx = code[_base + 5]\n");
+        vmbuf_puts(&out, "      _dt[_di] = {code[_base + 1], code[_base + 2], code[_base + 3], code[_base + 4], _bx, _bx - 131071}\n");
         vmbuf_puts(&out, "    end\n");
         vmbuf_puts(&out, "    code = _dt\n");
         vmbuf_puts(&out, "  end\n");
