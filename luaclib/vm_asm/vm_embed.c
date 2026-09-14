@@ -262,7 +262,7 @@ static void serialize_proto(Reader *r, Buf *b, int depth, EmbedCtx *ctx) {
         int _chunk_idx = 0;
         for (uint32_t _pi = 0; _pi < ncode; _pi++) {
             if (_pi % 256 == 0) {
-                if (_chunk_idx > 0) buf_str(b, "\"..\"");
+                if (_chunk_idx > 0) buf_str(b, "\"..");
                 buf_str(b, "\"");
                 _chunk_idx++;
             }
