@@ -1,7 +1,7 @@
 /*
 ** opaque_predicate.c - Multi-pattern opaque predicate with dead code blocks
 **
-** 8 patterns (random):
+** 9 patterns (random):
 **  0: LOADK 0 + LOADK 0 + LT(0<0=false) + JMP + dead   (always-false)
 **  1: LOADK N + MUL(r,r) + LT(r<0=false) + JMP + dead  (always-false, x*x<0)
 **  2: LOADK N + BXOR(r,r) + EQ(r==0=true) + JMP(dead)  (always-true, x^x==0)
@@ -10,9 +10,22 @@
 **  5: LOADK N + ADD(r,1) + LT(r<r+1=true) + JMP(dead)  (always-true, x<x+1)
 **  6: LOADK N + IDIV(r,1) + EQ(r==r=true) + JMP(dead)  (always-true, x//1==x)
 **  7: LOADK N + MUL(r,r) + LE(0<=r=true) + JMP(dead)   (always-true, 0<=x*x)
+**  8: GETTABUP r1,_ENV,K(k1) + GETTABUP r2,_ENV,K(k2) + EQ(r1==r2=true) + JMP(dead)
+**     (runtime environment predicate, always-true)
 **
 ** Always-false patterns (0,1): JMP always taken → dead code skipped
-** Always-true patterns (2-7): JMP never taken → JMP itself is dead
+** Always-true patterns (2-8): JMP never taken → JMP itself is dead
+**
+** Pattern 8 (runtime env predicate):
+**   k1/k2 are random 16-byte binary keys generated per-insertion. At runtime
+**   _ENV[k1] and _ENV[k2] are almost certainly nil (the keys are unguessable),
+**   so nil == nil is always true. Unlike patterns 0-7, the compared values do
+**   NOT come from visible LOADK constants — constant folding / value analysis
+**   cannot statically collapse the comparison (it would have to model the
+**   whole runtime environment), so the branch cannot be removed without
+**   dynamic analysis. Requires the proto to use upvalue[0] as its env table
+**   (i.e. it already has a GETTABUP with B==0 or SETTABUP with A==0);
+**   otherwise this pattern is skipped.
 */
 #include <time.h>
 #include "obf_util.h"
@@ -56,6 +69,29 @@ static int emit_loadk(unsigned int *buf, int reg, int kidx) {
     }
 }
 
+/* Pattern 8 support: does this proto use upvalue[0] as its env table?
+   Lua semantics guarantee upvalue[0] is _ENV iff some GETTABUP has B==0
+   or some SETTABUP has A==0 (only _ENV is used as a table via these ops). */
+static int proto_uses_env0(luac_Proto *p) {
+    for (int i = 0; i < p->sizecode; i++) {
+        int op = p->code[i] & 0x3F;
+        int a = (p->code[i] >> 6) & 0xFF;
+        int b = (p->code[i] >> 23) & 0x1FF;
+        if ((op == LUAC_OP_GETTABUP && b == 0) || (op == LUAC_OP_SETTABUP && a == 0))
+            return 1;
+    }
+    return 0;
+}
+
+/* generate n random bytes via the shared deterministic PRNG (LCG chain) */
+static void gen_rnd_key(char *buf, int n) {
+    unsigned int s = obf_rand();
+    for (int i = 0; i < n; i++) {
+        s = s * 1103515245 + 12345;
+        buf[i] = (char)((s >> 16) & 0xFF);
+    }
+}
+
 /* 在指定位置插入不透明谓词块，返回插入长度 */
 static int insert_predicate_at(luac_Proto *p, int pos) {
     /* scan actual highest register used in code (maxstacksize may be inaccurate) */
@@ -96,7 +132,8 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
     if (r3 + 1 > 255) return 0;  /* register overflow */
     obf_ensure_stack(p, r3 + 1);
 
-    int pattern = obf_rand() % 8;
+    int pattern = obf_rand() % 9;
+    if (pattern == 8 && !proto_uses_env0(p)) pattern = obf_rand() % 8;  /* fallback */
     int zero_idx = get_num_const(p, 0.0);
     int one_idx = get_num_const(p, 1.0);
     /* 随机一个非零整数作为谓词的"种子" */
@@ -120,7 +157,7 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
 
     int dead_len = 4 + (int)(obf_rand() % 10); /* 4-13 条死指令 */
     int prefix = 0;
-    unsigned int prefix_buf[12];
+    unsigned int prefix_buf[16];
 
     /* All patterns use register-only comparisons to avoid C/B field overflow
        when constant index > 255 (idx+256 > 511 overflows 9-bit field) */
@@ -179,6 +216,28 @@ static int insert_predicate_at(luac_Proto *p, int pos) {
             prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_LE, 1, r2, r1);
             prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
             break;
+        case 8: /* runtime env predicate: _ENV[k1] == _ENV[k2] always-true */
+        {
+            char kb1[16], kb2[16];
+            gen_rnd_key(kb1, 16);
+            gen_rnd_key(kb2, 16);
+            int k1 = obf_add_k_string(p, kb1, 16);
+            int k2 = obf_add_k_string(p, kb2, 16);
+            if (k1 <= 255 && k2 <= 255) {
+                prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_GETTABUP, r1, 0, 256 + k1);
+                prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_GETTABUP, r2, 0, 256 + k2);
+            } else {
+                /* RK overflow guard: load key into r3 via LOADK, then GETTABUP
+                   with C as a register index (<256) */
+                prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r3, k1);
+                prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_GETTABUP, r1, 0, r3);
+                prefix_buf[prefix++] = LUAC_ABx(LUAC_OP_LOADK, r3, k2);
+                prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_GETTABUP, r2, 0, r3);
+            }
+            prefix_buf[prefix++] = LUAC_ABC(LUAC_OP_EQ, 1, r1, r2);
+            prefix_buf[prefix++] = LUAC_AsBx(LUAC_OP_JMP, 0, dead_len);
+            break;
+        }
     }
 
     int insert_len = prefix + dead_len;

@@ -173,6 +173,9 @@ def run_nest(case, mods, seed=1, hard_timeout=20):
         return {"verdict":"TIMEOUT","ms":int((time.time()-t0)*1000)}
     ms=int((time.time()-t0)*1000)
     out=(p.stdout or b"").decode("utf-8","replace").strip()
+    # Windows CRT converts \n to \r\n on stdout; baseline comes from a JSON file
+    # (LF-only), so normalize line endings before classification.
+    out = out.replace("\r\n", "\n").replace("\r", "\n")
     if out.startswith("NEST_GEN_ERR"): return {"verdict":"GEN_ERR","ms":ms,"err":out[:200]}
     if out.startswith("NEST_LOAD_ERR"):return {"verdict":"GEN_ERR","ms":ms,"err":out[:200]}
     if out.startswith("NEST_TIMEOUT"):  return {"verdict":"RUN_TIMEOUT","ms":ms}
