@@ -46,7 +46,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <time.h>
 #include "luac.h"
+#include "obf_util.h"
 #include "vm_asm/vm_asm.h"
 
 static lua_State *g_L = NULL;
@@ -135,6 +137,10 @@ static void get_custom_table(lua_State *L) {
 EMSCRIPTEN_KEEPALIVE
 int wasm_init(void) {
     fprintf(stderr, "[WASM_ENTRY] wasm_init called\n");
+    /* randomize per init so obfuscation output is non-deterministic
+       (native path seeds via luac.srand; wasm had a fixed xorshift
+       state and always produced the same pattern sequence) */
+    obf_srand_force((unsigned int)time(NULL));
     if (g_L) return 0;
     g_L = luaL_newstate();
     if (!g_L) return -1;

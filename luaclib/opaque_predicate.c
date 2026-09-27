@@ -69,15 +69,20 @@ static int emit_loadk(unsigned int *buf, int reg, int kidx) {
     }
 }
 
-/* Pattern 8 support: does this proto use upvalue[0] as its env table?
-   Lua semantics guarantee upvalue[0] is _ENV iff some GETTABUP has B==0
-   or some SETTABUP has A==0 (only _ENV is used as a table via these ops). */
+/* Pattern 8 support: does this proto actually use its env table (_ENV)?
+   In the luasafe bytecode, global access compiles to GETUPVAL R, 0 + GETTABLE
+   (not the standard 5.3 GETTABUP B==0), so checking GETTABUP never matches.
+   Only main chunks (linedefined == 0) are guaranteed by Lua semantics to have
+   _ENV at upvalue[0]; child protos capture arbitrary locals as upvalue[0],
+   so using pattern 8 there could break semantics. Require BOTH:
+     - linedefined == 0   (main chunk -> upvalue[0] is _ENV)
+     - GETUPVAL/SETUPVAL with upvalue index 0 in code (env is actually used) */
 static int proto_uses_env0(luac_Proto *p) {
+    if (p->linedefined != 0) return 0;
     for (int i = 0; i < p->sizecode; i++) {
         int op = p->code[i] & 0x3F;
-        int a = (p->code[i] >> 6) & 0xFF;
         int b = (p->code[i] >> 23) & 0x1FF;
-        if ((op == LUAC_OP_GETTABUP && b == 0) || (op == LUAC_OP_SETTABUP && a == 0))
+        if ((op == LUAC_OP_GETUPVAL && b == 0) || (op == LUAC_OP_SETUPVAL && b == 0))
             return 1;
     }
     return 0;
