@@ -4,7 +4,7 @@ set EMSDK=E:\Soft\Proje\LXCLUA-NCore\emsdk
 set PATH=%EMSDK%;%EMSDK%\upstream\emscripten;%EMSDK%\node\18.20.3_64bit\bin;%PATH%
 cd /d E:\LuaRes
 
-set CORE=luasafe\lapi.c luasafe\lcode.c luasafe\lctype.c luasafe\ldebug.c luasafe\ldo.c luasafe\ldump.c luasafe\lfunc.c luasafe\lgc.c luasafe\llex.c luasafe\lmem.c luasafe\lobject.c luasafe\lopcodes.c luasafe\lparser.c luasafe\lstate.c luasafe\lstring.c luasafe\ltable.c luasafe\ltm.c luasafe\lundump.c luasafe\lvm.c luasafe\lzio.c luasafe\lauxlib.c luasafe\lbaselib.c luasafe\lbitlib.c luasafe\lcorolib.c luasafe\ldblib.c luasafe\liolib.c luasafe\lmathlib.c luasafe\loslib.c luasafe\lstrlib.c luasafe\ltablib.c luasafe\lutf8lib.c luasafe\loadlib.c luasafe\linit.c luasafe\lunsafe_stub.c
+set CORE=luasafe\lapi.c luasafe\lcode.c luasafe\lctype.c luasafe\ldebug.c luasafe\ldo.c luasafe\ldump.c luasafe\lfunc.c luasafe\lgc.c luasafe\llex.c luasafe\lmem.c luasafe\lobject.c luasafe\lopcodes.c luasafe\lparser.c luasafe\lstate.c luasafe\lstring.c luasafe\ltable.c luasafe\ltm.c luasafe\lundump.c luasafe\lvm.c luasafe\lzio.c luasafe\lauxlib.c luasafe\lbaselib.c luasafe\lbitlib.c luasafe\lcorolib.c luasafe\ldblib.c luasafe\liolib.c luasafe\lmathlib.c luasafe\loslib.c luasafe\lstrlib.c luasafe\ltablib.c luasafe\lutf8lib.c luasafe\loadlib.c luasafe\linit.c luasafe\lunsafe_stub.c luasafe\luacapi_log.c luasafe\luacapi_log_lua.c
 
 set FILES=
 for %%f in (luaclib\*.c) do (

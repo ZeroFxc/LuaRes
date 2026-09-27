@@ -8,6 +8,7 @@
 #define LUA_CORE
 
 #include "lprefix.h"
+#include "luacapi_log.h"
 
 
 #include <stddef.h>
@@ -253,6 +254,11 @@ static void close_state (lua_State *L) {
 
 
 LUA_API lua_State *lua_newthread (lua_State *L) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lstate", "lua_newthread");
+      luacapi_log_state("L", L);
+      luacapi_log_end();
+}
   global_State *g = G(L);
   lua_State *L1;
   lua_lock(L);
@@ -293,6 +299,12 @@ void luaE_freethread (lua_State *L, lua_State *L1) {
 
 
 LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lstate", "lua_newstate");
+      luacapi_log_ptr("f", (const void *)(f));
+      luacapi_log_ptr("ud", (const void *)(ud));
+      luacapi_log_end();
+}
   int i;
   lua_State *L;
   global_State *g;
@@ -339,6 +351,11 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
 
 
 LUA_API void lua_close (lua_State *L) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lstate", "lua_close");
+      luacapi_log_state("L", L);
+      luacapi_log_end();
+}
   L = G(L)->mainthread;  /* only the main thread can be closed */
   lua_lock(L);
   close_state(L);

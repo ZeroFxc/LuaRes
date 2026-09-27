@@ -25,6 +25,7 @@
 */
 
 #include "lprefix.h"
+#include "luacapi_log.h"
 
 
 #include <stddef.h>
@@ -35,6 +36,7 @@
 #include "lauxlib.h"
 
 LUAMOD_API int luaopen_luac(lua_State *L);
+LUAMOD_API int luaopen_log(lua_State *L);
 
 /*
 ** these libs are loaded by lua.c and are readily available to any Lua
@@ -54,11 +56,17 @@ static const luaL_Reg loadedlibs[] = {
   {LUA_BITLIBNAME, luaopen_bit32},
   {LUA_LUNSAFELIBNAME, luaopen_LUnSafe},
   {"luac", luaopen_luac},
+  {"log", luaopen_log},
   {NULL, NULL}
 };
 
 
 LUALIB_API void luaL_openlibs (lua_State *L) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("linit", "luaL_openlibs");
+      luacapi_log_state("L", L);
+      luacapi_log_end();
+}
   const luaL_Reg *lib;
   /* "require" functions from 'loadedlibs' and set results to global table */
   for (lib = loadedlibs; lib->func; lib++) {

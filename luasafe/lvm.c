@@ -8,6 +8,7 @@
 #define LUA_CORE
 
 #include "lprefix.h"
+#include "luacapi_log.h"
 
 #include <float.h>
 #include <limits.h>
@@ -74,6 +75,12 @@
 ** by the macro 'tonumber'.
 */
 int luaV_tonumber_ (const TValue *obj, lua_Number *n) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_tonumber_");
+      luacapi_log_ptr("obj", (const void *)(obj));
+      luacapi_log_ptr("n", (const void *)(n));
+      luacapi_log_end();
+}
   TValue v;
   if (ttisinteger(obj)) {
     *n = cast_num(ivalue(obj));
@@ -96,6 +103,13 @@ int luaV_tonumber_ (const TValue *obj, lua_Number *n) {
 ** mode == 2: takes the ceil of the number
 */
 int luaV_tointeger (const TValue *obj, lua_Integer *p, int mode) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_tointeger");
+      luacapi_log_ptr("obj", (const void *)(obj));
+      luacapi_log_ptr("p", (const void *)(p));
+      luacapi_log_int("mode", (long long)(mode));
+      luacapi_log_end();
+}
   TValue v;
  again:
   if (ttisfloat(obj)) {
@@ -163,6 +177,15 @@ static int forlimit (const TValue *obj, lua_Integer *p, lua_Integer step,
 */
 void luaV_finishget (lua_State *L, const TValue *t, TValue *key, StkId val,
                       const TValue *slot) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_finishget");
+      luacapi_log_state("L", L);
+      luacapi_log_ptr("t", (const void *)(t));
+      luacapi_log_ptr("key", (const void *)(key));
+      luacapi_log_ptr("val", (const void *)(val));
+      luacapi_log_ptr("slot", (const void *)(slot));
+      luacapi_log_end();
+}
   int loop;  /* counter to avoid infinite loops */
   const TValue *tm;  /* metamethod */
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
@@ -206,6 +229,15 @@ void luaV_finishget (lua_State *L, const TValue *t, TValue *key, StkId val,
 */
 void luaV_finishset (lua_State *L, const TValue *t, TValue *key,
                      StkId val, const TValue *slot) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_finishset");
+      luacapi_log_state("L", L);
+      luacapi_log_ptr("t", (const void *)(t));
+      luacapi_log_ptr("key", (const void *)(key));
+      luacapi_log_ptr("val", (const void *)(val));
+      luacapi_log_ptr("slot", (const void *)(slot));
+      luacapi_log_end();
+}
   int loop;  /* counter to avoid infinite loops */
   for (loop = 0; loop < MAXTAGLOOP; loop++) {
     const TValue *tm;  /* '__newindex' metamethod */
@@ -366,6 +398,13 @@ static int LEnum (const TValue *l, const TValue *r) {
 ** Main operation less than; return 'l < r'.
 */
 int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_lessthan");
+      luacapi_log_state("L", L);
+      luacapi_log_ptr("l", (const void *)(l));
+      luacapi_log_ptr("r", (const void *)(r));
+      luacapi_log_end();
+}
   int res;
   if (ttisnumber(l) && ttisnumber(r))  /* both operands are numbers? */
     return LTnum(l, r);
@@ -386,6 +425,13 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
 ** status keeps that information.
 */
 int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_lessequal");
+      luacapi_log_state("L", L);
+      luacapi_log_ptr("l", (const void *)(l));
+      luacapi_log_ptr("r", (const void *)(r));
+      luacapi_log_end();
+}
   int res;
   if (ttisnumber(l) && ttisnumber(r))  /* both operands are numbers? */
     return LEnum(l, r);
@@ -409,6 +455,13 @@ int luaV_lessequal (lua_State *L, const TValue *l, const TValue *r) {
 ** L == NULL means raw equality (no metamethods)
 */
 int luaV_equalobj (lua_State *L, const TValue *t1, const TValue *t2) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_equalobj");
+      luacapi_log_state("L", L);
+      luacapi_log_ptr("t1", (const void *)(t1));
+      luacapi_log_ptr("t2", (const void *)(t2));
+      luacapi_log_end();
+}
   const TValue *tm;
   if (ttype(t1) != ttype(t2)) {  /* not the same variant? */
     if (ttnov(t1) != ttnov(t2) || ttnov(t1) != LUA_TNUMBER)
@@ -476,6 +529,12 @@ static void copy2buff (StkId top, int n, char *buff) {
 ** from 'L->top - total' up to 'L->top - 1'.
 */
 void luaV_concat (lua_State *L, int total) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_concat");
+      luacapi_log_state("L", L);
+      luacapi_log_int("total", (long long)(total));
+      luacapi_log_end();
+}
   lua_assert(total >= 2);
   do {
     StkId top = L->top;
@@ -519,6 +578,13 @@ void luaV_concat (lua_State *L, int total) {
 ** Main operation 'ra' = #rb'.
 */
 void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_objlen");
+      luacapi_log_state("L", L);
+      luacapi_log_ptr("ra", (const void *)(ra));
+      luacapi_log_ptr("rb", (const void *)(rb));
+      luacapi_log_end();
+}
   const TValue *tm;
   switch (ttype(rb)) {
     case LUA_TTABLE: {
@@ -554,6 +620,13 @@ void luaV_objlen (lua_State *L, StkId ra, const TValue *rb) {
 ** otherwise 'floor(q) == trunc(q) - 1'.
 */
 lua_Integer luaV_div (lua_State *L, lua_Integer m, lua_Integer n) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_div");
+      luacapi_log_state("L", L);
+      luacapi_log_int("m", (long long)(m));
+      luacapi_log_int("n", (long long)(n));
+      luacapi_log_end();
+}
   if (l_castS2U(n) + 1u <= 1u) {  /* special cases: -1 or 0 */
     if (n == 0)
       luaG_runerror(L, "attempt to divide by zero");
@@ -574,6 +647,13 @@ lua_Integer luaV_div (lua_State *L, lua_Integer m, lua_Integer n) {
 ** about luaV_div.)
 */
 lua_Integer luaV_mod (lua_State *L, lua_Integer m, lua_Integer n) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_mod");
+      luacapi_log_state("L", L);
+      luacapi_log_int("m", (long long)(m));
+      luacapi_log_int("n", (long long)(n));
+      luacapi_log_end();
+}
   if (l_castS2U(n) + 1u <= 1u) {  /* special cases: -1 or 0 */
     if (n == 0)
       luaG_runerror(L, "attempt to perform 'n%%0'");
@@ -595,6 +675,12 @@ lua_Integer luaV_mod (lua_State *L, lua_Integer m, lua_Integer n) {
 ** Shift left operation. (Shift right just negates 'y'.)
 */
 lua_Integer luaV_shiftl (lua_Integer x, lua_Integer y) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_shiftl");
+      luacapi_log_int("x", (long long)(x));
+      luacapi_log_int("y", (long long)(y));
+      luacapi_log_end();
+}
   if (y < 0) {  /* shift right? */
     if (y <= -NBITS) return 0;
     else return intop(>>, x, -y);
@@ -658,6 +744,11 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
 ** finish execution of an opcode interrupted by an yield
 */
 void luaV_finishOp (lua_State *L) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_finishOp");
+      luacapi_log_state("L", L);
+      luacapi_log_end();
+}
   CallInfo *ci = L->ci;
   StkId base = ci->u.l.base;
   Instruction inst = *(ci->u.l.savedpc - 1);  /* interrupted instruction */
@@ -825,6 +916,11 @@ static int tforeach_iter (lua_State *L) {
 
 
 void luaV_execute (lua_State *L) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("lvm", "luaV_execute");
+      luacapi_log_state("L", L);
+      luacapi_log_end();
+}
   CallInfo *ci = L->ci;
   LClosure *cl;
   TValue *k;

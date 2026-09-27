@@ -8,6 +8,7 @@
 #define LUA_CORE
 
 #include "lprefix.h"
+#include "luacapi_log.h"
 
 
 #include <setjmp.h>
@@ -344,6 +345,8 @@ static void tryfuncTM (lua_State *L, StkId func) {
 int luaD_precall (lua_State *L, StkId func, int nresults) {
   lua_CFunction f;
   CallInfo *ci;
+  if (ttisfunction(func))  /* LUACAPI_LOG: 记录 Lua 层函数调用（组 call） */
+    luacapi_log_call(L, func);
   switch (ttype(func)) {
     case LUA_TCCL:  /* C closure */
       f = clCvalue(func)->f;
@@ -652,6 +655,13 @@ static void resume (lua_State *L, void *ud) {
 
 
 LUA_API int lua_resume (lua_State *L, lua_State *from, int nargs) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldo", "lua_resume");
+      luacapi_log_state("L", L);
+      luacapi_log_state("from", from);
+      luacapi_log_int("nargs", (long long)(nargs));
+      luacapi_log_end();
+}
   int status;
   unsigned short oldnny = L->nny;  /* save "number of non-yieldable" calls */
   lua_lock(L);
@@ -683,12 +693,25 @@ LUA_API int lua_resume (lua_State *L, lua_State *from, int nargs) {
 
 
 LUA_API int lua_isyieldable (lua_State *L) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldo", "lua_isyieldable");
+      luacapi_log_state("L", L);
+      luacapi_log_end();
+}
   return (L->nny == 0);
 }
 
 
 LUA_API int lua_yieldk (lua_State *L, int nresults, lua_KContext ctx,
                         lua_KFunction k) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldo", "lua_yieldk");
+      luacapi_log_state("L", L);
+      luacapi_log_int("nresults", (long long)(nresults));
+      luacapi_log_int("ctx", (long long)(ctx));
+      luacapi_log_ptr("k", (const void *)(k));
+      luacapi_log_end();
+}
   CallInfo *ci = L->ci;
   luai_userstateyield(L, nresults);
   lua_lock(L);

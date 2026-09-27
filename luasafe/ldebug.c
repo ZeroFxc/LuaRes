@@ -8,6 +8,7 @@
 #define LUA_CORE
 
 #include "lprefix.h"
+#include "luacapi_log.h"
 
 
 #include <stdarg.h>
@@ -78,6 +79,14 @@ static void swapextra (lua_State *L) {
 ** always checked before being called (see 'luaD_hook').
 */
 LUA_API void lua_sethook (lua_State *L, lua_Hook func, int mask, int count) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldebug", "lua_sethook");
+      luacapi_log_state("L", L);
+      luacapi_log_ptr("func", (const void *)(func));
+      luacapi_log_int("mask", (long long)(mask));
+      luacapi_log_int("count", (long long)(count));
+      luacapi_log_end();
+}
   if (func == NULL || mask == 0) {  /* turn off hooks? */
     mask = 0;
     func = NULL;
@@ -92,21 +101,43 @@ LUA_API void lua_sethook (lua_State *L, lua_Hook func, int mask, int count) {
 
 
 LUA_API lua_Hook lua_gethook (lua_State *L) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldebug", "lua_gethook");
+      luacapi_log_state("L", L);
+      luacapi_log_end();
+}
   return L->hook;
 }
 
 
 LUA_API int lua_gethookmask (lua_State *L) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldebug", "lua_gethookmask");
+      luacapi_log_state("L", L);
+      luacapi_log_end();
+}
   return L->hookmask;
 }
 
 
 LUA_API int lua_gethookcount (lua_State *L) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldebug", "lua_gethookcount");
+      luacapi_log_state("L", L);
+      luacapi_log_end();
+}
   return L->basehookcount;
 }
 
 
 LUA_API int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldebug", "lua_getstack");
+      luacapi_log_state("L", L);
+      luacapi_log_int("level", (long long)(level));
+      luacapi_log_ptr("ar", (const void *)(ar));
+      luacapi_log_end();
+}
   int status;
   CallInfo *ci;
   if (level < 0) return 0;  /* invalid (negative) level */
@@ -168,6 +199,13 @@ static const char *findlocal (lua_State *L, CallInfo *ci, int n,
 
 
 LUA_API const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldebug", "lua_getlocal");
+      luacapi_log_state("L", L);
+      luacapi_log_ptr("ar", (const void *)(ar));
+      luacapi_log_int("n", (long long)(n));
+      luacapi_log_end();
+}
   const char *name;
   lua_lock(L);
   swapextra(L);
@@ -192,6 +230,13 @@ LUA_API const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
 
 
 LUA_API const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldebug", "lua_setlocal");
+      luacapi_log_state("L", L);
+      luacapi_log_ptr("ar", (const void *)(ar));
+      luacapi_log_int("n", (long long)(n));
+      luacapi_log_end();
+}
   StkId pos = NULL;  /* to avoid warnings */
   const char *name;
   lua_lock(L);
@@ -296,6 +341,13 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
 
 
 LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
+{ /* LUACAPI_LOG */
+      luacapi_log_begin("ldebug", "lua_getinfo");
+      luacapi_log_state("L", L);
+      luacapi_log_str("what", what);
+      luacapi_log_ptr("ar", (const void *)(ar));
+      luacapi_log_end();
+}
   int status;
   Closure *cl;
   CallInfo *ci;
@@ -678,3 +730,10 @@ void luaG_traceexec (lua_State *L) {
   }
 }
 
+/* ==== LUACAPI_LOG: 导出函数名解析（luacapi_log.c 调用） ==== */
+const char *luac_funcnamefromcode (lua_State *L, CallInfo *ci, const char **name) {
+  if (name) *name = NULL;
+  if (ci == NULL || !isLua(ci))  /* 调用者必须是 Lua 帧才能解析名字 */
+    return NULL;
+  return getfuncname(L, ci, name);
+}

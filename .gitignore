@@ -49,3 +49,10 @@ pay-sdk-c/build/
 
 # Nested independent project (keeps its own .git; do not embed as gitlink)
 wasmobf/
+
+# Runtime logs
+1.log
+luacapi.log
+
+# Regression temp
+regress/tmp/
