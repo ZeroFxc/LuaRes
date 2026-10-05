@@ -28,6 +28,7 @@ __pycache__/
 
 # IDE
 .trae/
+.claude/
 
 # Native build working/cache dir
 build_native_bat/
@@ -49,6 +50,9 @@ pay-sdk-c/build/
 
 # Nested independent project (keeps its own .git; do not embed as gitlink)
 wasmobf/
+
+# Third-party Java obfuscator tool (standalone project, not part of LuaRes)
+ZelixKlassMaster-27-main/
 
 # Runtime logs
 1.log

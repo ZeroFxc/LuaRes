@@ -240,8 +240,19 @@ function renderModules(){
   // luajit_compat checkbox event
   const lcEl = document.getElementById('luajit_compat');
   if (lcEl) {
+    // 复选框默认勾选，但 vmLuajitCompat 初始为 false；必须同步实际勾选状态，
+    // 否则首次打开页面（无 localStorage 记录）时显示勾选、实际以非兼容模式生成
+    vmLuajitCompat = lcEl.checked;
     lcEl.addEventListener('change', () => { vmLuajitCompat = lcEl.checked; });
   }
+  // load luajit_compat persisted state
+  try {
+    const lcSaved = localStorage.getItem('luajit_compat');
+    if (lcEl && lcSaved !== null) {
+      lcEl.checked = (lcSaved === '1');
+      vmLuajitCompat = lcEl.checked;
+    }
+  } catch(e){}
 
   // Custom modules group (Lua + JS)
   const allCustom = [
@@ -312,16 +323,6 @@ function renderModules(){
   saveConfig = function(){
     origSaveConfig();
     updateGroupCheckboxes();
-
-  // load luajit_compat persisted state
-  try {
-    const lcSaved = localStorage.getItem('luajit_compat');
-    const lcEl = document.getElementById('luajit_compat');
-    if (lcEl && lcSaved !== null) {
-      lcEl.checked = (lcSaved === '1');
-      vmLuajitCompat = lcEl.checked;
-    }
-  } catch(e){}
   };
   updateGroupCheckboxes();
 
